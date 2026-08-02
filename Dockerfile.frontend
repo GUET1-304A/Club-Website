@@ -1,0 +1,16 @@
+# Xingyu CMS — Frontend (Vite + React)
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copy package files first for layer caching
+COPY frontendnew/package.json frontendnew/package-lock.json ./
+RUN npm ci
+
+# Copy frontend source
+COPY frontendnew/ .
+
+EXPOSE 3000
+
+# Vite dev server with host exposed
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "3000"]

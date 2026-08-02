@@ -1,0 +1,21 @@
+# Production frontend: build Vite assets once, then serve them with nginx.
+FROM node:24-alpine AS build
+
+WORKDIR /app
+
+COPY frontendnew/package.json frontendnew/package-lock.json ./
+RUN npm ci
+
+COPY frontendnew/ ./
+
+# Empty keeps the browser on the same origin, where nginx proxies /api and /uploads.
+ARG VITE_BACKEND_URL=""
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80

@@ -1,0 +1,17 @@
+**/node_modules
+**/__pycache__
+*.pyc
+.git
+.claude
+*.md
+xingyu_cms.db
+xingyu-backup-v2-importable.json
+**/dist
+prompt*.md
+
+# Runtime state and production credentials must never enter image layers.
+backend/uploads/
+backend/xingyu_cms.db
+**/.env
+secrets/*.txt
+deploy/certs/*.pem

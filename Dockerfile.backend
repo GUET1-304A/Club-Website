@@ -1,0 +1,19 @@
+# Xingyu CMS — Backend (Flask)
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Python dependencies (pure Python — no system compiler needed)
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend source
+COPY backend/ .
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+EXPOSE 5000
+
+# Flask reads DEBUG from the selected application configuration; do not override it here.
+CMD ["python", "-c", "from app import create_app; app = create_app(); app.run(host=app.config['APP_HOST'], port=app.config['APP_PORT'])"]

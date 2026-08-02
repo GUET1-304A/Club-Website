@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build output
+dist/
+.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Production Compose secret files (only *.txt.example is versioned)
+secrets/*.txt
+
+# TLS certificate material (the empty deploy/certs/.gitkeep remains tracked)
+deploy/certs/*.pem
+
+# Backup files
+*.json.bak
+xingyu-backup-*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (runtime data)
+backend/uploads/
+
+# Docker volumes
+db-data/
+upload-data/
+
+# Claude
+.claude/
+
+# Logs
+*.log
+npm-debug.log*
+xingyu_cms.db

@@ -1,0 +1,93 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: >-
+      gunicorn --workers 1 --threads 4 --bind 0.0.0.0:5000
+      --access-logfile - --error-logfile - 'app:create_app()'
+    environment:
+      FLASK_ENV: production
+      APP_DEBUG: "false"
+      SECRET_KEY_FILE: /run/secrets/secret_key
+      JWT_SECRET_KEY_FILE: /run/secrets/jwt_secret_key
+      OSS_ACCESS_KEY_ID_FILE: /run/secrets/oss_access_key_id
+      OSS_ACCESS_KEY_SECRET_FILE: /run/secrets/oss_access_key_secret
+      OCR_API_KEY_FILE: /run/secrets/ocr_api_key
+      AI_API_KEY_FILE: /run/secrets/ai_api_key
+      BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/bootstrap_admin_password
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:?BOOTSTRAP_ADMIN_USERNAME is required}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/xingyu_cms.db}
+      UPLOAD_FOLDER: ${UPLOAD_FOLDER:-/app/uploads}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      OSS_ENABLED: ${OSS_ENABLED:-false}
+      OSS_PROVIDER: ${OSS_PROVIDER:-}
+      OSS_BUCKET: ${OSS_BUCKET:-}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-}
+      OSS_PREFIX: ${OSS_PREFIX:-}
+      OSS_PUBLIC_BASE_URL: ${OSS_PUBLIC_BASE_URL:-}
+      OCR_ENABLED: ${OCR_ENABLED:-false}
+      OCR_PROVIDER: ${OCR_PROVIDER:-}
+      OCR_ENDPOINT: ${OCR_ENDPOINT:-}
+      OCR_MODEL: ${OCR_MODEL:-}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+    secrets:
+      - source: secret_key
+        target: secret_key
+      - source: jwt_secret_key
+        target: jwt_secret_key
+      - source: oss_access_key_id
+        target: oss_access_key_id
+      - source: oss_access_key_secret
+        target: oss_access_key_secret
+      - source: ocr_api_key
+        target: ocr_api_key
+      - source: ai_api_key
+        target: ai_api_key
+      - source: bootstrap_admin_password
+        target: bootstrap_admin_password
+    volumes:
+      - db_data_prod:/app/data
+      - upload_data_prod:/app/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.prod
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data_prod:
+  upload_data_prod:
+
+secrets:
+  secret_key:
+    file: ${SECRET_KEY_FILE:?Set SECRET_KEY_FILE to the secret file path.}
+  jwt_secret_key:
+    file: ${JWT_SECRET_KEY_FILE:?Set JWT_SECRET_KEY_FILE to the secret file path.}
+  oss_access_key_id:
+    file: ${OSS_ACCESS_KEY_ID_FILE:?Set OSS_ACCESS_KEY_ID_FILE to the secret file path.}
+  oss_access_key_secret:
+    file: ${OSS_ACCESS_KEY_SECRET_FILE:?Set OSS_ACCESS_KEY_SECRET_FILE to the secret file path.}
+  ocr_api_key:
+    file: ${OCR_API_KEY_FILE:?Set OCR_API_KEY_FILE to the secret file path.}
+  ai_api_key:
+    file: ${AI_API_KEY_FILE:?Set AI_API_KEY_FILE to the secret file path.}
+  bootstrap_admin_password:
+    file: ${BOOTSTRAP_ADMIN_PASSWORD_FILE:?Set BOOTSTRAP_ADMIN_PASSWORD_FILE to the secret file path.}
