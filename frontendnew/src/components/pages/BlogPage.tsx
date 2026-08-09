@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { FileText } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { FileText, Pin, CheckCircle2 } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
 import SearchModal from '../ui/SearchModal'
 import type { SearchItem } from '../ui/SearchModal'
 import EmptyState from '../ui/EmptyState'
 import { useSiteData } from '../../store/useSiteData'
+import { isMemberLoggedIn, memberBlogReadIds } from '../../services/memberApi'
 
 const categories = [
   { key: 'all', label: '全部' },
@@ -24,12 +25,20 @@ export default function BlogPage() {
   const [activeCat, setActiveCat] = useState('all')
   const [search, setSearch] = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [readIds, setReadIds] = useState<Set<number>>(() => new Set())
 
-  const filtered = blogPosts.filter((p) => {
+  useEffect(() => {
+    if (!isMemberLoggedIn()) return
+    memberBlogReadIds()
+      .then(data => setReadIds(new Set(data.readIds)))
+      .catch(() => {})
+  }, [])
+
+  const filtered = [...blogPosts].filter((p) => {
     if (activeCat !== 'all' && p.category !== activeCat) return false
     if (search && !p.title.includes(search)) return false
     return true
-  })
+  }).sort((a, b) => Number(b.pinned || false) - Number(a.pinned || false))
   const visible = filtered.slice(0, visibleCount)
 
   return (
@@ -68,6 +77,18 @@ export default function BlogPage() {
                   <a href={`/blog/${post.slug}`} className="text-xl font-medium text-[#051A24] hover:opacity-70 transition-opacity">
                     {post.title}
                   </a>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {post.pinned && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-[#051A24] text-white px-2 py-0.5">
+                        <Pin className="w-2.5 h-2.5" /> 置顶
+                      </span>
+                    )}
+                    {readIds.has(Number(post.id)) && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> 已读
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-[#273C46] mt-2 line-clamp-2">{post.excerpt}</p>
                   <div className="flex gap-3 mt-3 text-xs text-[#273C46]/60 items-center flex-wrap">
                     <img src={post.author.avatar} alt={post.author.name} className="w-5 h-5 rounded-full" />

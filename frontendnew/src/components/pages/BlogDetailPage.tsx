@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, User, ArrowLeft, Tag } from 'lucide-react'
+import { Calendar, User, ArrowLeft, Tag, Pin } from 'lucide-react'
 import TagPill from '../ui/TagPill'
 import Card from '../ui/Card'
 import Markdown from '../ui/Markdown'
@@ -7,6 +7,7 @@ import { useSiteData } from '../../store/useSiteData'
 import { fetchBlog, fetchBlogs } from '../../services/api'
 import type { BlogPost } from '../../types'
 import type { BlogData } from '../../services/api'
+import { isMemberLoggedIn, memberMarkBlogRead } from '../../services/memberApi'
 
 const CAT_LABELS: Record<string, string> = {
   tech: '技术分享', event: '活动记录', summary: '心得总结', announcement: '公告通知',
@@ -24,6 +25,7 @@ function mapBlog(b: BlogData): BlogPost {
     author: b.author || { name: b.authorName || '', avatar: b.authorAvatar || '' },
     date: b.date || '',
     coverImage: b.coverImage,
+    pinned: b.pinned,
   }
 }
 
@@ -68,6 +70,11 @@ export default function BlogDetailPage({ slug }: { slug: string }) {
       })
     return () => { cancelled = true }
   }, [slug])
+
+  useEffect(() => {
+    if (!post || !isMemberLoggedIn()) return
+    memberMarkBlogRead(Number(post.id)).catch(() => {})
+  }, [post])
 
   if (loading) {
     return (
@@ -116,6 +123,11 @@ export default function BlogDetailPage({ slug }: { slug: string }) {
         <div className="p-6 md:p-8 flex-1">
           <div className="flex items-center gap-2 mb-3">
             <TagPill label={CAT_LABELS[post.category] || post.category} />
+            {post.pinned && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-[#051A24] text-white px-2 py-1">
+                <Pin className="w-2.5 h-2.5" /> 置顶
+              </span>
+            )}
             {post.tags.slice(0, 3).map(t => <TagPill key={t} label={t} />)}
           </div>
           <h1 className="text-2xl md:text-3xl font-medium text-[#051A24] leading-tight tracking-tight">

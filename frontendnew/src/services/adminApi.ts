@@ -48,6 +48,7 @@ export interface AdminBlog {
   category: string; tags?: string[]; author?: { name: string; avatar: string }
   authorName?: string; authorAvatar?: string; authorId?: number
   date?: string; coverImage?: string; isPublished?: boolean
+  pinned?: boolean
 }
 
 export interface AdminPage {

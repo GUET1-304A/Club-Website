@@ -975,7 +975,9 @@ def admin_list_blogs():
     if category:
         query = query.filter_by(category=category)
 
-    posts = query.order_by(BlogPost.date.desc(), BlogPost.id.desc()).all()
+    posts = query.order_by(
+        BlogPost.pinned.desc(), BlogPost.date.desc(), BlogPost.id.desc()
+    ).all()
     return jsonify([p.to_dict() for p in posts])
 
 
@@ -1020,6 +1022,7 @@ def admin_create_blog():
         date=data.get('date'),
         cover_image=data.get('coverImage'),
         is_published=data.get('isPublished', True),
+        pinned=data.get('pinned', False),
     )
     db.session.add(post)
     db.session.commit()
@@ -1062,7 +1065,7 @@ def admin_update_blog(blog_id):
     data = request.get_json()
     # 可直接映射的字段
     updatable = ['title', 'slug', 'excerpt', 'content', 'category',
-                 'date', 'cover_image', 'is_published']
+                 'date', 'cover_image', 'is_published', 'pinned']
     for field in updatable:
         if field in data:
             setattr(post, field, data[field])

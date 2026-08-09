@@ -58,6 +58,7 @@ export interface BlogPost {
   author: { name: string; avatar: string }
   date: string
   coverImage?: string
+  pinned?: boolean
 }
 
 export interface SiteConfig {

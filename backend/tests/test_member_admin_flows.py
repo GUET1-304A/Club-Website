@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from models import Certificate, Notification, Project, ResourceFolder, Task, db
+from models import BlogPost, BlogRead, Certificate, Notification, Project, ResourceFolder, Task, db
 
 
 def test_member_can_manage_own_identity_without_exposing_password_data(client):
@@ -398,4 +398,110 @@ def test_admin_project_health_returns_statistics(client):
                 project = db.session.get(Project, project_id)
                 if project is not None:
                     db.session.delete(project)
+            db.session.commit()
+
+
+def test_admin_blog_pinning_orders_public_list(client):
+    login = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    assert login.status_code == 200
+    admin_headers = {"Authorization": f"Bearer {login.get_json()['token']}"}
+    blog_ids = []
+    try:
+        first = client.post(
+            "/api/admin/blogs",
+            headers=admin_headers,
+            json={
+                "title": "普通公告",
+                "category": "announcement",
+                "date": "2026-08-01",
+                "pinned": False,
+            },
+        )
+        second = client.post(
+            "/api/admin/blogs",
+            headers=admin_headers,
+            json={
+                "title": "置顶公告",
+                "category": "announcement",
+                "date": "2026-07-01",
+                "pinned": True,
+            },
+        )
+        assert first.status_code == 201 and second.status_code == 201
+        blog_ids = [first.get_json()["blog"]["id"], second.get_json()["blog"]["id"]]
+
+        public_list = client.get("/api/blogs").get_json()
+        pinned_titles = [p["title"] for p in public_list if p["id"] in blog_ids]
+        assert pinned_titles[0] == "置顶公告"
+        assert pinned_titles[1] == "普通公告"
+    finally:
+        with client.application.app_context():
+            for blog_id in blog_ids:
+                BlogRead.query.filter_by(blog_id=blog_id).delete()
+                blog = db.session.get(BlogPost, blog_id)
+                if blog is not None:
+                    db.session.delete(blog)
+            db.session.commit()
+
+
+def test_member_blog_read_tracking_is_idempotent_and_isolated(client):
+    admin_login = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    admin_headers = {"Authorization": f"Bearer {admin_login.get_json()['token']}"}
+    blog_id = None
+    try:
+        created = client.post(
+            "/api/admin/blogs",
+            headers=admin_headers,
+            json={"title": "已读追踪测试公告", "category": "announcement"},
+        )
+        blog_id = created.get_json()["blog"]["id"]
+
+        member_login = client.post(
+            "/api/member/login",
+            json={"account": "2023002", "password": "member123"},
+        )
+        member_headers = {"Authorization": f"Bearer {member_login.get_json()['token']}"}
+
+        marked = client.post(
+            f"/api/member/blogs/{blog_id}/read",
+            headers=member_headers,
+        )
+        assert marked.status_code == 200
+        # 幂等
+        marked_again = client.post(
+            f"/api/member/blogs/{blog_id}/read",
+            headers=member_headers,
+        )
+        assert marked_again.status_code == 200
+
+        read_ids = client.get("/api/member/blogs/read-ids", headers=member_headers).get_json()
+        assert read_ids["readIds"] == [blog_id]
+
+        other_login = client.post(
+            "/api/member/login",
+            json={"account": "2023003", "password": "member123"},
+        )
+        other_headers = {"Authorization": f"Bearer {other_login.get_json()['token']}"}
+        other_read_ids = client.get("/api/member/blogs/read-ids", headers=other_headers).get_json()
+        assert blog_id not in other_read_ids["readIds"]
+
+        assert client.post("/api/member/blogs/read-ids", json={}).status_code == 405
+        assert client.get("/api/member/blogs/read-ids").status_code == 401
+        assert client.post(
+            "/api/member/blogs/999999/read",
+            headers=member_headers,
+        ).status_code == 404
+    finally:
+        with client.application.app_context():
+            if blog_id is not None:
+                BlogRead.query.filter_by(blog_id=blog_id).delete()
+                blog = db.session.get(BlogPost, blog_id)
+                if blog is not None:
+                    db.session.delete(blog)
             db.session.commit()

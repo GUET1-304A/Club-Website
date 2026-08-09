@@ -503,7 +503,9 @@ def get_blogs():
             )
         )
 
-    posts = query.order_by(BlogPost.date.desc(), BlogPost.id.desc()).all()
+    posts = query.order_by(
+        BlogPost.pinned.desc(), BlogPost.date.desc(), BlogPost.id.desc()
+    ).all()
 
     # 标签筛选在 Python 层执行（因为 tags 是 JSON 数组，SQLite 不支持 JSON 查询）
     if tag:

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Edit3, Trash2, X, PenTool } from 'lucide-react'
+import { Plus, Edit3, Trash2, X, PenTool, Pin } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import AdminModal, { Field, Input, Select, Textarea } from './AdminModal'
 import ConfirmDialog from './ConfirmDialog'
@@ -12,7 +12,7 @@ const CATS = [
   { value: 'tech', label: '技术分享' }, { value: 'event', label: '活动记录' },
   { value: 'summary', label: '心得总结' }, { value: 'announcement', label: '公告通知' },
 ]
-const emptyBlog: AdminBlog = { id: 0, slug: '', title: '', excerpt: '', content: '', category: 'tech', tags: [], date: '', coverImage: '', isPublished: true }
+const emptyBlog: AdminBlog = { id: 0, slug: '', title: '', excerpt: '', content: '', category: 'tech', tags: [], date: '', coverImage: '', isPublished: true, pinned: false }
 
 export default function AdminBlogs() {
   const { toast } = useToast()
@@ -75,7 +75,16 @@ export default function AdminBlogs() {
             <tbody>
               {blogs.map((b) => (
                 <tr key={b.id} className="border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors">
-                  <td className="px-5 py-3 font-semibold text-[#051A24] max-w-[250px] truncate">{b.title}</td>
+                  <td className="px-5 py-3 max-w-[250px]">
+                    <div className="flex items-center gap-2">
+                      {b.pinned && (
+                        <span title="已置顶" className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-[#051A24] text-white px-2 py-0.5 shrink-0">
+                          <Pin className="w-2.5 h-2.5" /> 置顶
+                        </span>
+                      )}
+                      <span className="font-semibold text-[#051A24] truncate">{b.title}</span>
+                    </div>
+                  </td>
                   <td className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{CATS.find(c => c.value === b.category)?.label || b.category}</span></td>
                   <td className="px-5 py-3 text-[#273C46]/70 text-xs">{b.author?.name || b.authorName || '—'}</td>
                   <td className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{b.date || '—'}</td>
@@ -130,6 +139,7 @@ export default function AdminBlogs() {
               <div className="flex gap-2"><Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} placeholder="添加标签" /><button onClick={addTag} className="btn-secondary text-xs px-4 py-2.5 shrink-0">添加</button></div>
             </Field>
             <label className="flex items-center gap-2.5 text-sm text-[#273C46] cursor-pointer"><input type="checkbox" checked={form.isPublished !== false} onChange={e => setForm({ ...form, isPublished: e.target.checked })} className="w-4 h-4 rounded border-[rgba(0,0,0,0.15)] text-[#051A24]" /> 发布</label>
+            <label className="flex items-center gap-2.5 text-sm text-[#273C46] cursor-pointer"><input type="checkbox" checked={!!form.pinned} onChange={e => setForm({ ...form, pinned: e.target.checked })} className="w-4 h-4 rounded border-[rgba(0,0,0,0.15)] text-[#051A24]" /> 置顶（优先展示）</label>
             <button onClick={handleSave} className="btn-primary w-full py-3 text-sm font-medium">{editing ? '保存修改' : '发布文章'}</button>
           </div>
         </AdminModal>

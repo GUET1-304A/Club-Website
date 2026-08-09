@@ -337,6 +337,7 @@ def _migrate_columns(app):
 
         # ── 博客 ──
         ('blog_posts', 'is_published', 'BOOLEAN DEFAULT 1'),
+        ('blog_posts', 'pinned', 'BOOLEAN DEFAULT 0'),
         ('blog_posts', 'updated_at', 'DATETIME'),
         ('blog_posts', 'author_id', 'INTEGER'),
     ]

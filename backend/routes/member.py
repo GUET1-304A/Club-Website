@@ -55,6 +55,8 @@ from models import (
     ResourceFile,
     Certificate,
     Notification,
+    BlogPost,
+    BlogRead,
     WeeklyReport,
     Reminder,
 )
@@ -1269,6 +1271,39 @@ def member_mark_all_read():
         .update({'is_read': True})
     db.session.commit()
     return jsonify({'success': True})
+
+
+# ═══════════════════════════════════════════════════════════════
+# 博客已读追踪（公告已读状态）
+# ═══════════════════════════════════════════════════════════════
+
+@member_bp.route('/member/blogs/<int:blog_id>/read', methods=['POST'])
+@jwt_required()
+def member_mark_blog_read(blog_id):
+    """标记文章/公告为已读（幂等，重复阅读仅更新时间）。"""
+    member = _member_or_403()
+    post = BlogPost.query.get(blog_id)
+    if not post:
+        return jsonify({'error': 'not_found', 'message': '文章不存在'}), 404
+
+    record = BlogRead.query.filter_by(
+        member_id=member.id, blog_id=post.id
+    ).first()
+    if record:
+        record.read_at = datetime.now(timezone.utc)
+    else:
+        db.session.add(BlogRead(member_id=member.id, blog_id=post.id))
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@member_bp.route('/member/blogs/read-ids', methods=['GET'])
+@jwt_required()
+def member_blog_read_ids():
+    """返回当前成员已读的文章 ID 列表（用于前端展示已读状态）。"""
+    member = _member_or_403()
+    records = BlogRead.query.filter_by(member_id=member.id).all()
+    return jsonify({'readIds': [r.blog_id for r in records]})
 
 
 # ═══════════════════════════════════════════════════════════════

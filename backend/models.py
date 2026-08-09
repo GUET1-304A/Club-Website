@@ -631,6 +631,7 @@ class BlogPost(db.Model):
     date = db.Column(db.String(20), nullable=True)                      # 展示日期（如 "2025-12-15"）
     cover_image = db.Column(db.String(500), nullable=True)              # 封面图片 URL
     is_published = db.Column(db.Boolean, default=True)                  # 是否已发布（false 时为草稿）
+    pinned = db.Column(db.Boolean, default=False)                       # 是否置顶（置顶文章优先展示）
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
@@ -663,8 +664,36 @@ class BlogPost(db.Model):
             'date': self.date,
             'coverImage': self.cover_image,
             'isPublished': self.is_published,
+            'pinned': self.pinned,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class BlogRead(db.Model):
+    """成员博客已读记录（用于公告已读状态追踪）。
+
+    每名成员对每篇文章最多一条记录，重复阅读幂等更新 read_at。
+    """
+    __tablename__ = 'blog_reads'
+    __table_args__ = (
+        db.UniqueConstraint('member_id', 'blog_id', name='uq_member_blog_read'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)  # 阅读者
+    blog_id = db.Column(db.Integer, db.ForeignKey('blog_posts.id'), nullable=False)  # 文章
+    read_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    member = db.relationship('Member', backref='blog_reads', foreign_keys=[member_id])
+    blog = db.relationship('BlogPost', backref='reads', foreign_keys=[blog_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'memberId': self.member_id,
+            'blogId': self.blog_id,
+            'readAt': self.read_at.isoformat() if self.read_at else None,
         }
 
 

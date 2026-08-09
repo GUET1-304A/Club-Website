@@ -194,6 +194,7 @@ export interface BlogData {
   authorId?: number
   date?: string
   coverImage?: string
+  pinned?: boolean
 }
 
 export async function fetchBlogs(): Promise<BlogData[]> {

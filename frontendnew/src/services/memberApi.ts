@@ -437,6 +437,16 @@ export async function memberMarkAllRead(): Promise<{ success: boolean }> {
   return memberRequest('/member/notifications/read-all', { method: 'PUT' })
 }
 
+// ─── Blog read tracking ───
+
+export async function memberMarkBlogRead(blogId: number): Promise<{ success: boolean }> {
+  return memberRequest(`/member/blogs/${blogId}/read`, { method: 'POST' })
+}
+
+export async function memberBlogReadIds(): Promise<{ readIds: number[] }> {
+  return memberRequest('/member/blogs/read-ids')
+}
+
 // ─── Weekly Reports ───
 
 export interface WeeklyReportContent {

@@ -83,6 +83,7 @@ function mapApiBlog(b: BlogData): BlogPost {
     author: b.author || { name: '', avatar: '' },
     date: b.date || '',
     coverImage: b.coverImage,
+    pinned: b.pinned,
   }
 }
 
