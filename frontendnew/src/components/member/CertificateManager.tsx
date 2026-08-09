@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Trophy, Plus, Trash2, Edit3, X,
-  Award, Building, Calendar, Tag, ScanText, LoaderCircle,
+  Award, Building, Calendar, Tag, ScanText, LoaderCircle, GraduationCap,
 } from 'lucide-react'
 import MemberLayout from './MemberLayout'
 import {
@@ -48,6 +48,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
   const [category, setCategory] = useState('')
   const [winner, setWinner] = useState('')
   const [issuer, setIssuer] = useState('')
+  const [advisor, setAdvisor] = useState('')
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<string[]>([])
@@ -66,14 +67,14 @@ export default function CertificateManager({ member }: { member: MemberProfile }
   const openCreate = () => {
     setEditing(null)
     setName(''); setLevel('other'); setCategory(''); setWinner(member.name || '')
-    setIssuer(''); setDate(''); setDescription(''); setImages([]); setModalOcrText('')
+    setIssuer(''); setAdvisor(''); setDate(''); setDescription(''); setImages([]); setModalOcrText('')
     setShowModal(true)
   }
 
   const openEdit = (c: CertificateData) => {
     setEditing(c)
     setName(c.name); setLevel(c.level || 'other'); setCategory(c.category || '')
-    setWinner(c.winner || ''); setIssuer(c.issuer || ''); setDate(c.date || '')
+    setWinner(c.winner || ''); setIssuer(c.issuer || ''); setAdvisor(c.advisor || ''); setDate(c.date || '')
     setDescription(c.description || ''); setImages(c.images || [])
     setModalOcrText(c.ocrText || '')
     setShowModal(true)
@@ -82,7 +83,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
   const handleSave = async () => {
     if (!name.trim()) { toast('warning', '请填写证书名称'); return }
     try {
-      const payload = { name: name.trim(), level, category, winner, issuer, date, description, images }
+      const payload = { name: name.trim(), level, category, winner, issuer, advisor, date, description, images }
       if (editing) {
         await memberUpdateCertificate(editing.id, payload)
         toast('success', '证书已更新')
@@ -155,6 +156,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
       if (fields.category) setCategory(fields.category)
       if (fields.winner) setWinner(fields.winner)
       if (fields.issuer) setIssuer(fields.issuer)
+      if (fields.advisor) setAdvisor(fields.advisor)
       if (fields.date) setDate(fields.date)
       if (fields.description) setDescription(fields.description)
       setModalOcrText(result.ocrText || '')
@@ -247,6 +249,12 @@ export default function CertificateManager({ member }: { member: MemberProfile }
                         <div className="flex items-center gap-1.5 text-[11px] text-[#273C46]/50">
                           <Building className="w-3 h-3" />
                           {c.issuer}
+                        </div>
+                      )}
+                      {c.advisor && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#273C46]/50">
+                          <GraduationCap className="w-3 h-3" />
+                          指导教师：{c.advisor}
                         </div>
                       )}
                       {c.date && (
@@ -411,10 +419,16 @@ export default function CertificateManager({ member }: { member: MemberProfile }
                   </Field>
                 </div>
 
-                <Field label="颁发机构">
-                  <input value={issuer} onChange={e => setIssuer(e.target.value)} placeholder="中国计算机学会"
-                    className="w-full px-4 py-2.5 rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] text-sm text-[#051A24] placeholder:text-[#273C46]/25 focus:outline-none focus:border-[#051A24]/30 focus:ring-2 focus:ring-[#051A24]/5" />
-                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="颁发机构">
+                    <input value={issuer} onChange={e => setIssuer(e.target.value)} placeholder="中国计算机学会"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] text-sm text-[#051A24] placeholder:text-[#273C46]/25 focus:outline-none focus:border-[#051A24]/30 focus:ring-2 focus:ring-[#051A24]/5" />
+                  </Field>
+                  <Field label="指导教师">
+                    <input value={advisor} onChange={e => setAdvisor(e.target.value)} placeholder="如：张教授（没有可不填）"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] text-sm text-[#051A24] placeholder:text-[#273C46]/25 focus:outline-none focus:border-[#051A24]/30 focus:ring-2 focus:ring-[#051A24]/5" />
+                  </Field>
+                </div>
 
                 <Field label="描述">
                   <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}

@@ -45,6 +45,7 @@ def _create_certificate(client, headers, name="蓝桥杯省赛一等奖", **over
         "category": "程序设计",
         "winner": "测试成员",
         "issuer": "中国软件行业协会",
+        "advisor": "张教授",
         "date": "2025-04",
         "images": ["/uploads/cert.png"],
         **overrides,
@@ -92,6 +93,7 @@ def test_admin_certificate_approval_archives_award_and_notifies(client):
         assert award["level"] == "provincial"
         assert award["winner"] == "测试成员"
         assert award["issuer"] == "中国软件行业协会"
+        assert award["advisor"] == "张教授"
         assert award["date"] == "2025-04"
         assert award["certificateImages"] == ["/uploads/cert.png"]
         assert award["certificateId"] == certificate_id
@@ -249,6 +251,7 @@ def test_member_ocr_images_endpoint_returns_fields_without_persisting(client, mo
                 "category": "程序设计",
                 "winner": "张三",
                 "issuer": "中国软件行业协会",
+                "advisor": "张教授",
                 "date": "2025-04",
                 "description": "",
             },
@@ -270,6 +273,7 @@ def test_member_ocr_images_endpoint_returns_fields_without_persisting(client, mo
     assert data["ocrText"] == "荣誉证书\n张三 同学"
     assert data["ocrFields"]["name"] == "蓝桥杯省赛一等奖"
     assert data["ocrFields"]["level"] == "provincial"
+    assert data["ocrFields"]["advisor"] == "张教授"
     assert received_images == [StoredImage(content=_MINIMAL_PNG, mime_type="image/png")]
     with client.application.app_context():
         persisted = Certificate.query.filter(

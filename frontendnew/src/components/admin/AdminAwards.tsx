@@ -22,7 +22,7 @@ const LEVEL_STYLES: Record<string, string> = {
   other: 'bg-purple-50 text-purple-600 border-purple-200',
 }
 
-const emptyAward: AdminAward = { id: 0, slug: '', name: '', level: 'school', category: '', winner: '', issuer: '', date: '', description: '', certificateImages: [], relatedProject: '' }
+const emptyAward: AdminAward = { id: 0, slug: '', name: '', level: 'school', category: '', winner: '', issuer: '', advisor: '', date: '', description: '', certificateImages: [], relatedProject: '' }
 
 export default function AdminAwards() {
   const { toast } = useToast()
@@ -94,7 +94,10 @@ export default function AdminAwards() {
                       {LEVELS.find(l => l.value === a.level)?.label || a.level}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#273C46]/80 text-xs">{a.winner}</td>
+                  <td className="px-5 py-3 text-[#273C46]/80 text-xs">
+                    {a.winner}
+                    {a.advisor && <p className="text-[10px] text-[#273C46]/40 mt-0.5">指导教师：{a.advisor}</p>}
+                  </td>
                   <td className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{a.date || '—'}</td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-0.5">
@@ -142,8 +145,11 @@ export default function AdminAwards() {
               <Field label="类别"><Input value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="程序设计" /></Field>
               <Field label="颁发机构"><Input value={form.issuer || ''} onChange={e => setForm({ ...form, issuer: e.target.value })} placeholder="中国计算机学会" /></Field>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="指导教师"><Input value={form.advisor || ''} onChange={e => setForm({ ...form, advisor: e.target.value })} placeholder="如：张教授" /></Field>
+              <Field label="关联项目 slug"><Input value={form.relatedProject || ''} onChange={e => setForm({ ...form, relatedProject: e.target.value })} placeholder="campus-hub" /></Field>
+            </div>
             <Field label="描述"><Textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="奖项描述..." rows={2} /></Field>
-            <Field label="关联项目 slug"><Input value={form.relatedProject || ''} onChange={e => setForm({ ...form, relatedProject: e.target.value })} placeholder="campus-hub" /></Field>
             <button onClick={handleSave} className="btn-primary w-full py-3 text-sm font-medium">{editing ? '保存修改' : '添加奖项'}</button>
           </div>
         </AdminModal>

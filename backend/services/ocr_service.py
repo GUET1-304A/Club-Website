@@ -29,20 +29,22 @@ class OcrRequestFailed(RuntimeError):
     """Raised when a configured OCR provider cannot complete the request."""
 
 
-_FIELD_NAMES = ('name', 'level', 'category', 'winner', 'issuer', 'date', 'description')
+_FIELD_NAMES = ('name', 'level', 'category', 'winner', 'issuer', 'advisor', 'date', 'description')
 
 _FIELDS_PROMPT = (
     'You are a certificate recognition engine. Read the certificate image(s) '
     'and extract structured information. Return ONLY valid JSON without markdown '
     'fences in this exact shape: '
     '{"name": string, "level": "national"|"provincial"|"school"|"other", '
-    '"category": string, "winner": string, "issuer": string, "date": string, '
-    '"description": string, "raw_text": string}. '
+    '"category": string, "winner": string, "issuer": string, "advisor": string, '
+    '"date": string, "description": string, "raw_text": string}. '
     'Use an empty string when a field is not visible. date uses YYYY-MM-DD or '
     'YYYY-MM. Map level from the certificate: national for national-level awards, '
     'provincial for provincial-level awards, school for university/college-level '
-    'awards, otherwise other. raw_text must be the full exact transcription of '
-    'all visible text on the certificate.'
+    'awards, otherwise other. advisor is the instructor/teacher name(s) shown on '
+    'the certificate (e.g. "指导教师：张三" or "指导教师 张三"), joined with "、" '
+    'when multiple; use an empty string when the certificate has no advisor. '
+    'raw_text must be the full exact transcription of all visible text on the certificate.'
 )
 
 

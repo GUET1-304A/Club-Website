@@ -325,6 +325,7 @@ export interface CertificateOcrFields {
   category?: string
   winner?: string
   issuer?: string
+  advisor?: string
   date?: string
   description?: string
 }
@@ -338,6 +339,7 @@ export interface CertificateData {
   category?: string
   winner?: string
   issuer?: string
+  advisor?: string
   date?: string
   description?: string
   images?: string[]

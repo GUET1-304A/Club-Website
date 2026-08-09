@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Trophy, Search, CheckCircle2, XCircle, Eye, Building, Calendar,
-  User, Tag, ScanText, LoaderCircle, X, ChevronDown, ExternalLink,
+  User, Tag, ScanText, LoaderCircle, X, ChevronDown, ExternalLink, GraduationCap,
 } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import {
@@ -90,6 +90,7 @@ export default function AdminCertificates() {
     return ([
       fields.name && { label: '名称', value: fields.name },
       fields.issuer && { label: '机构', value: fields.issuer },
+      fields.advisor && { label: '指导教师', value: fields.advisor },
       fields.date && { label: '时间', value: fields.date },
       fields.level && { label: '等级', value: LEVELS[fields.level] || fields.level },
       fields.winner && { label: '获奖人', value: fields.winner },
@@ -199,6 +200,11 @@ export default function AdminCertificates() {
                           <Building className="w-3 h-3" /> {cert.issuer}
                         </div>
                       )}
+                      {cert.advisor && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#273C46]/50">
+                          <GraduationCap className="w-3 h-3" /> 指导教师：{cert.advisor}
+                        </div>
+                      )}
                       {cert.date && (
                         <div className="flex items-center gap-1.5 text-[11px] text-[#273C46]/50">
                           <Calendar className="w-3 h-3" /> {cert.date}
@@ -298,6 +304,7 @@ export default function AdminCertificates() {
                 <DetailRow label="等级" value={detail.level ? (LEVELS[detail.level] || detail.level) : '-'} />
                 <DetailRow label="类别" value={detail.category || '-'} />
                 <DetailRow label="颁发机构" value={detail.issuer || '-'} />
+                <DetailRow label="指导教师" value={detail.advisor || '-'} />
                 <DetailRow label="获奖时间" value={detail.date || '-'} />
                 <DetailRow label="关联项目" value={detail.relatedProject || '-'} />
                 <DetailRow label="审核状态" value={STATUS_MAP[detail.status]?.label || detail.status} />

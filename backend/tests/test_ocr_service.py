@@ -138,6 +138,7 @@ def test_extract_fields_parses_structured_json_and_normalizes_level():
         'category': '学科竞赛',
         'winner': '张三',
         'issuer': '中国工业与应用数学学会',
+        'advisor': '张教授',
         'date': '2025-09-15',
         'description': '全国一等奖',
         'raw_text': '荣誉证书\n张三 同学...',
@@ -153,6 +154,7 @@ def test_extract_fields_parses_structured_json_and_normalizes_level():
             'category': '学科竞赛',
             'winner': '张三',
             'issuer': '中国工业与应用数学学会',
+            'advisor': '张教授',
             'date': '2025-09-15',
             'description': '全国一等奖',
         },
@@ -187,7 +189,7 @@ def test_extract_fields_returns_empty_fields_when_response_is_not_json():
     assert result['ocr_text'] == '荣誉证书全文，无结构化 JSON'
     assert result['fields'] == {
         'name': '', 'level': '', 'category': '', 'winner': '',
-        'issuer': '', 'date': '', 'description': '',
+        'issuer': '', 'advisor': '', 'date': '', 'description': '',
     }
 
 

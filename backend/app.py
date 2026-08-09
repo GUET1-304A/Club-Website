@@ -298,6 +298,7 @@ def _migrate_columns(app):
         ('certificates', 'category', 'VARCHAR(50)'),
         ('certificates', 'winner', 'VARCHAR(200)'),
         ('certificates', 'issuer', 'VARCHAR(200)'),
+        ('certificates', 'advisor', 'VARCHAR(200)'),
         ('certificates', 'date', 'VARCHAR(20)'),
         ('certificates', 'description', 'TEXT'),
         ('certificates', 'images', 'JSON'),
@@ -312,6 +313,7 @@ def _migrate_columns(app):
 
         # ── 奖项来源证书 ──
         ('awards', 'certificate_id', 'INTEGER'),
+        ('awards', 'advisor', 'VARCHAR(200)'),
 
         # ── 通知 ──
         ('notifications', 'member_id', 'INTEGER'),

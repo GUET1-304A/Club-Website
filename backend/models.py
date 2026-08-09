@@ -562,6 +562,7 @@ class Award(db.Model):
     category = db.Column(db.String(50), nullable=True)                  # 奖项类别（如 "程序设计", "Web 开发"）
     winner = db.Column(db.String(200), nullable=False)                  # 获奖者（如 "陈星宇、王思远"）
     issuer = db.Column(db.String(200), nullable=True)                   # 颁发机构
+    advisor = db.Column(db.String(200), nullable=True)                  # 指导教师（证书归档时保留）
     date = db.Column(db.String(20), nullable=True)                      # 获奖日期（如 "2025-12"，字符串格式便于灵活展示）
     description = db.Column(db.Text, nullable=True)                     # 获奖描述/参赛过程
     certificate_images = db.Column(db.JSON, nullable=True)              # 证书图片 URL 列表（JSON 数组）
@@ -587,9 +588,10 @@ class Award(db.Model):
             'name': self.name,
             'level': self.level,
             'category': self.category,
-            'winner': self.winner,
-            'issuer': self.issuer,
-            'date': self.date,
+              'winner': self.winner,
+              'issuer': self.issuer,
+              'advisor': self.advisor,
+              'date': self.date,
             'description': self.description,
               'certificateImages': self.certificate_images or [],
               'relatedProject': self.related_project,
@@ -936,6 +938,7 @@ class Certificate(db.Model):
     category = db.Column(db.String(50), nullable=True)                                   # 证书类别
     winner = db.Column(db.String(200), nullable=True)                                    # 获奖者
     issuer = db.Column(db.String(200), nullable=True)                                    # 颁发机构
+    advisor = db.Column(db.String(200), nullable=True)                                   # 指导教师
     date = db.Column(db.String(20), nullable=True)                                       # 获奖日期
     description = db.Column(db.Text, nullable=True)                                      # 补充描述
     images = db.Column(db.JSON, nullable=True)                                           # 证书图片 URL 列表（JSON 数组）
@@ -971,6 +974,7 @@ class Certificate(db.Model):
             'category': self.category,
             'winner': self.winner,
             'issuer': self.issuer,
+            'advisor': self.advisor,
             'date': self.date,
             'description': self.description,
             'images': self.images or [],

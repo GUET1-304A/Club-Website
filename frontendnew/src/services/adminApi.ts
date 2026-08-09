@@ -39,7 +39,7 @@ export interface AdminProject {
 
 export interface AdminAward {
   id: number; slug: string; name: string; level: string; category?: string
-  winner: string; issuer?: string; date?: string; description?: string
+  winner: string; issuer?: string; advisor?: string; date?: string; description?: string
   certificateImages?: string[]; relatedProject?: string; sortOrder?: number
 }
 
@@ -78,6 +78,7 @@ export interface AdminCertificate {
   category?: string
   winner?: string
   issuer?: string
+  advisor?: string
   date?: string
   description?: string
   images?: string[]

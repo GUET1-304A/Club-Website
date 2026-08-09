@@ -911,6 +911,7 @@ def member_create_certificate():
         category=data.get('category'),
         winner=data.get('winner', member.name),  # 默认获奖者为当前成员
         issuer=data.get('issuer'),
+        advisor=data.get('advisor'),
         date=data.get('date'),
         description=data.get('description'),
         images=data.get('images', []),
@@ -941,7 +942,7 @@ def member_update_certificate(cert_id):
         return jsonify({'error': 'not_found', 'message': '证书不存在'}), 404
 
     data = request.get_json()
-    updatable = ['name', 'level', 'category', 'winner', 'issuer',
+    updatable = ['name', 'level', 'category', 'winner', 'issuer', 'advisor',
                  'date', 'description', 'related_project']
     for field in updatable:
         if field in data:
