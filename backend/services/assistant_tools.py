@@ -313,7 +313,11 @@ def _get_project_health(args, member):
     project = Project.query.get(args.get('project_id'))
     if not project:
         return False, '项目不存在'
+    return True, compute_project_health(project)
 
+
+def compute_project_health(project):
+    """计算项目健康度统计（供智能体工具与管理端 API 复用）。"""
     now = datetime.now(timezone.utc)
     milestones = Milestone.query.filter_by(project_id=project.id)\
         .order_by(Milestone.sort_order, Milestone.id).all()
@@ -344,7 +348,7 @@ def _get_project_health(args, member):
             for m in Member.query.filter(Member.id.in_(workload.keys())).all()
         }
 
-    return True, {
+    return {
         'project': {
             'id': project.id,
             'name': project.name,

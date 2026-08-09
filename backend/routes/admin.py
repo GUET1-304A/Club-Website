@@ -64,7 +64,7 @@ from models import (
     WeeklyReport, Reminder, Notification,
 )
 from services.ai_service import AiNotConfigured, AiRequestFailed
-from services.assistant_tools import _analyze_report_with_ai
+from services.assistant_tools import _analyze_report_with_ai, compute_project_health
 from services.reminder_service import send_reminder_notification
 from services.storage_service import StorageNotConfigured, StorageService
 
@@ -794,6 +794,20 @@ def admin_list_project_tasks(project_id):
         query = query.filter_by(status=status)
     tasks = query.order_by(Task.sort_order, Task.id).all()
     return jsonify([t.to_dict() for t in tasks])
+
+
+@admin_bp.route('/admin/projects/<int:project_id>/health', methods=['GET'])
+@jwt_required()
+def admin_project_health(project_id):
+    """获取项目健康度统计（管理端看板使用）。
+
+    返回任务完成率、状态分布、逾期任务、里程碑进度、成员负载与最近截止时间。
+    """
+    _admin_or_403()
+    project = Project.query.get(project_id)
+    if not project:
+        return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
+    return jsonify(compute_project_health(project))
 
 
 # ═══════════════════════════════════════════════════════════════

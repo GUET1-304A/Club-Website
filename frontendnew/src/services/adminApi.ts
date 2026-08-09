@@ -324,6 +324,154 @@ export async function adminAnalyzeWeeklyReport(id: number): Promise<{ success: b
   return authRequest(`/admin/weekly-reports/${id}/analyze`, { method: 'POST' })
 }
 
+// ─── Project Detail: Milestones / Tasks / Health / Reminders ───
+
+export interface AdminMilestone {
+  id: number
+  project_id: number
+  name: string
+  description?: string
+  dueDate?: string
+  status: string
+  sortOrder?: number
+  taskCount?: number
+  taskDoneCount?: number
+  created_at?: string
+}
+
+export interface AdminTask {
+  id: number
+  project_id: number
+  projectName?: string
+  milestone_id?: number
+  milestoneName?: string
+  assignee_id?: number
+  assigneeName?: string
+  title: string
+  description?: string
+  status: string
+  priority: string
+  dueDate?: string
+  sortOrder?: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface AdminReminder {
+  id: number
+  memberId: number
+  memberName?: string
+  projectId?: number
+  projectName?: string
+  type: string
+  title: string
+  message?: string
+  link?: string
+  scheduledAt?: string
+  sentAt?: string
+  status: string
+  createdBy?: number
+  created_at?: string
+}
+
+export interface AdminProjectHealth {
+  project: { id: number; name: string; status: string }
+  taskTotal: number
+  taskDone: number
+  completionRate: number
+  byStatus: Record<string, number>
+  milestoneCount: number
+  milestonesDone: number
+  overdueTaskCount: number
+  overdueTasks: { id: number; title: string; dueDate?: string; assigneeName?: string }[]
+  nextDeadline?: string
+  memberWorkload: { memberId: number; name?: string; pendingTasks: number }[]
+}
+
+export async function adminListProjectMilestones(projectId: number): Promise<AdminMilestone[]> {
+  return authRequest(`/admin/projects/${projectId}/milestones`)
+}
+
+export async function adminCreateMilestone(
+  projectId: number,
+  data: { name: string; description?: string; dueDate?: string; status?: string; sortOrder?: number },
+): Promise<{ success: boolean; milestone: AdminMilestone }> {
+  return authRequest(`/admin/projects/${projectId}/milestones`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminListProjectTasks(projectId: number, params?: Record<string, string>): Promise<AdminTask[]> {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+  return authRequest(`/admin/projects/${projectId}/tasks${qs}`)
+}
+
+export async function adminCreateTask(
+  projectId: number,
+  data: {
+    title: string
+    description?: string
+    milestoneId?: number
+    assigneeId?: number
+    status?: string
+    priority?: string
+    dueDate?: string
+    sortOrder?: number
+  },
+): Promise<{ success: boolean; task: AdminTask }> {
+  return authRequest(`/admin/projects/${projectId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminUpdateTask(
+  taskId: number,
+  data: Partial<AdminTask>,
+): Promise<{ success: boolean; task: AdminTask }> {
+  return authRequest(`/admin/tasks/${taskId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminUpdateTaskStatus(
+  taskId: number,
+  status: string,
+  sortOrder?: number,
+): Promise<{ success: boolean; task: AdminTask }> {
+  return authRequest(`/admin/tasks/${taskId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, sortOrder }),
+  })
+}
+
+export async function adminProjectHealth(projectId: number): Promise<AdminProjectHealth> {
+  return authRequest(`/admin/projects/${projectId}/health`)
+}
+
+export async function adminListReminders(params?: Record<string, string>): Promise<AdminReminder[]> {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+  return authRequest(`/admin/reminders${qs}`)
+}
+
+export async function adminCreateReminder(
+  data: {
+    memberId: number
+    projectId?: number
+    title: string
+    message?: string
+    scheduledAt?: string
+    type?: string
+  },
+): Promise<{ success: boolean; reminder: AdminReminder; sentImmediately: boolean }> {
+  return authRequest('/admin/reminders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
 // ─── Import / Export ───
 
 export interface ExportData {

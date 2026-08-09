@@ -339,3 +339,63 @@ def test_member_notifications_and_upload_boundary(client):
     backend_path = Path(client.application.root_path).resolve()
     if upload_path.is_relative_to(backend_path):
         assert upload_path.is_dir()
+
+
+def test_admin_project_health_returns_statistics(client):
+    login = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    assert login.status_code == 200
+    admin_headers = {"Authorization": f"Bearer {login.get_json()['token']}"}
+    project_id = None
+    task_ids = []
+    try:
+        with client.application.app_context():
+            project = Project(
+                slug=f"health-{uuid.uuid4().hex[:8]}",
+                name="健康度测试项目",
+                status="active",
+            )
+            db.session.add(project)
+            db.session.commit()
+            project_id = project.id
+            for status in ("todo", "done", "in_progress"):
+                task = Task(project_id=project.id, title=f"任务-{status}", status=status)
+                db.session.add(task)
+                db.session.flush()
+                task_ids.append(task.id)
+            db.session.commit()
+
+        response = client.get(
+            f"/api/admin/projects/{project_id}/health",
+            headers=admin_headers,
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["taskTotal"] == 3
+        assert data["taskDone"] == 1
+        assert data["completionRate"] == round(1 / 3 * 100, 1)
+        assert data["byStatus"]["todo"] == 1
+        assert data["byStatus"]["done"] == 1
+        assert data["byStatus"]["in_progress"] == 1
+        assert "overdueTaskCount" in data
+        assert "memberWorkload" in data
+        assert "milestoneCount" in data
+
+        missing = client.get(
+            "/api/admin/projects/999999/health",
+            headers=admin_headers,
+        )
+        assert missing.status_code == 404
+    finally:
+        with client.application.app_context():
+            for task_id in task_ids:
+                task = db.session.get(Task, task_id)
+                if task is not None:
+                    db.session.delete(task)
+            if project_id is not None:
+                project = db.session.get(Project, project_id)
+                if project is not None:
+                    db.session.delete(project)
+            db.session.commit()

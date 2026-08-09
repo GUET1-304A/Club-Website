@@ -22,6 +22,7 @@ import YujiPage from './components/pages/YujiPage'
 import AdminDashboard from './components/admin/AdminDashboard'
 import AdminMembers from './components/admin/AdminMembers'
 import AdminProjects from './components/admin/AdminProjects'
+import AdminProjectDetail from './components/admin/AdminProjectDetail'
 import AdminAwards from './components/admin/AdminAwards'
 import AdminBlogs from './components/admin/AdminBlogs'
 import AdminPages from './components/admin/AdminPages'
@@ -108,7 +109,9 @@ function AdminRouter({ parts }: { parts: string[] }) {
   switch (parts[1]) {
     case undefined: case '':        return <AdminDashboard />
     case 'members':                 return <AdminMembers />
-    case 'projects':                return <AdminProjects />
+    case 'projects':                return parts[2]
+      ? <AdminProjectDetail projectId={parseInt(parts[2]) || 0} />
+      : <AdminProjects />
     case 'awards':                  return <AdminAwards />
     case 'blogs':                   return <AdminBlogs />
     case 'pages':                   return <AdminPages />

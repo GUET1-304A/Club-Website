@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Edit3, Trash2, X, Upload, FolderGit2 } from 'lucide-react'
+import { Plus, Search, Edit3, Trash2, X, Upload, FolderGit2, Eye } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import AdminModal, { Field, Input, Select, Textarea } from './AdminModal'
 import ConfirmDialog from './ConfirmDialog'
@@ -97,7 +97,7 @@ export default function AdminProjects() {
                   <td className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{CATS.find(c => c.value === p.category)?.label || p.category}</span></td>
                   <td className="px-5 py-3"><div className="flex gap-1 flex-wrap">{(p.techStack || []).slice(0, 3).map((t, i) => <span key={i} className="text-[10px] bg-[#f0ece6] rounded-full px-2 py-0.5 text-[#273C46]/70 font-medium">{t}</span>)}</div></td>
                   <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${STATUS_STYLES[p.status ?? ''] || ''}`}><span className={`w-1.5 h-1.5 rounded-full ${p.status === 'active' ? 'bg-blue-500' : p.status === 'completed' ? 'bg-emerald-500' : 'bg-gray-300'}`} />{STATUSES.find(s => s.value === p.status)?.label || p.status}</span></td>
-                  <td className="px-5 py-3 text-right"><div className="flex items-center justify-end gap-0.5"><button onClick={() => openEdit(p)} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Edit3 className="w-4 h-4" /></button><button onClick={() => setConfirmDelete(p)} className="p-2 rounded-xl hover:bg-red-50 text-[#273C46]/30 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button></div></td>
+                  <td className="px-5 py-3 text-right"><div className="flex items-center justify-end gap-0.5"><a href={`/admin/projects/${p.id}`} title="项目详情" className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Eye className="w-4 h-4" /></a><button onClick={() => openEdit(p)} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Edit3 className="w-4 h-4" /></button><button onClick={() => setConfirmDelete(p)} className="p-2 rounded-xl hover:bg-red-50 text-[#273C46]/30 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button></div></td>
                 </tr>
               ))}
             </tbody>
