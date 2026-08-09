@@ -4,6 +4,31 @@ This deployment keeps the Flask backend private behind Nginx. It uses Compose
 secrets: file contents are mounted below `/run/secrets` and are not placed in
 the backend environment as credential values.
 
+## Development quick start (Docker Compose)
+
+The root `docker-compose.yml` starts a hot-reload development environment
+(backend on `http://localhost:5000`, frontend on `http://localhost:3000`).
+It requires `SECRET_KEY` and `JWT_SECRET_KEY`; provide them in a `.env` file
+or as environment variables:
+
+```powershell
+# PowerShell
+$env:SECRET_KEY = 'replace-with-a-long-random-string'
+$env:JWT_SECRET_KEY = 'replace-with-another-long-random-string'
+docker compose up -d --build
+```
+
+```bash
+# Linux/macOS
+SECRET_KEY=replace-with-a-long-random-string \
+JWT_SECRET_KEY=replace-with-another-long-random-string \
+docker compose up -d --build
+```
+
+Development mode seeds demo data (admin `admin/admin123`, demo members).
+Verify with `docker compose ps`, `curl http://localhost:5000/health`, and
+`curl http://localhost:3000`.
+
 ## First start
 
 1. Copy each `secrets/*.txt.example` file to the matching untracked `.txt`
