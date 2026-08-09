@@ -29,6 +29,7 @@ import AdminConfig from './components/admin/AdminConfig'
 import AdminApplications from './components/admin/AdminApplications'
 import AdminContacts from './components/admin/AdminContacts'
 import AdminCertificates from './components/admin/AdminCertificates'
+import AdminWeeklyReports from './components/admin/AdminWeeklyReports'
 import AdminData from './components/admin/AdminData'
 import { ToastProvider } from './components/admin/Toast'
 import MemberDashboard from './components/member/MemberDashboard'
@@ -115,6 +116,7 @@ function AdminRouter({ parts }: { parts: string[] }) {
     case 'applications':            return <AdminApplications />
     case 'contacts':                return <AdminContacts />
     case 'certificates':            return <AdminCertificates />
+    case 'weekly-reports':          return <AdminWeeklyReports />
     case 'data':                    return <AdminData />
     default:                        return <AdminDashboard />
   }

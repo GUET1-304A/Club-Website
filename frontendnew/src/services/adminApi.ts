@@ -264,6 +264,66 @@ export async function adminReviewCertificate(
   })
 }
 
+// ─── Weekly Reports ───
+
+export interface AdminWeeklyReportContent {
+  done?: string
+  plan?: string
+  issues?: string
+  summary?: string
+}
+
+export interface AdminWeeklyReportAnalysis {
+  score?: number
+  completion?: string
+  risks?: string[]
+  suggestions?: string[]
+  report?: string
+}
+
+export interface AdminWeeklyReport {
+  id: number
+  memberId: number
+  memberName?: string
+  projectId?: number
+  projectName?: string
+  weekStart?: string
+  weekEnd?: string
+  content: AdminWeeklyReportContent
+  completionRate?: number
+  aiAnalysis?: AdminWeeklyReportAnalysis | null
+  status: string
+  reviewNote?: string
+  reviewedBy?: number
+  submittedAt?: string
+  reviewedAt?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export async function adminListWeeklyReports(params?: Record<string, string>): Promise<AdminWeeklyReport[]> {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+  return authRequest(`/admin/weekly-reports${qs}`)
+}
+
+export async function adminGetWeeklyReport(id: number): Promise<AdminWeeklyReport> {
+  return authRequest(`/admin/weekly-reports/${id}`)
+}
+
+export async function adminReviewWeeklyReport(
+  id: number,
+  data: { reviewNote?: string; completionRate?: number },
+): Promise<{ success: boolean; report: AdminWeeklyReport }> {
+  return authRequest(`/admin/weekly-reports/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminAnalyzeWeeklyReport(id: number): Promise<{ success: boolean; report: AdminWeeklyReport }> {
+  return authRequest(`/admin/weekly-reports/${id}/analyze`, { method: 'POST' })
+}
+
 // ─── Import / Export ───
 
 export interface ExportData {
