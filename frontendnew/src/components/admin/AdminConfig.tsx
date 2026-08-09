@@ -35,6 +35,7 @@ export default function AdminConfig() {
     { key: 'about', label: '关于我们' },
     { key: 'members', label: '成员区域' },
     { key: 'footer', label: '页脚' },
+    { key: 'contact', label: '联系我们' },
     { key: 'sections', label: '区块开关' },
   ]
 
@@ -110,6 +111,19 @@ export default function AdminConfig() {
                     { key: 'brand', label: '品牌名', type: 'text' },
                     { key: 'slogan', label: '标语', type: 'text' },
                     { key: 'logo', label: 'Logo 路径', type: 'text' },
+                  ]}
+                />
+              )}
+              {activeSection === 'contact' && (
+                <SectionEditor
+                  title="联系我们"
+                  data={config.contact as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('contact', val)}
+                  fields={[
+                    { key: 'address', label: '地址', type: 'text' },
+                    { key: 'email', label: '邮箱', type: 'text' },
+                    { key: 'phone', label: '电话', type: 'text' },
+                    { key: 'hours', label: '开放时间', type: 'text' },
                   ]}
                 />
               )}
