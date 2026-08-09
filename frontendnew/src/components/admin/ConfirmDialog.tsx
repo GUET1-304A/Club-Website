@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -26,7 +27,7 @@ export default function ConfirmDialog({
 
   if (!open) return null
 
-  return (
+  return createPortal((
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onCancel}>
       <div
         className="bg-white rounded-[28px] shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-scale"
@@ -66,5 +67,5 @@ export default function ConfirmDialog({
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }

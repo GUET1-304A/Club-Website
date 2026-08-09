@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { ExternalLink, Users, Calendar, Star, GitFork, ArrowLeft, X, ChevronLeft, ChevronRight, Maximize2, Download } from 'lucide-react'
 import GithubIcon from '../ui/GithubIcon'
 import Card from '../ui/Card'
@@ -224,7 +225,7 @@ function Lightbox({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, prev, next])
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-[200] bg-black/95 flex flex-col"
       onClick={onClose}
@@ -312,5 +313,5 @@ function Lightbox({
         </div>
       )}
     </div>
-  )
+  ), document.body)
 }

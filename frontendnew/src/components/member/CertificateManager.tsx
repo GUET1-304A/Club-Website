@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Trophy, Plus, Trash2, Edit3, X,
   Award, Building, Calendar, Tag, ScanText, LoaderCircle,
@@ -311,7 +312,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
         )}
 
         {/* ── Create/Edit Modal ── */}
-        {showModal && (
+        {showModal && createPortal((
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             <div
@@ -428,10 +429,10 @@ export default function CertificateManager({ member }: { member: MemberProfile }
               </div>
             </div>
           </div>
-        )}
+        ), document.body)}
 
         {/* Delete confirm dialog */}
-        {confirmDelete && (
+        {confirmDelete && createPortal((
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="relative bg-white rounded-[28px] shadow-2xl w-full max-w-sm p-6 z-10 text-center" onClick={e => e.stopPropagation()}>
@@ -449,7 +450,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
               </div>
             </div>
           </div>
-        )}
+        ), document.body)}
       </div>
     </MemberLayout>
   )

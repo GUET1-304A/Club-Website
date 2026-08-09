@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface AdminModalProps {
@@ -19,7 +20,7 @@ export default function AdminModal({ open, title, children, onClose, maxWidth = 
 
   if (!open) return null
 
-  return (
+  return createPortal((
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onClose}>
       <div
         className={`bg-white rounded-[28px] shadow-2xl w-full ${maxWidth} animate-fade-in-up`}
@@ -39,7 +40,7 @@ export default function AdminModal({ open, title, children, onClose, maxWidth = 
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 /* ===== Shared form field component used across admin pages ===== */

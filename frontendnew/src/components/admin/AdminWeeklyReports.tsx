@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ClipboardCheck, Eye, Sparkles, LoaderCircle, X, CheckCircle2, Calendar, User, FolderGit2,
 } from 'lucide-react'
@@ -193,7 +194,7 @@ export default function AdminWeeklyReports() {
         )}
 
         {/* ── Detail / Review modal ── */}
-        {detail && (
+        {detail && createPortal((
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             <div className="relative bg-white rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-6 z-10"
@@ -304,7 +305,7 @@ export default function AdminWeeklyReports() {
               </div>
             </div>
           </div>
-        )}
+        ), document.body)}
       </div>
     </AdminLayout>
   )

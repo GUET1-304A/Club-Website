@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Trophy, Search, CheckCircle2, XCircle, Eye, Building, Calendar,
   User, Tag, ScanText, LoaderCircle, X, ChevronDown, ExternalLink,
@@ -279,7 +280,7 @@ export default function AdminCertificates() {
         )}
 
         {/* ── Detail modal ── */}
-        {detail && (
+        {detail && createPortal((
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             <div className="relative bg-white rounded-[28px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 z-10"
@@ -309,10 +310,10 @@ export default function AdminCertificates() {
               </div>
             </div>
           </div>
-        )}
+        ), document.body)}
 
         {/* ── Review modal ── */}
-        {reviewTarget && (
+        {reviewTarget && createPortal((
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setReviewTarget(null)}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             <div className="relative bg-white rounded-[28px] shadow-2xl w-full max-w-md p-6 z-10"
@@ -345,7 +346,7 @@ export default function AdminCertificates() {
               </div>
             </div>
           </div>
-        )}
+        ), document.body)}
       </div>
     </AdminLayout>
   )
