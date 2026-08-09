@@ -28,6 +28,7 @@ import AdminPages from './components/admin/AdminPages'
 import AdminConfig from './components/admin/AdminConfig'
 import AdminApplications from './components/admin/AdminApplications'
 import AdminContacts from './components/admin/AdminContacts'
+import AdminCertificates from './components/admin/AdminCertificates'
 import AdminData from './components/admin/AdminData'
 import { ToastProvider } from './components/admin/Toast'
 import MemberDashboard from './components/member/MemberDashboard'
@@ -39,6 +40,7 @@ import MemberTasks from './components/member/MemberTasks'
 import ResourceCenter from './components/member/ResourceCenter'
 import CertificateManager from './components/member/CertificateManager'
 import NotificationCenter from './components/member/NotificationCenter'
+import AssistantChat from './components/member/AssistantChat'
 import { useMemberAuth } from './hooks/useMemberAuth'
 import LoginPage from './components/pages/LoginPage'
 
@@ -112,6 +114,7 @@ function AdminRouter({ parts }: { parts: string[] }) {
     case 'config':                  return <AdminConfig />
     case 'applications':            return <AdminApplications />
     case 'contacts':                return <AdminContacts />
+    case 'certificates':            return <AdminCertificates />
     case 'data':                    return <AdminData />
     default:                        return <AdminDashboard />
   }
@@ -153,6 +156,8 @@ function MemberRouter({ parts }: { parts: string[] }) {
     return <CertificateManager member={member} />
   if (page === 'notifications')
     return <NotificationCenter member={member} />
+  if (page === 'assistant')
+    return <AssistantChat member={member} />
 
   return <MemberDashboard member={member} />
 }

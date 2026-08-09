@@ -319,6 +319,16 @@ export async function memberDeleteResource(fileId: number): Promise<{ success: b
 
 // ─── Certificates ───
 
+export interface CertificateOcrFields {
+  name?: string
+  level?: string
+  category?: string
+  winner?: string
+  issuer?: string
+  date?: string
+  description?: string
+}
+
 export interface CertificateData {
   id: number
   memberId: number
@@ -332,8 +342,12 @@ export interface CertificateData {
   description?: string
   images?: string[]
   ocrText?: string
+  ocrFields?: CertificateOcrFields | null
   relatedProject?: string
   status: string
+  reviewNote?: string
+  reviewedBy?: number
+  reviewedAt?: string
   created_at?: string
   updated_at?: string
 }
@@ -374,11 +388,23 @@ export async function memberUploadCertificateImage(file: File): Promise<{ succes
 export interface CertificateOcrResponse {
   success: boolean
   ocrText: string
+  ocrFields?: CertificateOcrFields | null
   certificate: CertificateData
 }
 
 export async function memberRunCertificateOcr(certId: number): Promise<CertificateOcrResponse> {
   return memberRequest(`/member/certificates/${certId}/ocr`, { method: 'POST' })
+}
+
+export async function memberRunCertificateOcrImages(images: string[]): Promise<{
+  success: boolean
+  ocrText: string
+  ocrFields: CertificateOcrFields
+}> {
+  return memberRequest('/member/certificates/ocr', {
+    method: 'POST',
+    body: JSON.stringify({ images }),
+  })
 }
 
 // ─── Notifications ───
@@ -409,6 +435,419 @@ export async function memberMarkRead(notifId: number): Promise<{ success: boolea
 
 export async function memberMarkAllRead(): Promise<{ success: boolean }> {
   return memberRequest('/member/notifications/read-all', { method: 'PUT' })
+}
+
+// ─── Weekly Reports ───
+
+export interface WeeklyReportContent {
+  done?: string
+  plan?: string
+  issues?: string
+  summary?: string
+}
+
+export interface WeeklyReportAnalysis {
+  score?: number
+  completion?: string
+  risks?: string[]
+  suggestions?: string[]
+  report?: string
+}
+
+export interface WeeklyReportData {
+  id: number
+  memberId: number
+  memberName?: string
+  projectId?: number
+  projectName?: string
+  weekStart?: string
+  weekEnd?: string
+  content: WeeklyReportContent
+  completionRate?: number
+  aiAnalysis?: WeeklyReportAnalysis | null
+  status: string
+  reviewNote?: string
+  reviewedBy?: number
+  submittedAt?: string
+  reviewedAt?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export async function memberListWeeklyReports(status?: string): Promise<WeeklyReportData[]> {
+  const qs = status ? `?status=${status}` : ''
+  return memberRequest(`/member/weekly-reports${qs}`)
+}
+
+export async function memberCreateWeeklyReport(data: {
+  weekStart?: string
+  weekEnd?: string
+  done: string
+  plan?: string
+  issues?: string
+  summary?: string
+  projectId?: number
+}): Promise<{ success: boolean; report: WeeklyReportData }> {
+  return memberRequest('/member/weekly-reports', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function memberGetWeeklyReport(reportId: number): Promise<WeeklyReportData> {
+  return memberRequest(`/member/weekly-reports/${reportId}`)
+}
+
+export async function memberUpdateWeeklyReport(
+  reportId: number,
+  data: Partial<WeeklyReportData>,
+): Promise<{ success: boolean; report: WeeklyReportData }> {
+  return memberRequest(`/member/weekly-reports/${reportId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function memberSubmitWeeklyReport(reportId: number): Promise<{ success: boolean; report: WeeklyReportData }> {
+  return memberRequest(`/member/weekly-reports/${reportId}/submit`, { method: 'POST' })
+}
+
+export async function memberDeleteWeeklyReport(reportId: number): Promise<{ success: boolean; message: string }> {
+  return memberRequest(`/member/weekly-reports/${reportId}`, { method: 'DELETE' })
+}
+
+export async function memberAnalyzeWeeklyReport(reportId: number): Promise<{ success: boolean; report: WeeklyReportData }> {
+  return memberRequest(`/member/weekly-reports/${reportId}/analyze`, { method: 'POST' })
+}
+
+// ─── Reminders ───
+
+export interface ReminderData {
+  id: number
+  memberId: number
+  memberName?: string
+  projectId?: number
+  projectName?: string
+  type: string
+  title: string
+  message?: string
+  link?: string
+  scheduledAt?: string
+  sentAt?: string
+  status: string
+  createdBy?: number
+  created_at?: string
+}
+
+export async function memberListReminders(status?: string): Promise<ReminderData[]> {
+  const qs = status ? `?status=${status}` : ''
+  return memberRequest(`/member/reminders${qs}`)
+}
+
+export async function memberCreateReminder(data: {
+  title: string
+  message?: string
+  scheduledAt?: string
+  projectId?: number
+  type?: string
+}): Promise<{ success: boolean; reminder: ReminderData; sentImmediately: boolean }> {
+  return memberRequest('/member/reminders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function memberUpdateReminder(
+  reminderId: number,
+  data: Partial<ReminderData>,
+): Promise<{ success: boolean; reminder: ReminderData }> {
+  return memberRequest(`/member/reminders/${reminderId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function memberCompleteReminder(reminderId: number): Promise<{ success: boolean; reminder: ReminderData }> {
+  return memberRequest(`/member/reminders/${reminderId}/complete`, { method: 'POST' })
+}
+
+export async function memberDeleteReminder(reminderId: number): Promise<{ success: boolean; message: string }> {
+  return memberRequest(`/member/reminders/${reminderId}`, { method: 'DELETE' })
+}
+
+// ─── AI Assistant ───
+
+export interface AssistantToolCall {
+  name: string
+  arguments: Record<string, unknown>
+  ok: boolean
+  result: unknown
+}
+
+export interface ConversationData {
+  id: number
+  memberId: number
+  title: string
+  messageCount: number
+  lastMessage?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ConversationMessageData {
+  id: number
+  conversationId: number
+  role: string
+  content: string
+  toolCalls?: AssistantToolCall[] | null
+  created_at?: string
+}
+
+export interface AssistantChatResponse {
+  success: boolean
+  reply: string
+  toolCalls: AssistantToolCall[]
+  conversation?: ConversationData
+}
+
+export interface AssistantStatus {
+  enabled: boolean
+  configured: boolean
+  provider?: string
+}
+
+export interface RequirementPlan {
+  project: {
+    name: string
+    description?: string
+    category?: string
+    startDate?: string
+    endDate?: string
+  }
+  milestones: {
+    name: string
+    description?: string
+    dueDate?: string
+  }[]
+  tasks: {
+    milestoneIndex?: number
+    title: string
+    description?: string
+    priority?: string
+    dueDate?: string
+    assigneeName?: string
+  }[]
+}
+
+export interface ApplyPlanSummary {
+  project: ProjectData
+  milestoneCount: number
+  taskCount: number
+}
+
+export async function assistantStatus(): Promise<AssistantStatus> {
+  return memberRequest('/assistant/status')
+}
+
+export interface AssistantChatOptions {
+  history?: { role: 'user' | 'assistant'; content: string }[]
+  conversationId?: number
+}
+
+export async function assistantChat(message: string, options?: AssistantChatOptions): Promise<AssistantChatResponse> {
+  return memberRequest('/assistant/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, ...options }),
+  })
+}
+
+export interface AssistantStreamHandlers {
+  onConversation?: (conversation: { id: number; title: string }) => void
+  onDelta: (text: string) => void
+  onToolStart: (name: string, args: Record<string, unknown>) => void
+  onToolDone: (name: string, ok: boolean) => void
+  onDone: (reply: string, toolCalls: AssistantToolCall[]) => void
+  onError: (message: string) => void
+}
+
+export async function assistantChatStream(
+  message: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  conversationId: number | undefined,
+  handlers: AssistantStreamHandlers,
+): Promise<void> {
+  const token = getToken()
+  if (!token) throw new Error('未登录')
+
+  const res = await fetch(`${API_BASE}/assistant/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message, history, conversationId }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(err.message || `HTTP ${res.status}`)
+  }
+  await consumeSse(res, ({ event, payload }) => {
+    switch (event) {
+      case 'conversation':
+        handlers.onConversation?.(payload as { id: number; title: string })
+        break
+      case 'delta':
+        if (typeof payload.text === 'string') handlers.onDelta(payload.text)
+        break
+      case 'tool_start':
+        handlers.onToolStart(
+          String(payload.name ?? ''),
+          (payload.arguments as Record<string, unknown>) ?? {},
+        )
+        break
+      case 'tool_done':
+        handlers.onToolDone(String(payload.name ?? ''), payload.ok === true)
+        break
+      case 'done':
+        handlers.onDone(
+          String(payload.reply ?? ''),
+          (payload.toolCalls as AssistantToolCall[]) ?? [],
+        )
+        break
+      case 'error':
+        handlers.onError(String(payload.message ?? '智能体执行出错'))
+        break
+    }
+  })
+}
+
+interface SseFrame {
+  event: string
+  payload: Record<string, unknown>
+}
+
+async function consumeSse(res: Response, onEvent: (frame: SseFrame) => void): Promise<void> {
+  if (!res.body) throw new Error('当前浏览器不支持流式输出')
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let separatorIndex: number
+    while ((separatorIndex = buffer.indexOf('\n\n')) !== -1) {
+      const frame = buffer.slice(0, separatorIndex)
+      buffer = buffer.slice(separatorIndex + 2)
+      onEvent(parseSseFrame(frame))
+    }
+  }
+}
+
+function parseSseFrame(frame: string): SseFrame {
+  let event = 'message'
+  let data = ''
+  for (const line of frame.split('\n')) {
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim()
+    } else if (line.startsWith('data:')) {
+      data += line.slice('data:'.length).trim()
+    }
+  }
+  let payload: Record<string, unknown> = {}
+  if (data) {
+    try {
+      payload = JSON.parse(data) as Record<string, unknown>
+    } catch {
+      payload = {}
+    }
+  }
+  return { event, payload }
+}
+
+// ─── AI Conversations (会话隔离与历史持久化) ───
+
+export async function listConversations(): Promise<ConversationData[]> {
+  return memberRequest('/assistant/conversations')
+}
+
+export async function createConversation(title?: string): Promise<{ success: boolean; conversation: ConversationData }> {
+  return memberRequest('/assistant/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function getConversation(conversationId: number): Promise<{
+  conversation: ConversationData
+  messages: ConversationMessageData[]
+}> {
+  return memberRequest(`/assistant/conversations/${conversationId}`)
+}
+
+export async function renameConversation(conversationId: number, title: string): Promise<{ success: boolean; conversation: ConversationData }> {
+  return memberRequest(`/assistant/conversations/${conversationId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function deleteConversation(conversationId: number): Promise<{ success: boolean; message: string }> {
+  return memberRequest(`/assistant/conversations/${conversationId}`, { method: 'DELETE' })
+}
+
+export async function assistantParseRequirement(message: string): Promise<{ success: boolean; plan: RequirementPlan }> {
+  return memberRequest('/assistant/parse-requirement', {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
+export interface RequirementStreamHandlers {
+  onDelta: (text: string) => void
+  onPlan: (plan: RequirementPlan) => void
+  onError: (message: string) => void
+}
+
+export async function assistantParseRequirementStream(
+  message: string,
+  handlers: RequirementStreamHandlers,
+): Promise<void> {
+  const token = getToken()
+  if (!token) throw new Error('未登录')
+
+  const res = await fetch(`${API_BASE}/assistant/parse-requirement/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(err.message || `HTTP ${res.status}`)
+  }
+  await consumeSse(res, ({ event, payload }) => {
+    switch (event) {
+      case 'delta':
+        if (typeof payload.text === 'string') handlers.onDelta(payload.text)
+        break
+      case 'plan':
+        handlers.onPlan(payload.plan as RequirementPlan)
+        break
+      case 'error':
+        handlers.onError(String(payload.message ?? '生成失败'))
+        break
+    }
+  })
+}
+
+export async function assistantApplyPlan(plan: RequirementPlan): Promise<{ success: boolean; summary: ApplyPlanSummary }> {
+  return memberRequest('/assistant/apply-plan', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  })
 }
 
 // ─── Cached profile accessor ───

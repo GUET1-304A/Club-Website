@@ -3,12 +3,13 @@ import { useLocation } from '../admin/router'
 import {
   LayoutDashboard, FolderGit2, CheckSquare, FolderOpen,
   Trophy, Users, Bell, Settings, LogOut, Menu, X,
-  ChevronLeft, ChevronRight, ExternalLink,
+  ChevronLeft, ChevronRight, ExternalLink, Sparkles,
 } from 'lucide-react'
 import Logo from '../ui/Logo'
 import { memberLogout } from '../../services/memberApi'
 import type { MemberProfile } from '../../services/memberApi'
 import NotificationBell from './NotificationBell'
+import NotificationWatcher from './NotificationWatcher'
 
 const navGroups = [
   {
@@ -35,6 +36,12 @@ const navGroups = [
     label: '成员',
     items: [
       { label: '通讯录', href: '/member/directory', icon: Users },
+    ],
+  },
+  {
+    label: '智能',
+    items: [
+      { label: 'AI 助手', href: '/member/assistant', icon: Sparkles },
     ],
   },
   {
@@ -67,6 +74,8 @@ export default function MemberLayout({ children, member }: Props) {
 
   return (
     <div className="min-h-screen flex bg-[#f8f7f5]">
+      {/* 新通知到达时弹窗提醒（仅在成员门户内生效） */}
+      <NotificationWatcher />
       {/* Mobile overlay */}
       {mobileOpen && (
         <div

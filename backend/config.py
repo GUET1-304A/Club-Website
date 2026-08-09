@@ -117,6 +117,30 @@ class Config:
     AI_MODEL = os.environ.get('AI_MODEL', '')
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
 
+    # ─── 智能体定时提醒扫描 ───
+    # REMINDER_SCAN_ENABLED: 是否启动后台提醒扫描线程
+    # REMINDER_SCAN_INTERVAL: 扫描间隔（秒）
+    REMINDER_SCAN_ENABLED = _get_bool('REMINDER_SCAN_ENABLED', True)
+    REMINDER_SCAN_INTERVAL = int(os.environ.get('REMINDER_SCAN_INTERVAL', 300))
+
+    # ─── 智能体调用防护 ───
+    # ASSISTANT_RATE_LIMIT_PER_MINUTE: 每个成员每分钟最多调用智能体端点的次数
+    # ASSISTANT_MAX_MESSAGE_LENGTH: 单条用户消息最大字符数
+    ASSISTANT_RATE_LIMIT_PER_MINUTE = int(
+        os.environ.get('ASSISTANT_RATE_LIMIT_PER_MINUTE', 30)
+    )
+    ASSISTANT_MAX_MESSAGE_LENGTH = int(
+        os.environ.get('ASSISTANT_MAX_MESSAGE_LENGTH', 4000)
+    )
+    # 智能体单次回答的最大输出 token 数
+    ASSISTANT_CHAT_MAX_TOKENS = int(
+        os.environ.get('ASSISTANT_CHAT_MAX_TOKENS', 2048)
+    )
+    # 需求拆解单次生成的最大输出 token 数
+    ASSISTANT_PARSE_MAX_TOKENS = int(
+        os.environ.get('ASSISTANT_PARSE_MAX_TOKENS', 4000)
+    )
+
     # Development and tests retain their demonstration data. Production must
     # explicitly bootstrap its first administrator and never use demo users.
     SEED_DEMO_DATA = True

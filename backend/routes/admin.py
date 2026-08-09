@@ -46,6 +46,9 @@
                 PATCH  /api/admin/applications/<id>  — 审核申请
   - 留言管理    GET    /api/admin/contact-messages   — 留言列表
                 PATCH  /api/admin/contact-messages/<id> — 处理留言
+  - 证书审核    GET    /api/admin/certificates       — 证书列表（含筛选）
+                GET    /api/admin/certificates/<id>  — 证书详情
+                POST   /api/admin/certificates/<id>/review — 审核证书（通过自动归档成果库）
   - 数据导入导出 GET  /api/admin/export             — 导出全站数据
                 POST   /api/admin/import             — 导入数据（支持 replace/merge 模式）
 """
@@ -57,8 +60,12 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 
 from models import (
     db, SiteConfig, Page, Application, ContactMessage,
-    Member, Project, Milestone, Task, Award, BlogPost, AdminUser,
+    Member, Project, Milestone, Task, Award, BlogPost, AdminUser, Certificate,
+    WeeklyReport, Reminder, Notification,
 )
+from services.ai_service import AiNotConfigured, AiRequestFailed
+from services.assistant_tools import _analyze_report_with_ai
+from services.reminder_service import send_reminder_notification
 from services.storage_service import StorageNotConfigured, StorageService
 
 admin_bp = Blueprint('admin', __name__)
@@ -702,6 +709,93 @@ def admin_create_task(project_id):
     return jsonify({'success': True, 'task': task.to_dict()}), 201
 
 
+@admin_bp.route('/admin/tasks/<int:task_id>', methods=['PUT'])
+@jwt_required()
+def admin_update_task(task_id):
+    """更新任意任务（管理员视角，不受任务负责人限制）。
+
+    支持部分更新：标题、描述、状态、优先级、排序、负责人、里程碑、截止日期。
+
+    Returns:
+        JSON: {"success": true, "task": {...}}
+        404: 任务不存在
+    """
+    _admin_or_403()
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'error': 'not_found', 'message': '任务不存在'}), 404
+
+    data = request.get_json() or {}
+    updatable = ['title', 'description', 'status', 'priority', 'sort_order']
+    for field in updatable:
+        if field in data:
+            setattr(task, field, data[field])
+    if 'assigneeId' in data:
+        task.assignee_id = data['assigneeId']
+    if 'milestoneId' in data:
+        task.milestone_id = data['milestoneId']
+    if 'dueDate' in data:
+        task.due_date = _parse_date(data['dueDate'])
+    if 'sortOrder' in data:
+        task.sort_order = data['sortOrder']
+
+    db.session.commit()
+    return jsonify({'success': True, 'task': task.to_dict()})
+
+
+@admin_bp.route('/admin/tasks/<int:task_id>/status', methods=['PUT'])
+@jwt_required()
+def admin_update_task_status(task_id):
+    """快速变更任意任务状态（管理员视角，用于看板拖拽/命令行操作）。"""
+    _admin_or_403()
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'error': 'not_found', 'message': '任务不存在'}), 404
+
+    data = request.get_json() or {}
+    status = data.get('status')
+    if not status:
+        return jsonify({'error': 'bad_request', 'message': 'status 不能为空'}), 400
+    valid_statuses = ('todo', 'in_progress', 'review', 'done', 'blocked')
+    if status not in valid_statuses:
+        return jsonify({'error': 'validation_error', 'message': f'无效状态: {status}'}), 400
+
+    task.status = status
+    if 'sortOrder' in data:
+        task.sort_order = data['sortOrder']
+    db.session.commit()
+    return jsonify({'success': True, 'task': task.to_dict()})
+
+
+@admin_bp.route('/admin/projects/<int:project_id>/milestones', methods=['GET'])
+@jwt_required()
+def admin_list_project_milestones(project_id):
+    """获取指定项目的全部里程碑（管理员视角）。"""
+    _admin_or_403()
+    project = Project.query.get(project_id)
+    if not project:
+        return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
+    milestones = Milestone.query.filter_by(project_id=project_id)\
+        .order_by(Milestone.sort_order, Milestone.id).all()
+    return jsonify([m.to_dict() for m in milestones])
+
+
+@admin_bp.route('/admin/projects/<int:project_id>/tasks', methods=['GET'])
+@jwt_required()
+def admin_list_project_tasks(project_id):
+    """获取指定项目的全部任务（管理员视角，支持状态筛选）。"""
+    _admin_or_403()
+    project = Project.query.get(project_id)
+    if not project:
+        return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
+    query = Task.query.filter_by(project_id=project_id)
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+    tasks = query.order_by(Task.sort_order, Task.id).all()
+    return jsonify([t.to_dict() for t in tasks])
+
+
 # ═══════════════════════════════════════════════════════════════
 # 管理员: 获奖荣誉 CRUD
 # ═══════════════════════════════════════════════════════════════
@@ -1335,6 +1429,299 @@ def admin_update_contact(msg_id):
 
 
 # ═══════════════════════════════════════════════════════════════
+# 管理员: 证书审核（通过后自动归档至成果库）
+# ═══════════════════════════════════════════════════════════════
+
+@admin_bp.route('/admin/certificates', methods=['GET'])
+@jwt_required()
+def admin_list_certificates():
+    """获取全部成员证书记录（教师/管理员视角）。
+
+    可选筛选: status（pending/verified/rejected）、memberId、search（名称/获奖者/颁发机构）
+
+    Returns:
+        JSON: 证书列表（按创建时间降序）
+    """
+    _admin_or_403()
+    status = request.args.get('status')
+    member_id = request.args.get('memberId', type=int)
+    search = (request.args.get('search') or '').strip()
+
+    query = Certificate.query
+    if status:
+        query = query.filter_by(status=status)
+    if member_id:
+        query = query.filter_by(member_id=member_id)
+    if search:
+        like = f'%{search}%'
+        query = query.filter(db.or_(
+            Certificate.name.like(like),
+            Certificate.winner.like(like),
+            Certificate.issuer.like(like),
+        ))
+
+    certs = query.order_by(Certificate.created_at.desc(), Certificate.id.desc()).all()
+    return jsonify([c.to_dict() for c in certs])
+
+
+@admin_bp.route('/admin/certificates/<int:cert_id>', methods=['GET'])
+@jwt_required()
+def admin_get_certificate(cert_id):
+    """获取单份证书详情（含 OCR 文本、结构化字段与审核信息）。"""
+    _admin_or_403()
+    cert = Certificate.query.get(cert_id)
+    if not cert:
+        return jsonify({'error': 'not_found', 'message': '证书不存在'}), 404
+    return jsonify(cert.to_dict())
+
+
+@admin_bp.route('/admin/certificates/<int:cert_id>/review', methods=['POST'])
+@jwt_required()
+def admin_review_certificate(cert_id):
+    """审核证书（pending → verified/rejected）。
+
+    Request Body:
+        {"status": "verified" | "rejected", "reviewNote": "批注/驳回原因（可选）"}
+
+    通过后自动将证书归档为 Award（实验室总成果库），并向成员发送站内通知。
+    同一证书重复通过不会重复创建 Award。
+    """
+    admin = _admin_or_403()
+    data = request.get_json() or {}
+    status = data.get('status')
+    if status not in ('verified', 'rejected'):
+        return jsonify({
+            'error': 'validation_error',
+            'message': 'status 必须为 verified 或 rejected',
+        }), 400
+    cert = Certificate.query.get(cert_id)
+    if not cert:
+        return jsonify({'error': 'not_found', 'message': '证书不存在'}), 404
+
+    cert.status = status
+    cert.review_note = (data.get('reviewNote') or '').strip() or None
+    cert.reviewed_by = admin.id
+    cert.reviewed_at = datetime.now(timezone.utc)
+
+    award = None
+    if status == 'verified':
+        award = _archive_certificate_as_award(cert)
+
+    db.session.add(Notification(
+        member_id=cert.member_id,
+        type='announcement',
+        title='证书已认证' if status == 'verified' else '证书被驳回',
+        body=(
+            f'你的证书「{cert.name}」已通过审核并归档至实验室成果库。'
+            + (f'批注：{cert.review_note}' if cert.review_note else '')
+            if status == 'verified'
+            else f'你的证书「{cert.name}」未通过审核。'
+                 + (f'原因：{cert.review_note}' if cert.review_note else '请修改后重新提交。')
+        ),
+        link='/member/certificates',
+        is_read=False,
+    ))
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'certificate': cert.to_dict(),
+        'award': award.to_dict() if award else None,
+    })
+
+
+def _archive_certificate_as_award(cert):
+    """把已认证证书归档为公开成果（幂等：已归档则直接返回）。"""
+    existing = Award.query.filter_by(certificate_id=cert.id).first()
+    if existing:
+        return existing
+    award = Award(
+        slug=f'cert-{cert.id}',
+        name=cert.name,
+        level=cert.level or 'other',
+        category=cert.category,
+        winner=(cert.winner or cert.member.name) if cert.member else '未署名',
+        issuer=cert.issuer,
+        date=cert.date,
+        description=cert.description,
+        certificate_images=cert.images or [],
+        related_project=cert.related_project,
+        certificate_id=cert.id,
+    )
+    db.session.add(award)
+    return award
+
+
+# ═══════════════════════════════════════════════════════════════
+# 管理员: 数据导入 / 导出
+# ═══════════════════════════════════════════════════════════════
+
+@admin_bp.route('/admin/weekly-reports', methods=['GET'])
+@jwt_required()
+def admin_list_weekly_reports():
+    """获取全部周报（教师/管理员视角）。
+
+    可选筛选: status（draft/submitted/reviewed）、projectId、memberId
+
+    Returns:
+        JSON: 周报列表（按提交时间/周开始日期降序）
+    """
+    _admin_or_403()
+    status = request.args.get('status')
+    project_id = request.args.get('projectId', type=int)
+    member_id = request.args.get('memberId', type=int)
+
+    query = WeeklyReport.query
+    if status:
+        query = query.filter_by(status=status)
+    if project_id:
+        query = query.filter_by(project_id=project_id)
+    if member_id:
+        query = query.filter_by(member_id=member_id)
+
+    reports = query.order_by(WeeklyReport.week_start.desc(), WeeklyReport.id.desc()).all()
+    return jsonify([r.to_dict() for r in reports])
+
+
+@admin_bp.route('/admin/weekly-reports/<int:report_id>', methods=['GET'])
+@jwt_required()
+def admin_get_weekly_report(report_id):
+    """获取单份周报详情（含 AI 分析结果）。"""
+    _admin_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+    return jsonify(report.to_dict())
+
+
+@admin_bp.route('/admin/weekly-reports/<int:report_id>/review', methods=['POST'])
+@jwt_required()
+def admin_review_weekly_report(report_id):
+    """审阅周报（submitted → reviewed）。
+
+    Request Body:
+        {"reviewNote": "批注内容", "completionRate": 85}
+
+    审阅后自动给周报提交者发送站内通知。
+    """
+    admin = _admin_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+
+    data = request.get_json() or {}
+    report.review_note = data.get('reviewNote', report.review_note)
+    if 'completionRate' in data and data['completionRate'] is not None:
+        try:
+            report.completion_rate = float(data['completionRate'])
+        except (TypeError, ValueError):
+            pass
+    report.status = 'reviewed'
+    report.reviewed_by = admin.id
+    report.reviewed_at = datetime.now(timezone.utc)
+
+    db.session.add(Notification(
+        member_id=report.member_id,
+        type='announcement',
+        title='周报已审阅',
+        body=f'你的第 {report.week_start or "?"} 周周报已由教师审阅完成'
+             + (f'，批注：{report.review_note}' if report.review_note else ''),
+        link='/member/notifications',
+        is_read=False,
+    ))
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()})
+
+
+@admin_bp.route('/admin/weekly-reports/<int:report_id>/analyze', methods=['POST'])
+@jwt_required()
+def admin_analyze_weekly_report(report_id):
+    """对任意周报执行 AI 分析（教师视角，可为学生生成审核报告）。"""
+    _admin_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+
+    try:
+        analysis = _analyze_report_with_ai(report)
+    except AiNotConfigured:
+        return jsonify({
+            'error': 'not_configured',
+            'message': 'AI 服务未配置，请联系管理员配置 AI 服务',
+        }), 503
+    except AiRequestFailed:
+        return jsonify({
+            'error': 'ai_failed',
+            'message': 'AI 分析暂时不可用，请稍后重试',
+        }), 502
+
+    report.ai_analysis = analysis
+    report.completion_rate = analysis.get('score')
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()})
+
+
+@admin_bp.route('/admin/reminders', methods=['GET'])
+@jwt_required()
+def admin_list_reminders():
+    """获取全部提醒记录（管理端）。"""
+    _admin_or_403()
+    status = request.args.get('status')
+    member_id = request.args.get('memberId', type=int)
+    query = Reminder.query
+    if status:
+        query = query.filter_by(status=status)
+    if member_id:
+        query = query.filter_by(member_id=member_id)
+    reminders = query.order_by(Reminder.created_at.desc()).all()
+    return jsonify([r.to_dict() for r in reminders])
+
+
+@admin_bp.route('/admin/reminders', methods=['POST'])
+@jwt_required()
+def admin_create_reminder():
+    """创建提醒（教师可给任意成员发提醒）。
+
+    Request Body:
+        {"memberId": 3, "title": "请尽快提交周报", "message": "...",
+         "scheduledAt": "2026-08-07T09:00:00+08:00", "type": "report_submit"}
+    """
+    admin = _admin_or_403()
+    data = request.get_json()
+    if not data or not data.get('memberId') or not str(data.get('title') or '').strip():
+        return jsonify({'error': 'bad_request', 'message': 'memberId 和 title 必填'}), 400
+
+    member = Member.query.get(data['memberId'])
+    if not member:
+        return jsonify({'error': 'not_found', 'message': '成员不存在'}), 404
+
+    reminder = Reminder(
+        member_id=member.id,
+        project_id=data.get('projectId'),
+        type=data.get('type', 'custom'),
+        title=data['title'].strip(),
+        message=data.get('message'),
+        link=data.get('link'),
+        scheduled_at=_parse_date(data.get('scheduledAt')),
+        status='pending',
+        created_by=admin.id,
+    )
+    db.session.add(reminder)
+    due_now = (
+        reminder.scheduled_at is None
+        or reminder.scheduled_at <= datetime.now(timezone.utc)
+    )
+    sent_immediately = False
+    if due_now:
+        sent_immediately = send_reminder_notification(reminder)
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'reminder': reminder.to_dict(),
+        'sentImmediately': sent_immediately,
+    }), 201
+
+
+# ═══════════════════════════════════════════════════════════════
 # 管理员: 数据导入 / 导出
 # ═══════════════════════════════════════════════════════════════
 
@@ -1556,6 +1943,7 @@ def admin_import():
                     description=a_data.get('description'),
                     certificate_images=a_data.get('certificate_images', []),
                     related_project=a_data.get('related_project'),
+                    certificate_id=a_data.get('certificate_id'),
                 ))
                 stats['awards'] += 1
 

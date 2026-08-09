@@ -5,7 +5,9 @@ import { fileURLToPath } from 'url'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const backendUrl = env.VITE_BACKEND_URL || 'http://localhost:5000'
+  // loadEnv only reads .env files; also honor the container/host environment
+  // (Docker Compose passes VITE_BACKEND_URL to the Vite dev server).
+  const backendUrl = env.VITE_BACKEND_URL || process.env.VITE_BACKEND_URL || 'http://localhost:5000'
 
   return {
     plugins: [react(), tailwindcss()],

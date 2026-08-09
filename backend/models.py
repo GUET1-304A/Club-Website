@@ -18,6 +18,10 @@
   - ResourceFile    — 资源中心文件
   - Certificate     — 成员提交的证书记录
   - Notification    — 成员通知
+  - WeeklyReport    — 成员周报（智能项目管理智能体的数据基础）
+  - Reminder        — 提醒记录（任务截止 / 周报提交 / 自定义提醒）
+  - AgentConversation — 智能体对话会话（成员隔离，含标题与消息）
+  - AgentMessage    — 智能体对话消息（角色/内容/工具调用记录）
 
 所有 DateTime 字段使用 UTC 时区。
 所有模型均提供 to_dict() 方法用于 JSON 序列化。
@@ -562,6 +566,7 @@ class Award(db.Model):
     description = db.Column(db.Text, nullable=True)                     # 获奖描述/参赛过程
     certificate_images = db.Column(db.JSON, nullable=True)              # 证书图片 URL 列表（JSON 数组）
     related_project = db.Column(db.String(100), nullable=True)          # 关联项目 slug（可链接到对应项目详情页）
+    certificate_id = db.Column(db.Integer, nullable=True)               # 来源证书 ID（审核通过后自动归档生成）
     sort_order = db.Column(db.Integer, default=0)                       # 排序序号
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
@@ -586,9 +591,10 @@ class Award(db.Model):
             'issuer': self.issuer,
             'date': self.date,
             'description': self.description,
-            'certificateImages': self.certificate_images or [],
-            'relatedProject': self.related_project,
-            'sortOrder': self.sort_order,
+              'certificateImages': self.certificate_images or [],
+              'relatedProject': self.related_project,
+              'certificateId': self.certificate_id,
+              'sortOrder': self.sort_order,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -883,8 +889,9 @@ class Certificate(db.Model):
     """成员证书记录模型。
 
     成员可在门户中上传自己的获奖证书/荣誉证明。
-    支持证书图片上传和 OCR 文字识别结果存储。
+    支持证书图片上传、OCR 文字识别与结构化字段提取结果存储。
     提交后需管理员审核（pending → verified / rejected）。
+    审核通过后自动归档为 Award（实验室总成果库）并通知成员。
 
     状态 (status) 取值:
       - 'pending'  — 待审核
@@ -904,8 +911,12 @@ class Certificate(db.Model):
     description = db.Column(db.Text, nullable=True)                                      # 补充描述
     images = db.Column(db.JSON, nullable=True)                                           # 证书图片 URL 列表（JSON 数组）
     ocr_text = db.Column(db.Text, nullable=True)                                         # OCR 识别文字结果
+    ocr_fields = db.Column(db.JSON, nullable=True)                                       # OCR 结构化字段（JSON）
     related_project = db.Column(db.String(100), nullable=True)                           # 关联项目 slug
     status = db.Column(db.String(20), nullable=False, default='pending')                 # 审核状态
+    review_note = db.Column(db.Text, nullable=True)                                      # 审核批注（通过说明/驳回原因）
+    reviewed_by = db.Column(db.Integer, nullable=True)                                   # 审核管理员 ID
+    reviewed_at = db.Column(db.DateTime, nullable=True)                                  # 审核时间
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
@@ -935,8 +946,12 @@ class Certificate(db.Model):
             'description': self.description,
             'images': self.images or [],
             'ocrText': self.ocr_text,
+            'ocrFields': self.ocr_fields or {},
             'relatedProject': self.related_project,
             'status': self.status,
+            'reviewNote': self.review_note,
+            'reviewedBy': self.reviewed_by,
+            'reviewedAt': self.reviewed_at.isoformat() if self.reviewed_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -986,5 +1001,220 @@ class Notification(db.Model):
             'body': self.body,
             'link': self.link,
             'isRead': self.is_read,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# 周报 & 提醒（智能项目管理智能体）
+# ═══════════════════════════════════════════════════════════════
+
+class WeeklyReport(db.Model):
+    """成员周报模型。
+
+    学生按周提交工作汇报，智能体可对周报进行 AI 分析：
+    比对任务要求，判定完成度与进度，生成审核报告供教师审阅。
+
+    状态 (status) 取值:
+      - 'draft'     — 草稿（可编辑）
+      - 'submitted' — 已提交（待审阅）
+      - 'reviewed'  — 已审阅
+
+    content 为 JSON 结构，约定字段:
+      {
+        "done":   "本周完成的工作",
+        "plan":   "下周计划",
+        "issues": "遇到的问题/风险",
+        "summary": "本周总结（可选）"
+      }
+
+    ai_analysis 为 JSON 结构，由 AI 分析生成:
+      {
+        "score": 0-100,
+        "completion": "完成度评估",
+        "risks": ["风险1", ...],
+        "suggestions": ["建议1", ...],
+        "report": "给教师的简短审核报告"
+      }
+    """
+    __tablename__ = 'weekly_reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)    # 周报提交者
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)   # 关联项目（可选）
+    week_start = db.Column(db.Date, nullable=True)                                    # 周起始日期
+    week_end = db.Column(db.Date, nullable=True)                                      # 周结束日期
+    content = db.Column(db.JSON, nullable=False)                                      # 周报内容（JSON）
+    completion_rate = db.Column(db.Float, nullable=True)                              # AI 判定的完成度（0-100）
+    ai_analysis = db.Column(db.JSON, nullable=True)                                   # AI 分析结果（JSON）
+    status = db.Column(db.String(20), nullable=False, default='draft')                # draft/submitted/reviewed
+    review_note = db.Column(db.Text, nullable=True)                                   # 教师/管理员审阅批注
+    reviewed_by = db.Column(db.Integer, nullable=True)                                # 审阅人（管理员 ID）
+    submitted_at = db.Column(db.DateTime, nullable=True)                              # 提交时间
+    reviewed_at = db.Column(db.DateTime, nullable=True)                               # 审阅时间
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # ── 关联关系 ──
+    member = db.relationship('Member', backref='weekly_reports', foreign_keys=[member_id])
+    project = db.relationship('Project', backref='weekly_reports', foreign_keys=[project_id])
+
+    def to_dict(self):
+        """序列化周报数据（含成员名、项目名）。"""
+        return {
+            'id': self.id,
+            'memberId': self.member_id,
+            'memberName': self.member.name if self.member else None,
+            'projectId': self.project_id,
+            'projectName': self.project.name if self.project else None,
+            'weekStart': self.week_start.isoformat() if self.week_start else None,
+            'weekEnd': self.week_end.isoformat() if self.week_end else None,
+            'content': self.content or {},
+            'completionRate': self.completion_rate,
+            'aiAnalysis': self.ai_analysis,
+            'status': self.status,
+            'reviewNote': self.review_note,
+            'reviewedBy': self.reviewed_by,
+            'submittedAt': self.submitted_at.isoformat() if self.submitted_at else None,
+            'reviewedAt': self.reviewed_at.isoformat() if self.reviewed_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Reminder(db.Model):
+    """提醒记录模型。
+
+    支持两类来源：
+      1. 用户/管理员主动创建（type='custom'，如"每周五提醒我交周报"）
+      2. 系统定时扫描自动生成（type='task_due'/'report_submit'/'review'）
+
+    类型 (type) 取值:
+      - 'task_due'     — 任务截止提醒
+      - 'report_submit'— 周报提交提醒
+      - 'review'       — 周报审阅提醒
+      - 'custom'       — 自定义提醒
+
+    状态 (status) 取值:
+      - 'pending'  — 待触发
+      - 'sent'     — 已发送（已生成站内通知）
+      - 'done'     — 已完成（用户手动标记）
+      - 'cancelled'— 已取消
+    """
+    __tablename__ = 'reminders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)    # 提醒接收者
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)   # 关联项目（可选）
+    type = db.Column(db.String(20), nullable=False, default='custom')                 # 提醒类型
+    title = db.Column(db.String(200), nullable=False)                                 # 提醒标题
+    message = db.Column(db.Text, nullable=True)                                       # 提醒正文
+    link = db.Column(db.String(500), nullable=True)                                   # 跳转链接
+    scheduled_at = db.Column(db.DateTime, nullable=True)                              # 计划触发时间（None 表示立即）
+    sent_at = db.Column(db.DateTime, nullable=True)                                   # 实际发送时间
+    status = db.Column(db.String(20), nullable=False, default='pending')              # pending/sent/done/cancelled
+    created_by = db.Column(db.Integer, nullable=True)                                 # 创建者（成员 ID 或 None 表示系统）
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # ── 关联关系 ──
+    member = db.relationship('Member', backref='reminders', foreign_keys=[member_id])
+    project = db.relationship('Project', backref='reminders', foreign_keys=[project_id])
+
+    def to_dict(self):
+        """序列化提醒数据。"""
+        return {
+            'id': self.id,
+            'memberId': self.member_id,
+            'memberName': self.member.name if self.member else None,
+            'projectId': self.project_id,
+            'projectName': self.project.name if self.project else None,
+            'type': self.type,
+            'title': self.title,
+            'message': self.message,
+            'link': self.link,
+            'scheduledAt': self.scheduled_at.isoformat() if self.scheduled_at else None,
+            'sentAt': self.sent_at.isoformat() if self.sent_at else None,
+            'status': self.status,
+            'createdBy': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# 智能体对话（会话隔离 + 历史持久化）
+# ═══════════════════════════════════════════════════════════════
+
+class AgentConversation(db.Model):
+    """智能体对话会话模型。
+
+    每个会话属于且仅属于一个成员（member_id 隔离），成员只能查看/操作
+    自己的会话。会话保存标题、消息列表，用于切换对话时恢复上下文。
+    """
+    __tablename__ = 'agent_conversations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)  # 所属成员
+    title = db.Column(db.String(200), nullable=False, default='新对话')             # 会话标题
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # ── 关联关系 ──
+    member = db.relationship('Member', backref='agent_conversations', foreign_keys=[member_id])
+    messages = db.relationship(
+        'AgentMessage',
+        backref='conversation',
+        cascade='all, delete-orphan',
+        order_by='AgentMessage.id',
+    )
+
+    def to_dict(self):
+        """序列化会话（含最近一条消息摘要）。"""
+        last_message = self.messages[-1] if self.messages else None
+        return {
+            'id': self.id,
+            'memberId': self.member_id,
+            'title': self.title,
+            'messageCount': len(self.messages),
+            'lastMessage': last_message.content if last_message else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class AgentMessage(db.Model):
+    """智能体对话消息模型。
+
+    记录每一轮用户消息与助手回复，助手消息同时保存工具调用记录
+    （tool_calls JSON），前端据此还原工具执行过程。
+    """
+    __tablename__ = 'agent_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(
+        db.Integer,
+        db.ForeignKey('agent_conversations.id'),
+        nullable=False,
+    )                                                                   # 所属会话
+    role = db.Column(db.String(20), nullable=False)                     # user / assistant
+    content = db.Column(db.Text, nullable=False)                        # 消息内容
+    tool_calls = db.Column(db.JSON, nullable=True)                      # 工具调用记录（JSON 数组）
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        """序列化消息。"""
+        return {
+            'id': self.id,
+            'conversationId': self.conversation_id,
+            'role': self.role,
+            'content': self.content,
+            'toolCalls': self.tool_calls,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }

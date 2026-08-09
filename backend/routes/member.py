@@ -32,6 +32,8 @@
                   PUT    /api/member/certificates/<id>     — 更新证书
                   DELETE /api/member/certificates/<id>     — 删除证书
                   POST   /api/member/certificates/upload   — 上传证书图片
+                  POST   /api/member/certificates/ocr      — 对图片执行 AI 识别并返回结构化字段
+                  POST   /api/member/certificates/<id>/ocr — 对已保存证书重新识别并持久化结果
   - 通知中心      GET    /api/member/notifications         — 通知列表
                   GET    /api/member/notifications/unread-count — 未读数
                   PUT    /api/member/notifications/<id>/read   — 标记已读
@@ -43,8 +45,23 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, abort, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
-from models import db, Member, Project, Milestone, Task, ResourceFolder, ResourceFile, Certificate, Notification
+from models import (
+    db,
+    Member,
+    Project,
+    Milestone,
+    Task,
+    ResourceFolder,
+    ResourceFile,
+    Certificate,
+    Notification,
+    WeeklyReport,
+    Reminder,
+)
 from services.ocr_service import OcrNotConfigured, OcrRequestFailed, OcrService
+from services.ai_service import AiNotConfigured, AiRequestFailed
+from services.assistant_tools import _analyze_report_with_ai
+from services.reminder_service import send_reminder_notification
 from services.storage_service import (
     StorageImageInvalid,
     StorageNotConfigured,
@@ -909,6 +926,7 @@ def member_update_certificate(cert_id):
     """更新证书记录。
 
     仅允许更新自己提交的证书（通过 member_id 校验所有权）。
+    被驳回（rejected）的证书在成员修正内容后自动重新进入待审核（pending）。
 
     Returns:
         JSON: {"success": true, "certificate": {...}}
@@ -933,6 +951,10 @@ def member_update_certificate(cert_id):
         cert.images = data['images']
     if 'relatedProject' in data:
         cert.related_project = data['relatedProject']
+
+    # 修正被驳回的证书后重新送审
+    if cert.status == 'rejected':
+        cert.status = 'pending'
 
     db.session.commit()
     return jsonify({'success': True, 'certificate': cert.to_dict()})
@@ -1006,7 +1028,7 @@ def member_upload_certificate_image():
 @member_bp.route('/member/certificates/<int:cert_id>/ocr', methods=['POST'])
 @jwt_required()
 def member_ocr_certificate(cert_id):
-    """Extract provider-supplied text from the current member's certificate images."""
+    """对当前成员已保存的证书执行 AI 识别并持久化识别结果。"""
     member = _member_or_403()
     cert = Certificate.query.get(cert_id)
     if not cert or cert.member_id != member.id:
@@ -1015,32 +1037,12 @@ def member_ocr_certificate(cert_id):
     ocr_service = OcrService(current_app.config)
     try:
         ocr_service.validate_configuration()
-        image_references = cert.images
-        if not isinstance(image_references, list) or not image_references:
-            return jsonify({
-                'error': 'invalid_certificate_images',
-                'message': 'Certificate images must be managed image uploads.',
-            }), 422
-        if len(image_references) > 5:
-            return jsonify({
-                'error': 'invalid_certificate_images',
-                'message': 'Certificate OCR accepts at most 5 images.',
-            }), 422
-
-        storage_service = StorageService(current_app.config)
-        max_total_bytes = current_app.config['MAX_CONTENT_LENGTH']
-        total_bytes = 0
-        images = []
-        for ref in image_references:
-            image = storage_service.read_certificate_image(ref)
-            total_bytes += len(image.content)
-            if total_bytes > max_total_bytes:
-                return jsonify({
-                    'error': 'certificate_images_too_large',
-                    'message': 'Certificate images exceed the total size limit.',
-                }), 413
-            images.append(image)
-        text = ocr_service.extract_text(images)
+        images = _read_managed_certificate_images(cert.images)
+        result = ocr_service.extract_fields(images)
+        if isinstance(result, str):
+            result = {'ocr_text': result, 'fields': {}}
+    except _InvalidCertificateImages as exc:
+        return jsonify(exc.body), exc.status
     except StorageImageInvalid:
         return jsonify({
             'error': 'invalid_certificate_images',
@@ -1067,9 +1069,127 @@ def member_ocr_certificate(cert_id):
             'message': 'Certificate recognition is temporarily unavailable. Please try again later.',
         }), 502
 
-    cert.ocr_text = text
+    cert.ocr_text = result['ocr_text']
+    cert.ocr_fields = result['fields']
     db.session.commit()
-    return jsonify({'success': True, 'ocrText': text, 'certificate': cert.to_dict()})
+    return jsonify({
+        'success': True,
+        'ocrText': result['ocr_text'],
+        'ocrFields': result['fields'],
+        'certificate': cert.to_dict(),
+    })
+
+
+@member_bp.route('/member/certificates/ocr', methods=['POST'])
+@jwt_required()
+def member_ocr_images():
+    """对尚未保存为证书记录的图片执行 AI 识别，返回结构化字段供表单回填。
+
+    Request Body:
+        {"images": ["/uploads/cert_xxx.png", ...]}
+
+    Returns:
+        JSON: {"success": true, "ocrText": "...", "ocrFields": {...}}
+    """
+    _member_or_403()
+    data = request.get_json() or {}
+    image_references = data.get('images')
+    if not isinstance(image_references, list) or not image_references:
+        return jsonify({
+            'error': 'invalid_certificate_images',
+            'message': 'Certificate images must be managed image uploads.',
+        }), 422
+
+    ocr_service = OcrService(current_app.config)
+    try:
+        ocr_service.validate_configuration()
+        images = _read_managed_certificate_images(image_references)
+        result = ocr_service.extract_fields(images)
+        if isinstance(result, str):
+            result = {'ocr_text': result, 'fields': {}}
+    except _InvalidCertificateImages as exc:
+        return jsonify(exc.body), exc.status
+    except StorageImageInvalid:
+        return jsonify({
+            'error': 'invalid_certificate_images',
+            'message': 'Certificate images must be managed image uploads.',
+        }), 422
+    except StorageNotConfigured:
+        return jsonify({
+            'error': 'not_configured',
+            'message': 'Object storage is not configured.',
+        }), 503
+    except StorageReadFailed:
+        return jsonify({
+            'error': 'ocr_failed',
+            'message': 'Certificate image could not be read. Please try again later.',
+        }), 502
+    except OcrNotConfigured:
+        return jsonify({
+            'error': 'not_configured',
+            'message': 'OCR is not configured. Ask an administrator to configure the OCR provider.',
+        }), 503
+    except OcrRequestFailed:
+        return jsonify({
+            'error': 'ocr_failed',
+            'message': 'Certificate recognition is temporarily unavailable. Please try again later.',
+        }), 502
+
+    return jsonify({
+        'success': True,
+        'ocrText': result['ocr_text'],
+        'ocrFields': result['fields'],
+    })
+
+
+class _InvalidCertificateImages(Exception):
+    """证书图片校验失败，携带可直接返回的 HTTP 状态与响应体。"""
+
+    def __init__(self, status, body):
+        super().__init__(body['message'])
+        self.status = status
+        self.body = body
+
+
+def _read_managed_certificate_images(image_references):
+    """读取受管证书图片，校验数量、格式与总大小。
+
+    Args:
+        image_references: 图片 URL 列表（来自受管上传）。
+
+    Returns:
+        list[StoredImage]: 可用于 OCR 的图片对象。
+
+    Raises:
+        _InvalidCertificateImages: 图片引用非法、数量超限或总大小超限。
+        StorageImageInvalid / StorageNotConfigured / StorageReadFailed:
+            存储层校验或读取失败。
+    """
+    if not isinstance(image_references, list) or not image_references:
+        raise _InvalidCertificateImages(422, {
+            'error': 'invalid_certificate_images',
+            'message': 'Certificate images must be managed image uploads.',
+        })
+    if len(image_references) > 5:
+        raise _InvalidCertificateImages(422, {
+            'error': 'invalid_certificate_images',
+            'message': 'Certificate OCR accepts at most 5 images.',
+        })
+
+    storage_service = StorageService(current_app.config)
+    max_total_bytes = current_app.config['MAX_CONTENT_LENGTH']
+    total_bytes = 0
+    images = []
+    for ref in image_references:
+        image = storage_service.read_certificate_image(ref)
+        total_bytes += len(image.content)
+        if total_bytes > max_total_bytes:
+            raise _InvalidCertificateImages(413, {
+                'error': 'certificate_images_too_large',
+                'message': 'Certificate images exceed the total size limit.',
+            })
+        images.append(image)
+    return images
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1151,22 +1271,311 @@ def member_mark_all_read():
     return jsonify({'success': True})
 
 
+# ═══════════════════════════════════════════════════════════════
+# 周报系统（智能项目管理智能体）
+# ═══════════════════════════════════════════════════════════════
+
+@member_bp.route('/member/weekly-reports', methods=['GET'])
+@jwt_required()
+def member_list_weekly_reports():
+    """获取当前成员的周报列表。
+
+    可选筛选: status（draft/submitted/reviewed）、projectId
+
+    Returns:
+        JSON: 周报列表（按周开始日期降序）
+    """
+    member = _member_or_403()
+    status = request.args.get('status')
+    project_id = request.args.get('projectId', type=int)
+
+    query = WeeklyReport.query.filter_by(member_id=member.id)
+    if status:
+        query = query.filter_by(status=status)
+    if project_id:
+        query = query.filter_by(project_id=project_id)
+
+    reports = query.order_by(WeeklyReport.week_start.desc(), WeeklyReport.id.desc()).all()
+    return jsonify([r.to_dict() for r in reports])
+
+
+@member_bp.route('/member/weekly-reports', methods=['POST'])
+@jwt_required()
+def member_create_weekly_report():
+    """创建周报草稿。
+
+    Request Body:
+        {"weekStart": "2026-08-03", "weekEnd": "2026-08-09",
+         "content": {"done": "...", "plan": "...", "issues": "...", "summary": "..."},
+         "projectId": 1}
+
+    也兼容扁平字段: done / plan / issues / summary（自动组装 content）。
+
+    Returns:
+        201: {"success": true, "report": {...}}
+        400: 周报内容不能为空
+    """
+    member = _member_or_403()
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'bad_request', 'message': '请求体为空'}), 400
+
+    content = data.get('content')
+    if not isinstance(content, dict):
+        content = {
+            'done': data.get('done', ''),
+            'plan': data.get('plan', ''),
+            'issues': data.get('issues', ''),
+            'summary': data.get('summary', ''),
+        }
+    if not str(content.get('done') or '').strip() and not str(content.get('plan') or '').strip():
+        return jsonify({'error': 'bad_request', 'message': '周报内容不能为空'}), 400
+
+    report = WeeklyReport(
+        member_id=member.id,
+        project_id=data.get('projectId'),
+        week_start=_parse_date(data.get('weekStart'), date_only=True),
+        week_end=_parse_date(data.get('weekEnd'), date_only=True),
+        content=content,
+        status='draft',
+    )
+    db.session.add(report)
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()}), 201
+
+
+@member_bp.route('/member/weekly-reports/<int:report_id>', methods=['GET'])
+@jwt_required()
+def member_get_weekly_report(report_id):
+    """获取当前成员的单份周报详情（仅限自己的）。"""
+    member = _member_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report or report.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+    return jsonify(report.to_dict())
+
+
+@member_bp.route('/member/weekly-reports/<int:report_id>', methods=['PUT'])
+@jwt_required()
+def member_update_weekly_report(report_id):
+    """更新周报内容（仅限自己的草稿，已提交/已审阅不可改）。"""
+    member = _member_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report or report.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+    if report.status != 'draft':
+        return jsonify({'error': 'validation_error', 'message': '已提交的周报不可修改'}), 400
+
+    data = request.get_json() or {}
+    if 'weekStart' in data:
+        report.week_start = _parse_date(data['weekStart'], date_only=True)
+    if 'weekEnd' in data:
+        report.week_end = _parse_date(data['weekEnd'], date_only=True)
+    if 'projectId' in data:
+        report.project_id = data['projectId']
+    if 'content' in data and isinstance(data['content'], dict):
+        report.content = data['content']
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()})
+
+
+@member_bp.route('/member/weekly-reports/<int:report_id>/submit', methods=['POST'])
+@jwt_required()
+def member_submit_weekly_report(report_id):
+    """提交周报（draft → submitted），进入教师审阅流程。"""
+    member = _member_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report or report.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+    if report.status == 'reviewed':
+        return jsonify({'error': 'validation_error', 'message': '周报已审阅，不能重复提交'}), 400
+    report.status = 'submitted'
+    report.submitted_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()})
+
+
+@member_bp.route('/member/weekly-reports/<int:report_id>', methods=['DELETE'])
+@jwt_required()
+def member_delete_weekly_report(report_id):
+    """删除当前成员自己的周报（已审阅的不可删除）。"""
+    member = _member_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report or report.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+    if report.status == 'reviewed':
+        return jsonify({'error': 'validation_error', 'message': '已审阅的周报不可删除'}), 400
+    db.session.delete(report)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '周报已删除'})
+
+
+@member_bp.route('/member/weekly-reports/<int:report_id>/analyze', methods=['POST'])
+@jwt_required()
+def member_analyze_weekly_report(report_id):
+    """对当前成员自己的周报执行 AI 分析。
+
+    分析结果写入 ai_analysis 与 completion_rate。
+    需要配置 AI_ENABLED / AI_API_KEY / AI_BASE_URL / AI_MODEL。
+    """
+    member = _member_or_403()
+    report = WeeklyReport.query.get(report_id)
+    if not report or report.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
+
+    try:
+        analysis = _analyze_report_with_ai(report)
+    except AiNotConfigured:
+        return jsonify({
+            'error': 'not_configured',
+            'message': 'AI 服务未配置，请联系管理员配置 AI 服务',
+        }), 503
+    except AiRequestFailed:
+        return jsonify({
+            'error': 'ai_failed',
+            'message': 'AI 分析暂时不可用，请稍后重试',
+        }), 502
+
+    report.ai_analysis = analysis
+    report.completion_rate = analysis.get('score')
+    db.session.commit()
+    return jsonify({'success': True, 'report': report.to_dict()})
+
+
+# ═══════════════════════════════════════════════════════════════
+# 提醒系统
+# ═══════════════════════════════════════════════════════════════
+
+@member_bp.route('/member/reminders', methods=['GET'])
+@jwt_required()
+def member_list_reminders():
+    """获取当前成员的提醒列表。
+
+    可选筛选: status（pending/sent/done/cancelled）、type
+    """
+    member = _member_or_403()
+    status = request.args.get('status')
+    reminder_type = request.args.get('type')
+
+    query = Reminder.query.filter_by(member_id=member.id)
+    if status:
+        query = query.filter_by(status=status)
+    if reminder_type:
+        query = query.filter_by(type=reminder_type)
+    reminders = query.order_by(Reminder.scheduled_at.asc(), Reminder.id.desc()).all()
+    return jsonify([r.to_dict() for r in reminders])
+
+
+@member_bp.route('/member/reminders', methods=['POST'])
+@jwt_required()
+def member_create_reminder():
+    """为当前成员创建自定义提醒。
+
+    Request Body:
+        {"title": "周五交周报", "message": "...", "scheduledAt": "2026-08-07T18:00:00+08:00",
+         "projectId": 1}
+    scheduledAt 不传表示立即提醒。
+    """
+    member = _member_or_403()
+    data = request.get_json()
+    if not data or not str(data.get('title') or '').strip():
+        return jsonify({'error': 'bad_request', 'message': '提醒标题不能为空'}), 400
+
+    reminder = Reminder(
+        member_id=member.id,
+        project_id=data.get('projectId'),
+        type=data.get('type', 'custom'),
+        title=data['title'].strip(),
+        message=data.get('message'),
+        link=data.get('link'),
+        scheduled_at=_parse_date(data.get('scheduledAt')),
+        status='pending',
+        created_by=member.id,
+    )
+    db.session.add(reminder)
+    # 创建时已到触发时间（scheduledAt 为空或过去）：立即转为站内通知，无需等定时扫描
+    due_now = (
+        reminder.scheduled_at is None
+        or reminder.scheduled_at <= datetime.now(timezone.utc)
+    )
+    sent_immediately = False
+    if due_now:
+        sent_immediately = send_reminder_notification(reminder)
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'reminder': reminder.to_dict(),
+        'sentImmediately': sent_immediately,
+    }), 201
+
+
+@member_bp.route('/member/reminders/<int:reminder_id>', methods=['DELETE'])
+@jwt_required()
+def member_delete_reminder(reminder_id):
+    """删除当前成员自己的提醒。"""
+    member = _member_or_403()
+    reminder = Reminder.query.get(reminder_id)
+    if not reminder or reminder.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '提醒不存在'}), 404
+    db.session.delete(reminder)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '提醒已删除'})
+
+
+@member_bp.route('/member/reminders/<int:reminder_id>', methods=['PUT'])
+@jwt_required()
+def member_update_reminder(reminder_id):
+    """更新当前成员的提醒（仅限未触发的提醒）。"""
+    member = _member_or_403()
+    reminder = Reminder.query.get(reminder_id)
+    if not reminder or reminder.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '提醒不存在'}), 404
+    if reminder.status != 'pending':
+        return jsonify({'error': 'validation_error', 'message': '已触发的提醒不可修改'}), 400
+
+    data = request.get_json() or {}
+    for field in ('title', 'message', 'link', 'type'):
+        if field in data:
+            setattr(reminder, field, data[field])
+    if 'scheduledAt' in data:
+        reminder.scheduled_at = _parse_date(data['scheduledAt'])
+    if 'projectId' in data:
+        reminder.project_id = data['projectId']
+    db.session.commit()
+    return jsonify({'success': True, 'reminder': reminder.to_dict()})
+
+
+@member_bp.route('/member/reminders/<int:reminder_id>/complete', methods=['POST'])
+@jwt_required()
+def member_complete_reminder(reminder_id):
+    """将当前成员的一条提醒标记为已完成。"""
+    member = _member_or_403()
+    reminder = Reminder.query.get(reminder_id)
+    if not reminder or reminder.member_id != member.id:
+        return jsonify({'error': 'not_found', 'message': '提醒不存在'}), 404
+    reminder.status = 'done'
+    db.session.commit()
+    return jsonify({'success': True, 'reminder': reminder.to_dict()})
+
+
 # ── 通用辅助函数 ──
 
-def _parse_date(value):
+def _parse_date(value, date_only=False):
     """将 ISO 8601 日期字符串解析为 datetime 对象。
 
     支持带时区偏移的格式（如 '2026-01-01T00:00:00Z' 或 '2026-01-01T00:00:00+08:00'）。
 
     Args:
         value: ISO 8601 格式的日期字符串
+        date_only: True 时返回 date 对象（用于周起始/结束日期）
 
     Returns:
-        datetime | None: 解析成功返回 datetime 对象，失败或输入为空返回 None
+        datetime | date | None: 解析成功返回对应对象，失败或输入为空返回 None
     """
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace('Z', '+00:00'))
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return parsed.date() if date_only else parsed
     except (ValueError, TypeError):
         return None

@@ -20,8 +20,8 @@ export default function NotificationBell() {
   useEffect(() => { refresh() }, [refresh])
 
   useEffect(() => {
-    // Poll every 60s
-    const iv = setInterval(refresh, 60000)
+    // Poll every 30s
+    const iv = setInterval(refresh, 30000)
     return () => clearInterval(iv)
   }, [refresh])
 

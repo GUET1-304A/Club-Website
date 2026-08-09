@@ -68,6 +68,29 @@ export interface AdminContact {
   admin_note?: string; created_at?: string
 }
 
+export interface AdminCertificate {
+  id: number
+  memberId: number
+  memberName?: string
+  name: string
+  level?: string
+  category?: string
+  winner?: string
+  issuer?: string
+  date?: string
+  description?: string
+  images?: string[]
+  ocrText?: string
+  ocrFields?: Record<string, string>
+  relatedProject?: string
+  status: string
+  reviewNote?: string
+  reviewedBy?: number
+  reviewedAt?: string
+  created_at?: string
+  updated_at?: string
+}
+
 // ─── Auth ───
 
 export async function adminGetMe(): Promise<{ id: number; username: string }> {
@@ -218,6 +241,27 @@ export async function adminListContacts(params?: Record<string, string>): Promis
 
 export async function adminUpdateContact(id: number, data: { status?: string; reply?: string; admin_note?: string }): Promise<{ success: boolean; message: AdminContact }> {
   return authRequest(`/admin/contact-messages/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+// ─── Certificates ───
+
+export async function adminListCertificates(params?: Record<string, string>): Promise<AdminCertificate[]> {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+  return authRequest(`/admin/certificates${qs}`)
+}
+
+export async function adminGetCertificate(id: number): Promise<AdminCertificate> {
+  return authRequest(`/admin/certificates/${id}`)
+}
+
+export async function adminReviewCertificate(
+  id: number,
+  data: { status: 'verified' | 'rejected'; reviewNote?: string },
+): Promise<{ success: boolean; certificate: AdminCertificate; award: AdminAward | null }> {
+  return authRequest(`/admin/certificates/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 }
 
 // ─── Import / Export ───

@@ -3,7 +3,7 @@ import { useLocation } from './router'
 import { isLoggedIn, clearToken } from '../../services/api'
 import {
   LayoutDashboard, Users, FolderGit2, Trophy, PenTool,
-  FileText, Settings, UserPlus, MessageSquare, Database, LogOut, Menu, X,
+  FileText, Settings, UserPlus, MessageSquare, Database, BadgeCheck, LogOut, Menu, X,
   ChevronLeft, ChevronRight, Sparkles, ExternalLink,
 } from 'lucide-react'
 import Logo from '../ui/Logo'
@@ -19,6 +19,7 @@ const navGroups = [
     label: '内容管理',
     items: [
       { label: '成员管理', href: '/admin/members', icon: Users },
+      { label: '证书审核', href: '/admin/certificates', icon: BadgeCheck },
       { label: '项目管理', href: '/admin/projects', icon: FolderGit2 },
       { label: '奖项管理', href: '/admin/awards', icon: Trophy },
       { label: '博客管理', href: '/admin/blogs', icon: PenTool },

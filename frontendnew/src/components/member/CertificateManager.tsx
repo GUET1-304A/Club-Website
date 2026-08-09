@@ -8,6 +8,7 @@ import {
   memberListCertificates, memberCreateCertificate,
   memberUpdateCertificate, memberDeleteCertificate,
   memberUploadCertificateImage, memberRunCertificateOcr,
+  memberRunCertificateOcrImages,
   type MemberProfile, type CertificateData,
 } from '../../services/memberApi'
 import { useToast } from '../admin/Toast'
@@ -36,6 +37,8 @@ export default function CertificateManager({ member }: { member: MemberProfile }
   const [uploading, setUploading] = useState(false)
   const [ocrPendingIds, setOcrPendingIds] = useState<Set<number>>(() => new Set())
   const [expandedOcrId, setExpandedOcrId] = useState<number | null>(null)
+  const [modalOcrScanning, setModalOcrScanning] = useState(false)
+  const [modalOcrText, setModalOcrText] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
@@ -62,7 +65,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
   const openCreate = () => {
     setEditing(null)
     setName(''); setLevel('other'); setCategory(''); setWinner(member.name || '')
-    setIssuer(''); setDate(''); setDescription(''); setImages([])
+    setIssuer(''); setDate(''); setDescription(''); setImages([]); setModalOcrText('')
     setShowModal(true)
   }
 
@@ -71,6 +74,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
     setName(c.name); setLevel(c.level || 'other'); setCategory(c.category || '')
     setWinner(c.winner || ''); setIssuer(c.issuer || ''); setDate(c.date || '')
     setDescription(c.description || ''); setImages(c.images || [])
+    setModalOcrText(c.ocrText || '')
     setShowModal(true)
   }
 
@@ -137,6 +141,37 @@ export default function CertificateManager({ member }: { member: MemberProfile }
     } catch (err: unknown) { toast('error', (err as Error).message) }
     finally { setUploading(false); e.target.value = '' }
   }
+
+  const handleModalOcr = async () => {
+    if (!images.length) { toast('warning', '请先上传证书图片'); return }
+    setModalOcrScanning(true)
+    setModalOcrText('')
+    try {
+      const result = await memberRunCertificateOcrImages(images)
+      const fields = result.ocrFields || {}
+      if (fields.name) setName(fields.name)
+      if (fields.level && LEVELS.some(l => l.value === fields.level)) setLevel(fields.level)
+      if (fields.category) setCategory(fields.category)
+      if (fields.winner) setWinner(fields.winner)
+      if (fields.issuer) setIssuer(fields.issuer)
+      if (fields.date) setDate(fields.date)
+      if (fields.description) setDescription(fields.description)
+      setModalOcrText(result.ocrText || '')
+      if (fields.name || fields.issuer || fields.date || fields.level) {
+        toast('success', '已自动识别并填充证书信息，请核对后保存')
+      } else {
+        toast('warning', '未能自动提取证书字段，请手动填写')
+      }
+    } catch (error: unknown) {
+      toast('error', (error as Error).message)
+    } finally {
+      setModalOcrScanning(false)
+    }
+  }
+
+  const recognizedCount = (c: CertificateData) =>
+    [c.ocrFields?.name, c.ocrFields?.issuer, c.ocrFields?.date, c.ocrFields?.level]
+      .filter(Boolean).length
 
   return (
     <MemberLayout member={member}>
@@ -223,6 +258,11 @@ export default function CertificateManager({ member }: { member: MemberProfile }
 
                     {c.ocrText && (
                       <div className="mt-3 border-t border-[rgba(0,0,0,0.03)] pt-3">
+                        {recognizedCount(c) > 0 && (
+                          <p className="text-[11px] text-emerald-700/70 mb-1">
+                            AI 已识别 {recognizedCount(c)} 项字段
+                          </p>
+                        )}
                         <button
                           onClick={() => setExpandedOcrId(id => id === c.id ? null : c.id)}
                           aria-expanded={expandedOcrId === c.id}
@@ -315,6 +355,30 @@ export default function CertificateManager({ member }: { member: MemberProfile }
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      onClick={handleModalOcr}
+                      disabled={modalOcrScanning || !images.length}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all
+                        ${images.length
+                          ? 'bg-[#051A24] text-white hover:opacity-90'
+                          : 'bg-[#f0ece6] text-[#273C46]/40 cursor-not-allowed'}`}
+                    >
+                      {modalOcrScanning
+                        ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                        : <ScanText className="w-3.5 h-3.5" />}
+                      {modalOcrScanning ? '识别中...' : 'AI 识别并自动填充'}
+                    </button>
+                    {!images.length && (
+                      <span className="text-[11px] text-[#273C46]/40">上传证书图片后可使用智能识别</span>
+                    )}
+                  </div>
+                  {modalOcrText && (
+                    <div className="mt-2 rounded-xl bg-[#f7f5f1] px-3 py-2">
+                      <p className="text-[10px] font-medium text-[#273C46]/40 mb-1">识别原文</p>
+                      <p className="text-xs leading-5 text-[#273C46]/60 whitespace-pre-wrap max-h-24 overflow-y-auto">{modalOcrText}</p>
+                    </div>
+                  )}
                 </div>
 
                 <Field label="证书名称 *">

@@ -74,6 +74,10 @@ def create_app(config_name=None):
             )
         _ensure_pages()           # 确保所有默认 CMS 页面存在
 
+    # ── 5.1 启动智能体定时提醒扫描（后台守护线程，须在数据库建表之后）──
+    from services.reminder_service import start_reminder_scanner
+    start_reminder_scanner(app)
+
     # ── 6. 基础路由 ──
 
     @app.route('/health')
@@ -298,9 +302,16 @@ def _migrate_columns(app):
         ('certificates', 'description', 'TEXT'),
         ('certificates', 'images', 'JSON'),
         ('certificates', 'ocr_text', 'TEXT'),
+        ('certificates', 'ocr_fields', 'JSON'),
+        ('certificates', 'review_note', 'TEXT'),
+        ('certificates', 'reviewed_by', 'INTEGER'),
+        ('certificates', 'reviewed_at', 'DATETIME'),
         ('certificates', 'related_project', 'VARCHAR(100)'),
         ('certificates', 'status', 'VARCHAR(20) DEFAULT "pending"'),
         ('certificates', 'updated_at', 'DATETIME'),
+
+        # ── 奖项来源证书 ──
+        ('awards', 'certificate_id', 'INTEGER'),
 
         # ── 通知 ──
         ('notifications', 'member_id', 'INTEGER'),

@@ -30,6 +30,16 @@ class CapturingOpener:
         return FakeResponse({'choices': [{'message': {'content': 'certificate text'}}]})
 
 
+class StructuredCapturingOpener:
+    def __init__(self, content):
+        self.content = content
+        self.requests = []
+
+    def __call__(self, request, timeout):
+        self.requests.append((request, timeout))
+        return FakeResponse({'choices': [{'message': {'content': self.content}}]})
+
+
 class ReadFailingResponse:
     def __enter__(self):
         return self
@@ -119,6 +129,73 @@ def test_extract_text_rejects_runtime_malformed_stored_image_before_request():
         _configured_service(opener).extract_text([image])
 
     assert opener.requests == []
+
+
+def test_extract_fields_parses_structured_json_and_normalizes_level():
+    opener = StructuredCapturingOpener(json.dumps({
+        'name': '全国大学生数学建模竞赛一等奖',
+        'level': '国家级',
+        'category': '学科竞赛',
+        'winner': '张三',
+        'issuer': '中国工业与应用数学学会',
+        'date': '2025-09-15',
+        'description': '全国一等奖',
+        'raw_text': '荣誉证书\n张三 同学...',
+    }))
+
+    result = _configured_service(opener).extract_fields([StoredImage(b'png-bytes', 'image/png')])
+
+    assert result == {
+        'ocr_text': '荣誉证书\n张三 同学...',
+        'fields': {
+            'name': '全国大学生数学建模竞赛一等奖',
+            'level': 'national',
+            'category': '学科竞赛',
+            'winner': '张三',
+            'issuer': '中国工业与应用数学学会',
+            'date': '2025-09-15',
+            'description': '全国一等奖',
+        },
+    }
+    request, timeout = opener.requests[0]
+    assert timeout == 30
+    payload = json.loads(request.data.decode('utf-8'))
+    prompt = payload['messages'][0]['content'][0]['text']
+    assert 'structured' in prompt.lower()
+    assert 'raw_text' in prompt
+
+
+def test_extract_fields_tolerates_markdown_fences():
+    opener = StructuredCapturingOpener(
+        '```json\n{"name": "蓝桥杯", "level": "provincial", '
+        '"issuer": "工业和信息化部", "date": "2025-04", "raw_text": "证书"}'
+        '\n```'
+    )
+
+    result = _configured_service(opener).extract_fields([StoredImage(b'png-bytes', 'image/png')])
+
+    assert result['fields']['name'] == '蓝桥杯'
+    assert result['fields']['level'] == 'provincial'
+    assert result['ocr_text'] == '证书'
+
+
+def test_extract_fields_returns_empty_fields_when_response_is_not_json():
+    opener = StructuredCapturingOpener('荣誉证书全文，无结构化 JSON')
+
+    result = _configured_service(opener).extract_fields([StoredImage(b'png-bytes', 'image/png')])
+
+    assert result['ocr_text'] == '荣誉证书全文，无结构化 JSON'
+    assert result['fields'] == {
+        'name': '', 'level': '', 'category': '', 'winner': '',
+        'issuer': '', 'date': '', 'description': '',
+    }
+
+
+def test_extract_fields_maps_read_oserror_to_request_failed():
+    with pytest.raises(OcrRequestFailed, match='The OCR provider request failed'):
+        _configured_service(ReadFailingOpener()).extract_fields([
+            StoredImage(b'png-bytes', 'image/png'),
+        ])
 
 
 def test_validate_configuration_raises_without_sending_request():

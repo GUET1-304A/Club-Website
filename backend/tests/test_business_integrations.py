@@ -152,7 +152,7 @@ def _forbid_ocr_dependencies(monkeypatch):
         storage_calls.append((args, kwargs))
         raise AssertionError('storage must not be read before authorization succeeds')
 
-    def extract_text(*args, **kwargs):
+    def extract_fields(*args, **kwargs):
         ocr_calls.append((args, kwargs))
         raise AssertionError('OCR provider must not be called before authorization succeeds')
 
@@ -160,7 +160,7 @@ def _forbid_ocr_dependencies(monkeypatch):
         'services.storage_service.StorageService.read_certificate_image',
         read_certificate_image,
     )
-    monkeypatch.setattr('services.ocr_service.OcrService.extract_text', extract_text)
+    monkeypatch.setattr('services.ocr_service.OcrService.extract_fields', extract_fields)
     return storage_calls, ocr_calls
 
 
@@ -246,7 +246,7 @@ def test_certificate_ocr_reads_local_managed_image_without_public_base_url(
     )
     received_images = []
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda _service, images: received_images.extend(images) or "Managed OCR text",
     )
 
@@ -276,7 +276,7 @@ def test_certificate_ocr_passes_managed_images_to_provider_in_reference_order(
     )
     received_images = []
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda _service, images: received_images.extend(images) or "Managed OCR text",
     )
 
@@ -309,7 +309,7 @@ def test_certificate_ocr_rejects_more_than_five_images_before_storage_or_provide
         lambda *_args: (_ for _ in ()).throw(AssertionError("storage must not be read")),
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not be called")),
     )
 
@@ -341,7 +341,7 @@ def test_certificate_ocr_rejects_images_exceeding_aggregate_byte_budget(
     )
     monkeypatch.setitem(client.application.config, "MAX_CONTENT_LENGTH", len(_MINIMAL_PNG))
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not be called")),
     )
 
@@ -372,7 +372,7 @@ def test_certificate_ocr_rejects_empty_or_scalar_images_before_storage_or_provid
         lambda *_args: (_ for _ in ()).throw(AssertionError("storage must not be read")),
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not be called")),
     )
 
@@ -425,7 +425,7 @@ def test_certificate_ocr_rejects_external_image_without_local_read_or_provider_c
         lambda *_args: (_ for _ in ()).throw(AssertionError("managed storage must not be read")),
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not be called")),
     )
 
@@ -470,7 +470,7 @@ def test_certificate_ocr_maps_managed_storage_failures(
         lambda *_args: (_ for _ in ()).throw(storage_error),
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(AssertionError("provider must not be called")),
     )
 
@@ -492,7 +492,7 @@ def test_certificate_ocr_returns_safe_failure_message(client, monkeypatch, tmp_p
         client, headers, "OCR failure test", ["/uploads/cert.png"]
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda *_args: (_ for _ in ()).throw(OcrRequestFailed("provider details")),
     )
 
@@ -519,7 +519,7 @@ def test_certificate_ocr_persists_provider_text(client, monkeypatch, tmp_path):
         client, headers, "OCR persistence test", ["/uploads/cert.png"]
     )
     monkeypatch.setattr(
-        "services.ocr_service.OcrService.extract_text",
+        "services.ocr_service.OcrService.extract_fields",
         lambda _service, _images: "Provider supplied certificate text",
     )
 

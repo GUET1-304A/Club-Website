@@ -3,8 +3,35 @@ import { type ReactNode } from 'react'
 /**
  * Lightweight Markdown-to-JSX renderer.
  * Supports: headings, bold, italic, links, images, code blocks, inline code,
- * unordered lists, ordered lists, horizontal rules, paragraph breaks.
+ * unordered lists, ordered lists, tables, horizontal rules, paragraph breaks.
  */
+
+function splitTableRow(line: string): string[] {
+  const trimmed = line.trim()
+  const withoutOuterPipes = trimmed.replace(/^\|/, '').replace(/\|$/, '')
+  return withoutOuterPipes.split('|').map(cell => cell.trim())
+}
+
+function parseTable(lines: string[], start: number): {
+  header: string[]
+  rows: string[][]
+  nextIndex: number
+} | null {
+  const header = splitTableRow(lines[start])
+  if (header.length === 0 || start + 1 >= lines.length) return null
+  const separator = splitTableRow(lines[start + 1])
+  // GFM 分隔行必须与表头列数一致（如 |---|---|），避免把普通文本误判成表格
+  if (separator.length !== header.length || !separator.every(cell => /^:?-{1,}:?$/.test(cell))) {
+    return null
+  }
+  const rows: string[][] = []
+  let i = start + 2
+  while (i < lines.length && lines[i].includes('|')) {
+    rows.push(splitTableRow(lines[i]))
+    i++
+  }
+  return { header, rows, nextIndex: i }
+}
 
 function parseInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = []
@@ -167,6 +194,41 @@ export default function Markdown({ content }: { content: string }) {
         </ol>
       )
       continue
+    }
+
+    // Table (GFM)
+    if (line.includes('|')) {
+      const table = parseTable(lines, i)
+      if (table) {
+        elements.push(
+          <div key={key++} className="overflow-x-auto my-4">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr>
+                  {table.header.map((cell, idx) => (
+                    <th key={idx} className="border border-[rgba(0,0,0,0.08)] bg-[#f8f7f5] px-3 py-2 text-left font-semibold text-[#051A24] whitespace-nowrap">
+                      {parseInline(cell)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {table.rows.map((row, rIdx) => (
+                  <tr key={rIdx}>
+                    {table.header.map((_, cIdx) => (
+                      <td key={cIdx} className="border border-[rgba(0,0,0,0.08)] px-3 py-2 text-[#0D212C] align-top">
+                        {parseInline(row[cIdx] ?? '')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+        i = table.nextIndex
+        continue
+      }
     }
 
     // Paragraph (default)
