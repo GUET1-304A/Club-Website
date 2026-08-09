@@ -13,6 +13,9 @@ import AwardsPage from './components/pages/AwardsPage'
 import AwardDetailPage from './components/pages/AwardDetailPage'
 import BlogPage from './components/pages/BlogPage'
 import BlogDetailPage from './components/pages/BlogDetailPage'
+import ResearchPage from './components/pages/ResearchPage'
+import CooperationPage from './components/pages/CooperationPage'
+import ContactPage from './components/pages/ContactPage'
 import OpenSourcePage from './components/pages/OpenSourcePage'
 import JoinPage from './components/pages/JoinPage'
 import RecruitmentPage from './components/pages/RecruitmentPage'
@@ -74,6 +77,9 @@ function AppContent({ path }: { path: string }) {
     case 'awards':      return <AwardsPage />
     case 'award':       return <AwardDetailPage slug={parts[1] || ''} />
     case 'blog':        return parts[1] ? <BlogDetailPage slug={parts[1]} /> : <BlogPage />
+    case 'research':    return <ResearchPage />
+    case 'cooperation': return <CooperationPage />
+    case 'contact':     return <ContactPage />
     case 'open-source': return <OpenSourcePage />
     case 'join':        return <JoinPage />
     case 'recruitment': return <RecruitmentPage />

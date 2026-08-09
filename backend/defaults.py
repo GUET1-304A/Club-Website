@@ -56,6 +56,19 @@ DEFAULT_SITE_CONFIG = {
         'logo': '/logo.png',
     },
 
+    # ─── 联系我们页配置 ───
+    'contact': {
+        'address': '示例大学 计算机学院 实验楼 3 层 星雨作坊工作室',
+        'email': 'hello@xingyu.studio',
+        'phone': '138-0000-0000',
+        'hours': '工作日 18:00-22:00（线上随时可联系）',
+        'socials': [
+            {'label': 'GitHub', 'url': 'https://github.com/xingyu-studio'},
+            {'label': 'Bilibili', 'url': 'https://space.bilibili.com/00000000'},
+            {'label': 'Email', 'url': 'mailto:hello@xingyu.studio'},
+        ],
+    },
+
     # ─── 主页区域显隐开关 ───
     # 控制首页各模块是否显示，管理员可在后台动态切换
     'sections': {
@@ -137,6 +150,80 @@ DEFAULT_PAGES = {
         'content': {
             'body': '星雨作坊是一个由学生自主运营的开发社团。我们相信，每一行代码背后都藏着改变世界的力量。',
             'images': [],
+        },
+    },
+
+    # ─── 研究方向页 ───
+    # 路径: /research，技术方向与学习研究内容
+    'research': {
+        'title': '研究方向',
+        'content': {
+            'intro': '星雨作坊围绕五大方向开展学习、研究与项目实践，成员按兴趣选择方向，并在真实项目中持续深耕。',
+            'directions': [
+                {
+                    'name': '前端工程',
+                    'tagline': '构建流畅、美观、可访问的用户界面',
+                    'techFields': ['React', 'TypeScript', 'Vue', 'Tailwind CSS', 'Web 性能优化'],
+                    'content': '研究组件化架构、状态管理、微前端与 Web 动画，打磨复杂产品的前端体验。',
+                    'scenarios': ['官网门户', '数据可视化大屏', '小程序 / H5'],
+                },
+                {
+                    'name': '后端服务',
+                    'tagline': '设计稳定、可扩展的服务端系统',
+                    'techFields': ['Python', 'Flask', 'Go', 'Docker', 'MySQL / Redis'],
+                    'content': '研究 REST API 设计、认证授权、消息推送、容器化部署与系统监控。',
+                    'scenarios': ['内容管理平台', '智能项目管理', '自动化运维'],
+                },
+                {
+                    'name': '算法与 AI',
+                    'tagline': '让机器理解语言、图像与数据',
+                    'techFields': ['Python', 'PyTorch', 'NLP', 'CV', '大模型应用'],
+                    'content': '研究自然语言处理、计算机视觉与大模型应用（RAG、Agent、智能识别）。',
+                    'scenarios': ['证书智能识别', '周报智能分析', '智能问答助手'],
+                },
+                {
+                    'name': '产品设计',
+                    'tagline': '把复杂问题翻译成清晰的产品方案',
+                    'techFields': ['用户研究', '交互设计', 'Figma', '数据分析'],
+                    'content': '研究需求分析、信息架构、界面设计原则与用户增长方法。',
+                    'scenarios': ['产品原型', '设计系统', '用户反馈闭环'],
+                },
+            ],
+        },
+    },
+
+    # ─── 合作交流页 ───
+    # 路径: /cooperation，校企合作、校际交流、学术活动、参会参展
+    'cooperation': {
+        'title': '合作交流',
+        'content': {
+            'intro': '星雨作坊积极链接企业、高校与社区，通过合作项目、学术分享与竞赛交流，让成员在真实场景中成长。',
+            'items': [
+                {
+                    'type': '校企合作',
+                    'title': '企业联合项目',
+                    'description': '与科技公司共建真实项目，企业导师参与评审与指导。',
+                    'details': ['企业命题实训', '技术沙龙', '实习内推'],
+                },
+                {
+                    'type': '校际交流',
+                    'title': '高校技术交流',
+                    'description': '与其他高校学生组织互访，联合开展黑客松与分享会。',
+                    'details': ['联合 Hackathon', '跨校技术分享', '社团互访'],
+                },
+                {
+                    'type': '学术活动',
+                    'title': '学术讲座与工作坊',
+                    'description': '邀请老师、校友与行业专家开展讲座与动手工作坊。',
+                    'details': ['技术讲座', '论文共读', '动手工作坊'],
+                },
+                {
+                    'type': '参会参展',
+                    'title': '竞赛与展会',
+                    'description': '组织参加程序设计、AI 创新等竞赛，并参与创新创业展会。',
+                    'details': ['学科竞赛', '创新创业展', '开源大会'],
+                },
+            ],
         },
     },
 }

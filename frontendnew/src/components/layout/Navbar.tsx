@@ -8,7 +8,7 @@ import {
   type SpringOptions,
   type MotionValue,
 } from 'framer-motion'
-import { Menu, X, Home, Users, FolderGit2, Trophy, PenTool, UserPlus, Clock, BookOpen, Cloud, LogIn } from 'lucide-react'
+import { Menu, X, Home, Users, FolderGit2, Trophy, PenTool, UserPlus, Clock, BookOpen, Cloud, LogIn, FlaskConical, Handshake, Mail } from 'lucide-react'
 import GithubIcon from '../ui/GithubIcon'
 import Logo from '../ui/Logo'
 
@@ -20,10 +20,13 @@ const navItems = [
   { label: '奖项', href: '/awards', Icon: Trophy },
   { label: '博客', href: '/blog', Icon: PenTool },
   { label: '开源', href: '/open-source', Icon: GithubIcon },
+  { label: '研究', href: '/research', Icon: FlaskConical },
+  { label: '合作', href: '/cooperation', Icon: Handshake },
   { label: '加入', href: '/join', Icon: UserPlus },
   { label: '时间线', href: '/timeline', Icon: Clock },
   { label: '入门', href: '/onboarding', Icon: BookOpen },
   { label: '雨记', href: '/yuji', Icon: Cloud },
+  { label: '联系', href: '/contact', Icon: Mail },
   { label: '登录', href: '/login', Icon: LogIn },
 ]
 

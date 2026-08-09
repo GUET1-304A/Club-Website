@@ -4,10 +4,13 @@ import Logo from '../ui/Logo'
 
 const quickLinks = [
   { label: '关于我们', href: '/about' },
+  { label: '研究方向', href: '/research' },
+  { label: '合作交流', href: '/cooperation' },
   { label: '成员风采', href: '/members' },
   { label: '项目作品', href: '/projects' },
   { label: '开源精神', href: '/open-source' },
   { label: '加入社团', href: '/join' },
+  { label: '联系我们', href: '/contact' },
 ]
 
 export default function Footer() {

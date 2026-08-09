@@ -112,6 +112,29 @@ def test_public_config_is_available_without_authentication(client):
     assert isinstance(response.get_json(), dict)
 
 
+def test_public_config_includes_contact_info(client):
+    config = client.get("/api/config").get_json()
+
+    assert config["contact"]["email"]
+    assert config["contact"]["address"]
+    assert config["contact"]["socials"]
+
+
+def test_public_default_pages_include_research_and_cooperation(client):
+    pages = client.get("/api/pages").get_json()
+    slugs = {page["slug"] for page in pages}
+
+    assert {"research", "cooperation", "about"} <= slugs
+
+    research = client.get("/api/pages/research").get_json()
+    assert research["content"]["directions"]
+    assert research["content"]["directions"][0]["techFields"]
+
+    cooperation = client.get("/api/pages/cooperation").get_json()
+    assert cooperation["content"]["items"]
+    assert cooperation["content"]["items"][0]["type"]
+
+
 def test_member_me_requires_bearer_token(client):
     response = client.get("/api/member/me")
 
