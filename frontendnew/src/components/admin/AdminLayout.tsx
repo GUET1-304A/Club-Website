@@ -1,18 +1,21 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { useLocation } from './router'
-import { isLoggedIn, clearToken } from '../../services/api'
+import { isLoggedIn, clearToken, getRole } from '../../services/api'
+import { adminGetMe, type AdminUserData } from '../../services/adminApi'
 import {
   LayoutDashboard, Users, FolderGit2, Trophy, PenTool,
-  FileText, Settings, UserPlus, MessageSquare, Database, BadgeCheck, ClipboardCheck, LogOut, Menu, X,
-  ChevronLeft, ChevronRight, Sparkles, ExternalLink,
+  FileText, Settings, UserPlus, MessageSquare, Database, BadgeCheck, ClipboardCheck, Bell, LogOut, Menu, X,
+  ChevronLeft, ChevronRight, Sparkles, ExternalLink, KeyRound, AlertTriangle,
 } from 'lucide-react'
 import Logo from '../ui/Logo'
+import AdminNotificationBell from './AdminNotificationBell'
 
 const navGroups = [
   {
     label: '概览',
     items: [
       { label: '仪表盘', href: '/admin', icon: LayoutDashboard },
+      { label: '教师通知', href: '/admin/notifications', icon: Bell },
     ],
   },
   {
@@ -33,7 +36,31 @@ const navGroups = [
       { label: '站点配置', href: '/admin/config', icon: Settings },
       { label: '入社申请', href: '/admin/applications', icon: UserPlus },
       { label: '留言管理', href: '/admin/contacts', icon: MessageSquare },
+      { label: '权限管理', href: '/admin/permissions', icon: KeyRound },
       { label: '数据管理', href: '/admin/data', icon: Database },
+    ],
+  },
+]
+
+const teacherNavGroups = [
+  {
+    label: '概览',
+    items: [
+      { label: '教师通知', href: '/admin/notifications', icon: Bell },
+    ],
+  },
+  {
+    label: '审阅',
+    items: [
+      { label: '周报审阅', href: '/admin/weekly-reports', icon: ClipboardCheck },
+      { label: '证书审核', href: '/admin/certificates', icon: BadgeCheck },
+    ],
+  },
+  {
+    label: '查看',
+    items: [
+      { label: '成员管理', href: '/admin/members', icon: Users },
+      { label: '项目管理', href: '/admin/projects', icon: FolderGit2 },
     ],
   },
 ]
@@ -42,10 +69,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [authed, setAuthed] = useState<boolean | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [adminUser, setAdminUser] = useState<AdminUserData | null>(null)
 
   useEffect(() => {
     setAuthed(isLoggedIn())
+    setRole(getRole() || 'admin')
+    if (isLoggedIn()) {
+      adminGetMe()
+        .then(user => {
+          setAdminUser(user)
+          setRole(user.role)
+        })
+        .catch(() => {})
+    }
   }, [])
+
+  const visibleNavGroups = role === 'teacher' ? teacherNavGroups : navGroups
 
   if (authed === false) return <LoginRedirect />
   if (authed === null) return <LoadingScreen />
@@ -101,7 +141,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-5 scrollbar-thin">
-          {navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <div key={group.label}>
               <p
                 className="px-3 mb-1.5 text-[10px] font-semibold text-[#273C46]/40 uppercase tracking-[0.08em]
@@ -165,6 +205,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1400px] w-full">
+          <div className="flex justify-end mb-4">
+            <AdminNotificationBell />
+          </div>
+          {adminUser?.securityWarnings?.length ? (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-start gap-2 flex-1">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{adminUser.securityWarnings[0]}</span>
+              </div>
+              <a href="/admin/permissions" className="text-xs font-medium text-amber-950 underline underline-offset-4 shrink-0">
+                前往修改
+              </a>
+            </div>
+          ) : null}
           {children}
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react'
 import Logo from '../ui/Logo'
+import { setRole } from '../../services/api'
 
 /**
  * Unified Login/Register Page.
@@ -19,12 +20,13 @@ async function unifiedLogin(account: string, password: string) {
     throw new Error(err.message || `HTTP ${res.status}`)
   }
   const data = await res.json()
-  if (data.role === 'admin') {
+  if (data.role === 'admin' || data.role === 'teacher') {
     localStorage.setItem('auth_token', data.token)
+    setRole(data.role)
   } else {
     localStorage.setItem('member_token', data.token)
   }
-  return data as { success: boolean; token: string; role: 'admin' | 'member'; user: Record<string, unknown> }
+  return data as { success: boolean; token: string; role: 'admin' | 'teacher' | 'member'; user: Record<string, unknown> }
 }
 
 async function register(account: string, name: string, password: string) {
@@ -73,7 +75,10 @@ export default function UnifiedLogin() {
     setLoading(true)
     try {
       const result = await unifiedLogin(account.trim(), password)
-      window.location.href = result.role === 'admin' ? '/admin' : '/member/dashboard'
+      window.location.href =
+        result.role === 'teacher' ? '/admin/weekly-reports'
+          : result.role === 'admin' ? '/admin'
+            : '/member/dashboard'
     } catch (err: unknown) {
       setError((err as Error).message || '登录失败，请重试')
     } finally { setLoading(false) }
@@ -219,7 +224,7 @@ export default function UnifiedLogin() {
         {/* Footer hint */}
         <p className="text-center text-xs text-[#273C46]/30 mt-6">
           {tab === 'login'
-            ? '管理员使用用户名登录 · 成员使用学号或邮箱登录'
+            ? '管理员/教师使用用户名登录 · 成员使用学号或邮箱登录'
             : '仅社团成员可注册 · 需管理员预先录入信息'}
         </p>
       </div>

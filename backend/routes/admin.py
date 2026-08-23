@@ -61,12 +61,19 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from models import (
     db, SiteConfig, Page, Application, ContactMessage,
     Member, Project, Milestone, Task, Award, BlogPost, AdminUser, Certificate,
-    WeeklyReport, Reminder, Notification,
+    WeeklyReport, Reminder, Notification, AdminNotification,
 )
 from services.ai_service import AiNotConfigured, AiRequestFailed
 from services.assistant_tools import _analyze_report_with_ai, compute_project_health
+from services.notification_service import notify_all_admins
 from services.reminder_service import send_reminder_notification
 from services.storage_service import StorageNotConfigured, StorageService
+from services.security_service import (
+    UploadContentInvalid,
+    is_rate_limited,
+    record_rate_limit_failure,
+    validate_upload_content,
+)
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -105,7 +112,20 @@ def _admin_or_403():
         403: 当前用户不是管理员
     """
     admin = _admin_required()
-    if not admin:
+    if not admin or admin.role != 'admin':
+        from flask import abort
+        abort(403)
+    return admin
+
+
+def _teacher_or_403():
+    """强制要求教师或管理员身份，否则返回 403。
+
+    教师可访问周报审阅、证书审核、查看成员/项目、管理提醒等教学场景接口，
+    但不能访问站点配置、内容管理、数据导入导出等管理员专属接口。
+    """
+    admin = _admin_required()
+    if not admin or admin.role not in ('admin', 'teacher'):
         from flask import abort
         abort(403)
     return admin
@@ -153,8 +173,18 @@ def admin_login():
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({'error': 'bad_request', 'message': '请输入用户名和密码'}), 400
 
-    user = AdminUser.query.filter_by(username=data['username']).first()
+    account = data['username'].strip()
+    rate_key = f"{request.remote_addr or 'unknown'}:{account}"
+    limit = current_app.config.get('LOGIN_RATE_LIMIT_PER_MINUTE', 10)
+    if is_rate_limited('admin-login', rate_key, limit):
+        return jsonify({
+            'error': 'rate_limited',
+            'message': '登录失败次数过多，请稍后再试',
+        }), 429
+
+    user = AdminUser.query.filter_by(username=account).first()
     if not user or not user.check_password(data['password']):
+        record_rate_limit_failure('admin-login', rate_key)
         return jsonify({'error': 'auth_failed', 'message': '用户名或密码错误'}), 401
 
     # 生成 JWT token，identity 为管理员 ID 的字符串
@@ -176,8 +206,64 @@ def admin_me():
         200: 管理员信息
         403: token 无效或非管理员
     """
-    admin = _admin_or_403()
+    admin = _teacher_or_403()
     return jsonify(admin.to_dict())
+
+
+@admin_bp.route('/admin/users', methods=['GET'])
+@jwt_required()
+def admin_list_users():
+    """获取全部后台账号（管理员/教师），仅管理员可访问。"""
+    _admin_or_403()
+    users = AdminUser.query.order_by(AdminUser.id).all()
+    return jsonify([u.to_dict() for u in users])
+
+
+@admin_bp.route('/admin/users', methods=['POST'])
+@jwt_required()
+def admin_create_user():
+    """创建后台账号（教师或管理员），仅管理员可访问。"""
+    _admin_or_403()
+    data = request.get_json()
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    role = data.get('role') or 'teacher'
+
+    if not username or not password:
+        return jsonify({'error': 'bad_request', 'message': '用户名和密码必填'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'validation_error', 'message': '密码至少需要6个字符'}), 400
+    if role not in ('admin', 'teacher'):
+        return jsonify({'error': 'validation_error', 'message': '角色必须是 admin 或 teacher'}), 400
+    if AdminUser.query.filter_by(username=username).first():
+        return jsonify({'error': 'conflict', 'message': '该用户名已存在'}), 409
+
+    user = AdminUser(username=username, role=role)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({'success': True, 'user': user.to_dict()}), 201
+
+
+@admin_bp.route('/admin/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+def admin_update_user(user_id):
+    """更新后台账号（重置密码/调整角色），仅管理员可访问。"""
+    _admin_or_403()
+    user = AdminUser.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'not_found', 'message': '账号不存在'}), 404
+
+    data = request.get_json() or {}
+    if data.get('password'):
+        if len(data['password']) < 6:
+            return jsonify({'error': 'validation_error', 'message': '密码至少需要6个字符'}), 400
+        user.set_password(data['password'])
+    if data.get('role') in ('admin', 'teacher'):
+        user.role = data['role']
+
+    db.session.commit()
+    return jsonify({'success': True, 'user': user.to_dict()})
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -215,6 +301,13 @@ def upload_file():
 
     if not _allowed_file(file.filename):
         return jsonify({'error': 'bad_request', 'message': '不支持的文件类型'}), 400
+    try:
+        validate_upload_content(file, file.filename)
+    except UploadContentInvalid:
+        return jsonify({
+            'error': 'invalid_file_content',
+            'message': '文件内容与扩展名不匹配或存在安全风险',
+        }), 400
 
     # 生成唯一文件名（UUID + 原始扩展名）
     ext = file.filename.rsplit('.', 1)[1].lower()
@@ -247,7 +340,7 @@ def admin_list_members():
     Returns:
         JSON: 成员完整信息列表（含隐私字段）
     """
-    _admin_or_403()
+    _teacher_or_403()
 
     search = request.args.get('search')
     group = request.args.get('group')
@@ -333,7 +426,7 @@ def admin_get_member(member_id):
         JSON: 成员完整信息
               或 404: 成员不存在
     """
-    _admin_or_403()
+    _teacher_or_403()
     member = Member.query.get(member_id)
     if not member:
         return jsonify({'error': 'not_found', 'message': '成员不存在'}), 404
@@ -428,7 +521,7 @@ def admin_list_projects():
     Returns:
         JSON: 项目完整信息列表（含内部管理字段）
     """
-    _admin_or_403()
+    _teacher_or_403()
 
     search = request.args.get('search')
     category = request.args.get('category')
@@ -521,7 +614,7 @@ def admin_get_project(project_id):
         JSON: 项目完整信息
               或 404: 项目不存在
     """
-    _admin_or_403()
+    _teacher_or_403()
     project = Project.query.get(project_id)
     if not project:
         return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
@@ -771,7 +864,7 @@ def admin_update_task_status(task_id):
 @jwt_required()
 def admin_list_project_milestones(project_id):
     """获取指定项目的全部里程碑（管理员视角）。"""
-    _admin_or_403()
+    _teacher_or_403()
     project = Project.query.get(project_id)
     if not project:
         return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
@@ -784,7 +877,7 @@ def admin_list_project_milestones(project_id):
 @jwt_required()
 def admin_list_project_tasks(project_id):
     """获取指定项目的全部任务（管理员视角，支持状态筛选）。"""
-    _admin_or_403()
+    _teacher_or_403()
     project = Project.query.get(project_id)
     if not project:
         return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
@@ -803,7 +896,7 @@ def admin_project_health(project_id):
 
     返回任务完成率、状态分布、逾期任务、里程碑进度、成员负载与最近截止时间。
     """
-    _admin_or_403()
+    _teacher_or_403()
     project = Project.query.get(project_id)
     if not project:
         return jsonify({'error': 'not_found', 'message': '项目不存在'}), 404
@@ -1459,7 +1552,7 @@ def admin_list_certificates():
     Returns:
         JSON: 证书列表（按创建时间降序）
     """
-    _admin_or_403()
+    _teacher_or_403()
     status = request.args.get('status')
     member_id = request.args.get('memberId', type=int)
     search = (request.args.get('search') or '').strip()
@@ -1485,7 +1578,7 @@ def admin_list_certificates():
 @jwt_required()
 def admin_get_certificate(cert_id):
     """获取单份证书详情（含 OCR 文本、结构化字段与审核信息）。"""
-    _admin_or_403()
+    _teacher_or_403()
     cert = Certificate.query.get(cert_id)
     if not cert:
         return jsonify({'error': 'not_found', 'message': '证书不存在'}), 404
@@ -1503,7 +1596,7 @@ def admin_review_certificate(cert_id):
     通过后自动将证书归档为 Award（实验室总成果库），并向成员发送站内通知。
     同一证书重复通过不会重复创建 Award。
     """
-    admin = _admin_or_403()
+    admin = _teacher_or_403()
     data = request.get_json() or {}
     status = data.get('status')
     if status not in ('verified', 'rejected'):
@@ -1583,7 +1676,7 @@ def admin_list_weekly_reports():
     Returns:
         JSON: 周报列表（按提交时间/周开始日期降序）
     """
-    _admin_or_403()
+    _teacher_or_403()
     status = request.args.get('status')
     project_id = request.args.get('projectId', type=int)
     member_id = request.args.get('memberId', type=int)
@@ -1604,7 +1697,7 @@ def admin_list_weekly_reports():
 @jwt_required()
 def admin_get_weekly_report(report_id):
     """获取单份周报详情（含 AI 分析结果）。"""
-    _admin_or_403()
+    _teacher_or_403()
     report = WeeklyReport.query.get(report_id)
     if not report:
         return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
@@ -1621,7 +1714,7 @@ def admin_review_weekly_report(report_id):
 
     审阅后自动给周报提交者发送站内通知。
     """
-    admin = _admin_or_403()
+    admin = _teacher_or_403()
     report = WeeklyReport.query.get(report_id)
     if not report:
         return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
@@ -1654,7 +1747,7 @@ def admin_review_weekly_report(report_id):
 @jwt_required()
 def admin_analyze_weekly_report(report_id):
     """对任意周报执行 AI 分析（教师视角，可为学生生成审核报告）。"""
-    _admin_or_403()
+    _teacher_or_403()
     report = WeeklyReport.query.get(report_id)
     if not report:
         return jsonify({'error': 'not_found', 'message': '周报不存在'}), 404
@@ -1675,14 +1768,74 @@ def admin_analyze_weekly_report(report_id):
     report.ai_analysis = analysis
     report.completion_rate = analysis.get('score')
     db.session.commit()
+    notify_all_admins(
+        title=f'周报 AI 分析完成：{report.member.name if report.member else "成员"}',
+        body=f'周报 #{report.id} 已生成审核报告，完成度 {analysis.get("score", "-")}，请及时查看。',
+        link='/admin/weekly-reports',
+        notification_type='weekly_report_analyzed',
+    )
+    db.session.commit()
     return jsonify({'success': True, 'report': report.to_dict()})
+
+
+@admin_bp.route('/admin/notifications', methods=['GET'])
+@jwt_required()
+def admin_list_notifications():
+    """获取当前管理员的通知列表。
+
+    可选筛选: unread=true 仅返回未读通知。
+    """
+    admin = _teacher_or_403()
+    unread_only = request.args.get('unread', type=bool, default=False)
+
+    query = AdminNotification.query.filter_by(admin_id=admin.id)
+    if unread_only:
+        query = query.filter_by(is_read=False)
+
+    notifications = query.order_by(AdminNotification.created_at.desc()).limit(100).all()
+    return jsonify([n.to_dict() for n in notifications])
+
+
+@admin_bp.route('/admin/notifications/unread-count', methods=['GET'])
+@jwt_required()
+def admin_unread_notification_count():
+    """获取当前管理员未读通知数量（用于导航栏角标）。"""
+    admin = _teacher_or_403()
+    count = AdminNotification.query.filter_by(
+        admin_id=admin.id, is_read=False
+    ).count()
+    return jsonify({'count': count})
+
+
+@admin_bp.route('/admin/notifications/<int:notif_id>/read', methods=['PUT'])
+@jwt_required()
+def admin_mark_notification_read(notif_id):
+    """标记单条管理员通知为已读（仅限自己的）。"""
+    admin = _teacher_or_403()
+    notif = AdminNotification.query.get(notif_id)
+    if not notif or notif.admin_id != admin.id:
+        return jsonify({'error': 'not_found', 'message': '通知不存在'}), 404
+    notif.is_read = True
+    db.session.commit()
+    return jsonify({'success': True, 'notification': notif.to_dict()})
+
+
+@admin_bp.route('/admin/notifications/read-all', methods=['PUT'])
+@jwt_required()
+def admin_mark_all_notifications_read():
+    """将当前管理员全部通知标记为已读。"""
+    admin = _teacher_or_403()
+    AdminNotification.query.filter_by(admin_id=admin.id, is_read=False)\
+        .update({'is_read': True})
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @admin_bp.route('/admin/reminders', methods=['GET'])
 @jwt_required()
 def admin_list_reminders():
     """获取全部提醒记录（管理端）。"""
-    _admin_or_403()
+    _teacher_or_403()
     status = request.args.get('status')
     member_id = request.args.get('memberId', type=int)
     query = Reminder.query
@@ -1703,7 +1856,7 @@ def admin_create_reminder():
         {"memberId": 3, "title": "请尽快提交周报", "message": "...",
          "scheduledAt": "2026-08-07T09:00:00+08:00", "type": "report_submit"}
     """
-    admin = _admin_or_403()
+    admin = _teacher_or_403()
     data = request.get_json()
     if not data or not data.get('memberId') or not str(data.get('title') or '').strip():
         return jsonify({'error': 'bad_request', 'message': 'memberId 和 title 必填'}), 400

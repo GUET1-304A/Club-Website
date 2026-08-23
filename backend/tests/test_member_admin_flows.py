@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from models import BlogPost, BlogRead, Certificate, Notification, Project, ResourceFolder, Task, db
+from models import AdminUser, BlogPost, BlogRead, Certificate, Notification, Project, ResourceFolder, Task, db
 
 
 def test_member_can_manage_own_identity_without_exposing_password_data(client):
@@ -504,4 +504,102 @@ def test_member_blog_read_tracking_is_idempotent_and_isolated(client):
                 blog = db.session.get(BlogPost, blog_id)
                 if blog is not None:
                     db.session.delete(blog)
+            db.session.commit()
+
+
+def test_application_status_query_flow(client):
+    payload = {
+        "name": "状态查询测试",
+        "student_id": f"2026{uuid.uuid4().hex[:4]}",
+        "grade_major": "2026级 计算机",
+        "phone": f"139{uuid.uuid4().hex[:8]}",
+        "email": f"{uuid.uuid4().hex[:10]}@example.com",
+        "group_id": "dev",
+        "group_name": "逐云组",
+        "motivation": "我想加入社团学习技术并参与真实项目。",
+    }
+
+    created = client.post("/api/applications", json=payload)
+    assert created.status_code == 201
+    app_id = created.get_json()["id"]
+
+    wrong = client.post(
+        "/api/applications/status",
+        json={"student_id": payload["student_id"], "phone": "13800000000"},
+    )
+    assert wrong.status_code == 404
+
+    queried = client.post(
+        "/api/applications/status",
+        json={"student_id": payload["student_id"], "phone": payload["phone"]},
+    )
+    assert queried.status_code == 200
+    assert queried.get_json()["status"] == "pending"
+
+    login = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    admin_headers = {"Authorization": f"Bearer {login.get_json()['token']}"}
+    reviewed = client.patch(
+        f"/api/admin/applications/{app_id}",
+        headers=admin_headers,
+        json={"status": "approved", "admin_note": "欢迎加入"},
+    )
+    assert reviewed.status_code == 200
+
+    final = client.post(
+        "/api/applications/status",
+        json={"student_id": payload["student_id"], "email": payload["email"]},
+    )
+    assert final.status_code == 200
+    assert final.get_json()["status"] == "approved"
+    assert final.get_json()["admin_note"] == "欢迎加入"
+
+
+def test_teacher_role_login_and_permission_boundaries(client):
+    login = client.post(
+        "/api/auth/login",
+        json={"account": "teacher", "password": "teacher123"},
+    )
+    assert login.status_code == 200
+    login_data = login.get_json()
+    assert login_data["role"] == "teacher"
+    teacher_headers = {"Authorization": f"Bearer {login_data['token']}"}
+
+    me = client.get("/api/admin/me", headers=teacher_headers)
+    assert me.status_code == 200
+    assert me.get_json()["role"] == "teacher"
+
+    assert client.get("/api/admin/weekly-reports", headers=teacher_headers).status_code == 200
+    assert client.get("/api/admin/certificates", headers=teacher_headers).status_code == 200
+    assert client.get("/api/admin/members", headers=teacher_headers).status_code == 200
+
+    assert client.get("/api/admin/config", headers=teacher_headers).status_code == 403
+    assert client.post(
+        "/api/admin/users",
+        headers=teacher_headers,
+        json={"username": "blocked", "password": "block123", "role": "teacher"},
+    ).status_code == 403
+
+    admin_login = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    admin_headers = {"Authorization": f"Bearer {admin_login.get_json()['token']}"}
+    assert client.get("/api/admin/users", headers=admin_headers).status_code == 200
+
+    username = f"teacher_{uuid.uuid4().hex[:6]}"
+    created = client.post(
+        "/api/admin/users",
+        headers=admin_headers,
+        json={"username": username, "password": "teacher456", "role": "teacher"},
+    )
+    assert created.status_code == 201
+    assert created.get_json()["user"]["role"] == "teacher"
+
+    with client.application.app_context():
+        user = AdminUser.query.filter_by(username=username).first()
+        if user is not None:
+            db.session.delete(user)
             db.session.commit()

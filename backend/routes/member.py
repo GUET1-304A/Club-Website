@@ -64,12 +64,19 @@ from services.ocr_service import OcrNotConfigured, OcrRequestFailed, OcrService
 from services.ai_service import AiNotConfigured, AiRequestFailed
 from services.assistant_tools import _analyze_report_with_ai
 from services.reminder_service import send_reminder_notification
+from services.notification_service import notify_all_admins
 from services.storage_service import (
     StorageImageInvalid,
     StorageNotConfigured,
     StorageReadFailed,
     StorageWriteFailed,
     StorageService,
+)
+from services.security_service import (
+    UploadContentInvalid,
+    is_rate_limited,
+    record_rate_limit_failure,
+    validate_upload_content,
 )
 
 member_bp = Blueprint('member', __name__)
@@ -181,6 +188,13 @@ def member_login():
 
     account = data['account'].strip()
     password = data['password']
+    rate_key = f"{request.remote_addr or 'unknown'}:{account}"
+    limit = current_app.config.get('LOGIN_RATE_LIMIT_PER_MINUTE', 10)
+    if is_rate_limited('member-login', rate_key, limit):
+        return jsonify({
+            'error': 'rate_limited',
+            'message': '登录失败次数过多，请稍后再试',
+        }), 429
 
     # 按学号或邮箱查找成员
     member = Member.query.filter(
@@ -189,6 +203,7 @@ def member_login():
 
     # 用户不存在或未设置密码
     if not member or not member.password_hash:
+        record_rate_limit_failure('member-login', rate_key)
         return jsonify({
             'error': 'auth_failed',
             'message': '账号或密码错误',
@@ -196,6 +211,7 @@ def member_login():
 
     # 验证密码
     if not member.check_password(password):
+        record_rate_limit_failure('member-login', rate_key)
         return jsonify({
             'error': 'auth_failed',
             'message': '账号或密码错误',
@@ -645,14 +661,14 @@ def member_update_task_status(task_id):
 # 允许上传的文件扩展名集合（成员端比管理端更宽松，增加了代码/文本文件类型）
 ALLOWED_EXTENSIONS = {
     # 图片
-    'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg',
+    'png', 'jpg', 'jpeg', 'gif', 'webp',
     # 文档和压缩包
     'pdf', 'mp4', 'webm', 'zip', 'rar',
     'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
     # 文本和数据文件
     'txt', 'md', 'json', 'xml', 'csv',
     # 代码文件
-    'py', 'js', 'ts', 'html', 'css', 'java', 'go', 'rs',
+    'py', 'ts', 'css', 'java', 'go', 'rs',
 }
 
 
@@ -781,6 +797,13 @@ def member_upload_resource():
 
     if not _allowed_file(file.filename):
         return jsonify({'error': 'bad_request', 'message': '不支持的文件类型'}), 400
+    try:
+        validate_upload_content(file, file.filename)
+    except UploadContentInvalid:
+        return jsonify({
+            'error': 'invalid_file_content',
+            'message': '文件内容与扩展名不匹配或存在安全风险',
+        }), 400
 
     # 目标文件夹（可选）
     folder_id = request.form.get('folderId', type=int)
@@ -1012,6 +1035,13 @@ def member_upload_certificate_image():
     ext = file.filename.rsplit('.', 1)[1].lower()
     if ext not in {'png', 'jpg', 'jpeg', 'webp'}:
         return jsonify({'error': 'bad_request', 'message': '请上传图片文件 (PNG/JPG/WebP)'}), 400
+    try:
+        validate_upload_content(file, file.filename)
+    except UploadContentInvalid:
+        return jsonify({
+            'error': 'invalid_file_content',
+            'message': '文件内容与扩展名不匹配或存在安全风险',
+        }), 400
 
     # 证书图片使用 cert_ 前缀便于识别
     unique_name = f"cert_{uuid.uuid4().hex}.{ext}"
@@ -1427,6 +1457,12 @@ def member_submit_weekly_report(report_id):
         return jsonify({'error': 'validation_error', 'message': '周报已审阅，不能重复提交'}), 400
     report.status = 'submitted'
     report.submitted_at = datetime.now(timezone.utc)
+    notify_all_admins(
+        title=f'新周报待审阅：{member.name}',
+        body=f'成员 {member.name} 提交了第 {report.week_start or "?"} 周周报，请及时审阅。',
+        link='/admin/weekly-reports',
+        notification_type='weekly_report_submitted',
+    )
     db.session.commit()
     return jsonify({'success': True, 'report': report.to_dict()})
 
@@ -1474,6 +1510,12 @@ def member_analyze_weekly_report(report_id):
 
     report.ai_analysis = analysis
     report.completion_rate = analysis.get('score')
+    notify_all_admins(
+        title=f'周报 AI 分析完成：{member.name}',
+        body=f'你的周报 #{report.id} 已生成审核报告，完成度 {analysis.get("score", "-")}。',
+        link='/admin/weekly-reports',
+        notification_type='weekly_report_analyzed',
+    )
     db.session.commit()
     return jsonify({'success': True, 'report': report.to_dict()})
 

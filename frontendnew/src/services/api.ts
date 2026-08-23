@@ -64,6 +64,26 @@ export async function submitApplication(payload: ApplicationPayload): Promise<{ 
   })
 }
 
+export interface ApplicationStatusResult {
+  success: boolean
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note?: string
+  session?: string
+  group_name?: string
+  created_at?: string
+  processed_at?: string
+}
+
+export async function queryApplicationStatus(studentId: string, phoneOrEmail: string): Promise<ApplicationStatusResult> {
+  const payload = /^\S+@\S+\.\S+$/.test(phoneOrEmail)
+    ? { student_id: studentId, email: phoneOrEmail }
+    : { student_id: studentId, phone: phoneOrEmail }
+  return request('/applications/status', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 // ─── Auth helpers (used by admin components) ───
 
 export function getToken(): string | null {
@@ -72,6 +92,15 @@ export function getToken(): string | null {
 
 export function clearToken(): void {
   localStorage.removeItem('auth_token')
+  localStorage.removeItem('auth_role')
+}
+
+export function getRole(): string | null {
+  return localStorage.getItem('auth_role')
+}
+
+export function setRole(role: string): void {
+  localStorage.setItem('auth_role', role)
 }
 
 export function isLoggedIn(): boolean {

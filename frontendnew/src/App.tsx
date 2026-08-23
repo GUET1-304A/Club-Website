@@ -34,6 +34,8 @@ import AdminApplications from './components/admin/AdminApplications'
 import AdminContacts from './components/admin/AdminContacts'
 import AdminCertificates from './components/admin/AdminCertificates'
 import AdminWeeklyReports from './components/admin/AdminWeeklyReports'
+import AdminNotifications from './components/admin/AdminNotifications'
+import AdminPermissions from './components/admin/AdminPermissions'
 import AdminData from './components/admin/AdminData'
 import { ToastProvider } from './components/admin/Toast'
 import MemberDashboard from './components/member/MemberDashboard'
@@ -48,6 +50,7 @@ import NotificationCenter from './components/member/NotificationCenter'
 import AssistantChat from './components/member/AssistantChat'
 import { useMemberAuth } from './hooks/useMemberAuth'
 import LoginPage from './components/pages/LoginPage'
+import { getRole } from './services/api'
 
 /* ═══════════════════════════════════════════════════════════════
    Helpers
@@ -112,6 +115,10 @@ function NotFound() {
 
 function AdminRouter({ parts }: { parts: string[] }) {
   if (parts[1] === 'login') { window.location.href = '/login'; return null }
+  if (getRole() === 'teacher' && (parts[1] === undefined || parts[1] === '')) {
+    window.location.href = '/admin/weekly-reports'
+    return null
+  }
   switch (parts[1]) {
     case undefined: case '':        return <AdminDashboard />
     case 'members':                 return <AdminMembers />
@@ -126,6 +133,8 @@ function AdminRouter({ parts }: { parts: string[] }) {
     case 'contacts':                return <AdminContacts />
     case 'certificates':            return <AdminCertificates />
     case 'weekly-reports':          return <AdminWeeklyReports />
+    case 'notifications':           return <AdminNotifications />
+    case 'permissions':             return <AdminPermissions />
     case 'data':                    return <AdminData />
     default:                        return <AdminDashboard />
   }

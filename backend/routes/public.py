@@ -28,6 +28,10 @@ from models import (
     db, SiteConfig, Page, Application, ContactMessage,
     Member, Project, Milestone, Award, BlogPost, AdminUser,
 )
+from services.security_service import (
+    is_rate_limited,
+    record_rate_limit_failure,
+)
 
 public_bp = Blueprint('public', __name__)
 
@@ -192,6 +196,61 @@ def submit_application():
         'message': '申请已提交',
         'id': app_record.id,
     }), 201
+
+
+@public_bp.route('/applications/status', methods=['POST'])
+def query_application_status():
+    """查询招新申请审核状态。
+
+    申请人凭学号 + 手机号（或邮箱）查询自己的审核结果，
+    避免暴露他人申请信息。
+
+    Request Body:
+        {"student_id": "2025001", "phone": "13800000000"}
+        或 {"student_id": "2025001", "email": "zhangsan@example.com"}
+
+    Returns:
+        200: {"success": true, "status": "pending", "admin_note": ...,
+              "session": ..., "created_at": ..., "processed_at": ..., "group_name": ...}
+        400: 缺少查询条件
+        404: 未找到匹配的申请
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'bad_request', 'message': '请求体为空'}), 400
+
+    student_id = (data.get('student_id') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    email = (data.get('email') or '').strip()
+
+    if not student_id or not (phone or email):
+        return jsonify({
+            'error': 'bad_request',
+            'message': '请输入学号和手机号（或邮箱）',
+        }), 400
+
+    query = Application.query.filter(Application.student_id == student_id)
+    if phone:
+        query = query.filter(Application.phone == phone)
+    else:
+        query = query.filter(Application.email == email)
+
+    app_record = query.order_by(Application.created_at.desc()).first()
+    if not app_record:
+        return jsonify({
+            'error': 'not_found',
+            'message': '未找到匹配的申请记录，请核对学号和联系方式',
+        }), 404
+
+    return jsonify({
+        'success': True,
+        'status': app_record.status,
+        'admin_note': app_record.admin_note,
+        'session': app_record.session,
+        'group_name': app_record.group_name,
+        'created_at': app_record.created_at.isoformat() if app_record.created_at else None,
+        'processed_at': app_record.processed_at.isoformat() if app_record.processed_at else None,
+    }), 200
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -567,6 +626,13 @@ def unified_login():
 
     account = data['account'].strip()
     password = data['password']
+    rate_key = f"{request.remote_addr or 'unknown'}:{account}"
+    limit = current_app.config.get('LOGIN_RATE_LIMIT_PER_MINUTE', 10)
+    if is_rate_limited('unified-login', rate_key, limit):
+        return jsonify({
+            'error': 'rate_limited',
+            'message': '登录失败次数过多，请稍后再试',
+        }), 429
 
     # ── 第一步：尝试管理员登录 ──
     admin = AdminUser.query.filter_by(username=account).first()
@@ -575,7 +641,7 @@ def unified_login():
         return jsonify({
             'success': True,
             'token': token,
-            'role': 'admin',
+            'role': admin.role,
             'user': admin.to_dict(),
         })
 
@@ -608,6 +674,7 @@ def unified_login():
         })
 
     # ── 第三步：都不匹配 ──
+    record_rate_limit_failure('unified-login', rate_key)
     return jsonify({
         'error': 'auth_failed',
         'message': '账号或密码错误',

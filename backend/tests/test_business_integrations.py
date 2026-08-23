@@ -49,7 +49,7 @@ def test_member_resource_upload_maps_storage_write_failure_to_safe_response(clie
     response = client.post(
         '/api/member/resources/upload',
         headers=_member_headers(client),
-        data={'file': (io.BytesIO(b'resource data'), 'resource.png')},
+        data={'file': (io.BytesIO(_MINIMAL_PNG), 'resource.png')},
     )
 
     assert response.status_code == 502
@@ -98,7 +98,7 @@ def test_upload_returns_not_configured_when_oss_is_explicitly_incomplete(client)
     response = client.post(
         "/api/admin/upload",
         headers=headers,
-        data={"file": (io.BytesIO(b"storage test"), "integration.png")},
+        data={"file": (io.BytesIO(_MINIMAL_PNG), "integration.png")},
     )
 
     assert response.status_code == 503

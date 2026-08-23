@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from models import (
+    AdminNotification,
     Milestone,
     Notification,
     Project,
@@ -184,6 +185,56 @@ def test_weekly_report_lifecycle(client):
                     db.session.commit()
 
 
+def test_weekly_report_submit_notifies_admins(client):
+    headers = _member_headers(client)
+    admin_headers = _admin_headers(client)
+    report_id = None
+
+    try:
+        created = client.post(
+            '/api/member/weekly-reports',
+            headers=headers,
+            json={'done': '完成教师闭环', 'plan': '推送审核报告', 'issues': ''},
+        )
+        assert created.status_code == 201
+        report_id = created.get_json()['report']['id']
+
+        submitted = client.post(
+            f'/api/member/weekly-reports/{report_id}/submit',
+            headers=headers,
+        )
+        assert submitted.status_code == 200
+
+        notifications = client.get('/api/admin/notifications', headers=admin_headers)
+        assert notifications.status_code == 200
+        items = notifications.get_json()
+        assert any(
+            n['type'] == 'weekly_report_submitted'
+            and '新周报待审阅' in n['title']
+            for n in items
+        )
+
+        unread = client.get('/api/admin/notifications/unread-count', headers=admin_headers)
+        assert unread.status_code == 200
+        assert unread.get_json()['count'] >= 1
+
+        target = next(n for n in items if n['type'] == 'weekly_report_submitted')
+        marked = client.put(
+            f"/api/admin/notifications/{target['id']}/read",
+            headers=admin_headers,
+        )
+        assert marked.status_code == 200
+        assert marked.get_json()['notification']['isRead'] is True
+    finally:
+        if report_id is not None:
+            with client.application.app_context():
+                report = db.session.get(WeeklyReport, report_id)
+                if report is not None:
+                    db.session.delete(report)
+                    AdminNotification.query.filter_by(link='/admin/weekly-reports').delete()
+                    db.session.commit()
+
+
 def test_weekly_report_permission_isolation(client):
     headers_a = _member_headers(client, '2023001')
     headers_b = _member_headers(client, '2023002')
@@ -282,6 +333,14 @@ def test_weekly_report_ai_analysis(client, monkeypatch):
         assert analysis['aiAnalysis']['score'] == 85
         assert analysis['aiAnalysis']['report'].startswith('本周进度')
         assert analysis['completionRate'] == 85
+
+        admin_headers = _admin_headers(client)
+        notifications = client.get('/api/admin/notifications', headers=admin_headers).get_json()
+        assert any(
+            n['type'] == 'weekly_report_analyzed'
+            and 'AI 分析完成' in n['title']
+            for n in notifications
+        )
     finally:
         if report_id is not None:
             with client.application.app_context():

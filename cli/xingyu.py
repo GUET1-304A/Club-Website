@@ -118,7 +118,11 @@ def auth_login(ctx, account, password):
     })
     user = data.get('user') or {}
     save_session(ctx.obj['base_url'], data['token'], data['role'], user)
-    role_label = '管理员' if data['role'] == 'admin' else '成员'
+    role_label = {
+        'admin': '管理员',
+        'teacher': '教师',
+        'member': '成员',
+    }.get(data['role'], '成员')
     name = user.get('name') or user.get('username') or account
     click.echo(f'登录成功：{role_label}「{name}」')
     if ctx.obj.get('as_json'):
@@ -142,7 +146,7 @@ def auth_status(ctx):
     token = ctx.obj.get('token')
     rows = [
         ['服务器', ctx.obj['base_url']],
-        ['角色', {'admin': '管理员', 'member': '成员', 'guest': '未登录'}.get(role, role)],
+        ['角色', {'admin': '管理员', 'teacher': '教师', 'member': '成员', 'guest': '未登录'}.get(role, role)],
         ['账号', name],
         ['凭证', '已保存' if token else '未登录'],
     ]
@@ -165,7 +169,7 @@ def platform_status(ctx):
         ['服务器', ctx.obj['base_url']],
         ['健康状态', health.get('status', 'unknown')],
         ['消息', health.get('message', '-')],
-        ['登录角色', {'admin': '管理员', 'member': '成员', 'guest': '未登录'}.get(role, role)],
+        ['登录角色', {'admin': '管理员', 'teacher': '教师', 'member': '成员', 'guest': '未登录'}.get(role, role)],
         ['登录账号', ctx.obj.get('name') or '-'],
     ]
     click.echo(render_table(['项目', '值'], rows))

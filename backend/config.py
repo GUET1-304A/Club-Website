@@ -148,6 +148,8 @@ class Config:
     BOOTSTRAP_ADMIN_PASSWORD = _read_secret('BOOTSTRAP_ADMIN_PASSWORD')
 
     # ─── 频率限制配置 ───
+    # 登录失败限流：同一 IP + 账号每分钟最多失败次数
+    LOGIN_RATE_LIMIT_PER_MINUTE = int(os.environ.get('LOGIN_RATE_LIMIT_PER_MINUTE', 10))
     # 招新申请表单的同 IP/邮箱/手机号提交间隔（分钟）
     APPLICATION_RATE_LIMIT_MINUTES = int(os.environ.get('APPLICATION_RATE_LIMIT_MINUTES', 10))
 

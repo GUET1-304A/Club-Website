@@ -115,12 +115,17 @@ class AdminUser(db.Model):
     用于 CMS 后台管理系统的登录认证。
     密码通过 werkzeug.security 进行哈希存储，从不以明文形式保存。
     JWT token 的 identity 使用 admin 用户的 id（字符串形式）。
+
+    角色 (role) 取值:
+      - 'admin'   — 管理员：拥有全部后台权限
+      - 'teacher' — 教师：可审阅周报、审核证书、查看成员/项目、管理提醒
     """
     __tablename__ = 'admin_users'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)     # 管理员用户名（唯一）
     password_hash = db.Column(db.String(255), nullable=False)            # bcrypt 哈希后的密码
+    role = db.Column(db.String(20), nullable=False, default='admin')      # admin / teacher
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
@@ -148,9 +153,19 @@ class AdminUser(db.Model):
         Returns:
             dict: 包含 id, username, created_at 的字典
         """
+        must_change_password = (
+            self.username == 'admin'
+            and self.check_password('admin123')
+        )
         return {
             'id': self.id,
             'username': self.username,
+            'role': self.role,
+            'mustChangePassword': must_change_password,
+            'securityWarnings': (
+                ['默认管理员密码仍在使用，请立即在权限管理中修改。']
+                if must_change_password else []
+            ),
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -1029,6 +1044,44 @@ class Notification(db.Model):
         return {
             'id': self.id,
             'memberId': self.member_id,
+            'type': self.type,
+            'title': self.title,
+            'body': self.body,
+            'link': self.link,
+            'isRead': self.is_read,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class AdminNotification(db.Model):
+    """管理员/教师通知模型。
+
+    用于教师侧闭环：新周报提交、AI 审核报告生成等事件发生时，
+    向全部管理员账号推送站内通知，避免教师只能被动打开后台查看。
+
+    类型 (type) 取值:
+      - 'weekly_report_submitted' — 新周报待审阅
+      - 'weekly_report_analyzed'  — 周报 AI 分析完成
+      - 'certificate_review'      — 证书待审核（预留）
+    """
+    __tablename__ = 'admin_notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=False)  # 接收通知的管理员 ID
+    type = db.Column(db.String(50), nullable=False)             # 通知类型
+    title = db.Column(db.String(200), nullable=False)           # 通知标题
+    body = db.Column(db.Text, nullable=True)                    # 通知正文
+    link = db.Column(db.String(500), nullable=True)             # 跳转链接
+    is_read = db.Column(db.Boolean, default=False)              # 是否已读
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    admin = db.relationship('AdminUser', backref='notifications', foreign_keys=[admin_id])
+
+    def to_dict(self):
+        """序列化管理员通知数据。"""
+        return {
+            'id': self.id,
+            'adminId': self.admin_id,
             'type': self.type,
             'title': self.title,
             'body': self.body,

@@ -152,6 +152,10 @@ def _seed_defaults():
             admin = AdminUser(username='admin')
             admin.set_password('admin123')
             db.session.add(admin)
+        if not AdminUser.query.filter_by(username='teacher').first():
+            teacher = AdminUser(username='teacher', role='teacher')
+            teacher.set_password('teacher123')
+            db.session.add(teacher)
 
         # ── 默认站点配置 ──
         if not SiteConfig.query.first():
@@ -262,6 +266,9 @@ def _migrate_columns(app):
         app: Flask 应用实例（用于获取数据库连接）
     """
     migrations = [
+        # ── 管理员角色 ──
+        ('admin_users', 'role', 'VARCHAR(20) DEFAULT "admin"'),
+
         # ── Member 展示字段 ──
         ('members', 'role', 'VARCHAR(100)'),
         ('members', 'skills', 'JSON'),

@@ -95,8 +95,35 @@ export interface AdminCertificate {
 
 // ─── Auth ───
 
-export async function adminGetMe(): Promise<{ id: number; username: string }> {
+export interface AdminUserData {
+  id: number
+  username: string
+  role: 'admin' | 'teacher'
+  mustChangePassword?: boolean
+  securityWarnings?: string[]
+  created_at?: string
+}
+
+export async function adminGetMe(): Promise<AdminUserData> {
   return authRequest('/admin/me')
+}
+
+export async function adminListUsers(): Promise<AdminUserData[]> {
+  return authRequest('/admin/users')
+}
+
+export async function adminCreateUser(data: { username: string; password: string; role: 'admin' | 'teacher' }): Promise<{ success: boolean; user: AdminUserData }> {
+  return authRequest('/admin/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminUpdateUser(userId: number, data: { password?: string; role?: 'admin' | 'teacher' }): Promise<{ success: boolean; user: AdminUserData }> {
+  return authRequest(`/admin/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
 }
 
 // ─── Members ───
@@ -524,4 +551,34 @@ export async function adminUpload(file: File): Promise<{ success: boolean; url: 
     throw new Error(err.message || `HTTP ${res.status}`)
   }
   return res.json()
+}
+
+// ─── Admin / Teacher notifications ───
+
+export interface AdminNotificationData {
+  id: number
+  adminId: number
+  type: string
+  title: string
+  body?: string
+  link?: string
+  isRead: boolean
+  created_at?: string
+}
+
+export async function adminListNotifications(unreadOnly?: boolean): Promise<AdminNotificationData[]> {
+  const qs = unreadOnly ? '?unread=true' : ''
+  return authRequest(`/admin/notifications${qs}`)
+}
+
+export async function adminUnreadNotificationCount(): Promise<{ count: number }> {
+  return authRequest('/admin/notifications/unread-count')
+}
+
+export async function adminMarkNotificationRead(notifId: number): Promise<{ success: boolean; notification: AdminNotificationData }> {
+  return authRequest(`/admin/notifications/${notifId}/read`, { method: 'PUT' })
+}
+
+export async function adminMarkAllNotificationsRead(): Promise<{ success: boolean }> {
+  return authRequest('/admin/notifications/read-all', { method: 'PUT' })
 }
