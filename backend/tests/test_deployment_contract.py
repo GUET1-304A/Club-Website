@@ -56,6 +56,8 @@ def test_production_compose_uses_private_backend_and_file_secrets():
         assert f"{variable}: /run/secrets/{secret_name}" in compose
 
     assert "CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}" in compose
+    assert "REMINDER_SCHEDULER_BACKEND: ${REMINDER_SCHEDULER_BACKEND:-thread}" in compose
+    assert "REMINDER_SCHEDULER_LEADER: ${REMINDER_SCHEDULER_LEADER:-true}" in compose
 
 
 def test_frontend_image_and_nginx_support_same_origin_spa_delivery():
@@ -86,6 +88,7 @@ def test_production_examples_never_store_real_secrets_and_gunicorn_is_pinned():
     assert "secrets/*.txt" in ignored
     assert "deploy/certs/*.pem" in ignored
     assert "gunicorn>=23,<24" in requirements
+    assert "APScheduler>=3.10,<4" in requirements
 
     for runtime_path in (
         "backend/uploads/",

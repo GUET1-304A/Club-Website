@@ -92,6 +92,24 @@ PUBLIC_BASE_URL=https://your-domain.example
 The production Compose file mounts placeholder example secrets by default so
 the channels remain disabled until their explicit `*_ENABLED` flags are set.
 
+## Reminder scheduler
+
+The reminder scan core is `run_reminder_scan(app)`. Production can run it with
+the default lightweight thread backend or APScheduler:
+
+```sh
+REMINDER_SCAN_ENABLED=true
+REMINDER_SCAN_INTERVAL=300
+REMINDER_SCHEDULER_BACKEND=apscheduler
+REMINDER_SCHEDULER_TIMEZONE=UTC
+REMINDER_SCHEDULER_LEADER=true
+```
+
+When running more than one backend replica, keep `REMINDER_SCHEDULER_LEADER=true`
+on only one instance and set `REMINDER_SCHEDULER_LEADER=false` on the others.
+This prevents duplicate reminder scans. `REMINDER_SCHEDULER_BACKEND=disabled`
+fully disables the scanner for worker-only or maintenance instances.
+
 ## Backup
 
 Stop writes first, then archive both named volumes. For the default Compose

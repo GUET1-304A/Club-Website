@@ -132,9 +132,16 @@ class Config:
     SMTP_USE_SSL = _get_bool('SMTP_USE_SSL', False)
 
     # ─── 智能体定时提醒扫描 ───
-    # REMINDER_SCAN_ENABLED: 是否启动后台提醒扫描线程
+    # REMINDER_SCAN_ENABLED: 是否启动提醒扫描
+    # REMINDER_SCHEDULER_BACKEND: thread / apscheduler / disabled
+    # REMINDER_SCHEDULER_LEADER: 多实例部署时仅 leader 实例启动扫描
     # REMINDER_SCAN_INTERVAL: 扫描间隔（秒）
     REMINDER_SCAN_ENABLED = _get_bool('REMINDER_SCAN_ENABLED', True)
+    REMINDER_SCHEDULER_BACKEND = os.environ.get(
+        'REMINDER_SCHEDULER_BACKEND', 'thread'
+    ).strip().lower()
+    REMINDER_SCHEDULER_TIMEZONE = os.environ.get('REMINDER_SCHEDULER_TIMEZONE', 'UTC')
+    REMINDER_SCHEDULER_LEADER = _get_bool('REMINDER_SCHEDULER_LEADER', True)
     REMINDER_SCAN_INTERVAL = int(os.environ.get('REMINDER_SCAN_INTERVAL', 300))
 
     # ─── 智能体调用防护 ───

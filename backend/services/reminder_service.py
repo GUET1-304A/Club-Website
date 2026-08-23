@@ -4,14 +4,15 @@
   1. 到期提醒（Reminder）：pending → sent，并生成站内通知
   2. 任务截止提醒：24 小时内到期的任务自动提醒负责人（每日至多一条，防刷屏）
 
-生产环境如需分布式部署，可无缝替换为 APScheduler / Celery beat，
-扫描逻辑本身（run_reminder_scan）保持不变。
+生产环境可通过 REMINDER_SCHEDULER_BACKEND=apscheduler 切换到 APScheduler。
+多实例部署时仅让一个实例设置 REMINDER_SCHEDULER_LEADER=true，避免重复扫描。
 """
 
 import threading
 import time
 from datetime import datetime, timedelta, timezone
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import current_app
 
 from models import Member, Notification, Project, Reminder, Task, WeeklyReport, db
@@ -171,11 +172,30 @@ def _already_reminded_weekly(member_id, window_days=7):
 
 
 def start_reminder_scanner(app, interval=None):
-    """启动后台提醒扫描线程（守护线程，随进程退出）。"""
+    """启动配置指定的提醒扫描器。"""
     if app.config.get('TESTING'):
         return None
     if not app.config.get('REMINDER_SCAN_ENABLED', True):
         return None
+    if not app.config.get('REMINDER_SCHEDULER_LEADER', True):
+        app.logger.info('Reminder scanner skipped on non-leader instance')
+        return None
+
+    backend = (app.config.get('REMINDER_SCHEDULER_BACKEND') or 'thread').lower()
+    if backend == 'disabled':
+        return None
+    if backend == 'apscheduler':
+        return _start_apscheduler(app, interval)
+    if backend != 'thread':
+        app.logger.warning(
+            'Unknown REMINDER_SCHEDULER_BACKEND=%s; falling back to thread',
+            backend,
+        )
+    return _start_thread_scanner(app, interval)
+
+
+def _start_thread_scanner(app, interval=None):
+    """启动后台提醒扫描线程（守护线程，随进程退出）。"""
     interval = interval or app.config.get('REMINDER_SCAN_INTERVAL', 3600)
 
     def _loop():
@@ -193,3 +213,33 @@ def start_reminder_scanner(app, interval=None):
     )
     thread.start()
     return thread
+
+
+def _start_apscheduler(app, interval=None):
+    """Use APScheduler to run the reminder scan at a fixed interval."""
+    interval = interval or app.config.get('REMINDER_SCAN_INTERVAL', 3600)
+    timezone_name = app.config.get('REMINDER_SCHEDULER_TIMEZONE', 'UTC')
+    scheduler = BackgroundScheduler(timezone=timezone_name)
+    scheduler.add_job(
+        lambda: _run_scan_with_logging(app),
+        'interval',
+        seconds=interval,
+        id='reminder-scan',
+        max_instances=1,
+        coalesce=True,
+        replace_existing=True,
+    )
+    scheduler.start()
+    app.logger.info(
+        'Reminder scanner started with APScheduler every %s seconds',
+        interval,
+    )
+    return scheduler
+
+
+def _run_scan_with_logging(app):
+    try:
+        return run_reminder_scan(app)
+    except Exception:
+        app.logger.exception('Reminder scan failed')
+        return 0
