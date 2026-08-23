@@ -456,6 +456,7 @@ export interface WeeklyReportContent {
   plan?: string
   issues?: string
   summary?: string
+  [key: string]: string | undefined
 }
 
 export interface WeeklyReportAnalysis {
@@ -494,7 +495,8 @@ export async function memberListWeeklyReports(status?: string): Promise<WeeklyRe
 export async function memberCreateWeeklyReport(data: {
   weekStart?: string
   weekEnd?: string
-  done: string
+  content?: WeeklyReportContent
+  done?: string
   plan?: string
   issues?: string
   summary?: string

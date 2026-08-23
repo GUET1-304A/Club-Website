@@ -20,6 +20,7 @@ from models import (
     Notification,
     Project,
     Reminder,
+    SiteConfig,
     Task,
     WeeklyReport,
     db,
@@ -73,6 +74,14 @@ class FakeAI:
         return iter(FakeAI.stream_responses.pop(0))
 
     stream_responses = []
+
+
+class CapturingAI(FakeAI):
+    captured_messages = []
+
+    def chat_completion(self, messages, tools=None, temperature=0.3, max_tokens=None):
+        CapturingAI.captured_messages.append(messages)
+        return super().chat_completion(messages, tools, temperature, max_tokens)
 
 
 def _member_headers(client, account='2023001'):
@@ -397,6 +406,144 @@ def test_weekly_report_ai_analysis(client, monkeypatch):
                 if report is not None:
                     db.session.delete(report)
                     db.session.commit()
+
+
+def test_weekly_report_template_is_exposed_in_public_config(client):
+    response = client.get('/api/config')
+
+    assert response.status_code == 200
+    template = response.get_json()['weekly_report_template']
+    assert template['title'] == '周报模板'
+    assert [field['key'] for field in template['fields']] == [
+        'done',
+        'plan',
+        'issues',
+        'summary',
+    ]
+    assert template['fields'][0]['required'] is True
+
+
+def test_weekly_report_template_required_fields_drive_create_validation(client):
+    headers = _member_headers(client)
+    report_id = None
+
+    with client.application.app_context():
+        cfg = SiteConfig.query.filter_by(config_key='weekly_report_template').first()
+        cfg.config_value = {
+            'title': '研发周报',
+            'fields': [
+                {
+                    'key': 'progress',
+                    'label': '进展说明',
+                    'required': True,
+                    'placeholder': '本周推进了什么',
+                    'rows': 3,
+                },
+                {
+                    'key': 'risks',
+                    'label': '风险阻塞',
+                    'required': False,
+                    'placeholder': '风险或需要协助',
+                    'rows': 2,
+                },
+            ],
+        }
+        db.session.commit()
+
+    try:
+        rejected = client.post(
+            '/api/member/weekly-reports',
+            headers=headers,
+            json={'content': {'risks': '接口依赖未确定'}},
+        )
+        assert rejected.status_code == 400
+        assert '进展说明' in rejected.get_json()['message']
+
+        created = client.post(
+            '/api/member/weekly-reports',
+            headers=headers,
+            json={'content': {'progress': '完成模板配置', 'risks': '暂无'}},
+        )
+        assert created.status_code == 201
+        report = created.get_json()['report']
+        report_id = report['id']
+        assert report['content']['progress'] == '完成模板配置'
+    finally:
+        with client.application.app_context():
+            if report_id is not None:
+                report = db.session.get(WeeklyReport, report_id)
+                if report is not None:
+                    db.session.delete(report)
+            cfg = SiteConfig.query.filter_by(config_key='weekly_report_template').first()
+            if cfg is not None:
+                cfg.config_value = {
+                    'title': '周报模板',
+                    'fields': [
+                        {'key': 'done', 'label': '本周完成', 'required': True, 'placeholder': '本周完成了哪些工作？', 'rows': 3},
+                        {'key': 'plan', 'label': '下周计划', 'required': False, 'placeholder': '下周计划做什么？', 'rows': 2},
+                        {'key': 'issues', 'label': '遇到的问题', 'required': False, 'placeholder': '遇到的问题、风险或需要帮助的地方（可选）', 'rows': 2},
+                        {'key': 'summary', 'label': '一句话总结', 'required': False, 'placeholder': '本周整体进展的一句话总结', 'rows': 2},
+                    ],
+                }
+            db.session.commit()
+
+
+def test_weekly_report_ai_analysis_uses_template_field_labels(client, monkeypatch):
+    _enable_ai(client)
+    headers = _member_headers(client)
+    report_id = None
+    CapturingAI.captured_messages = []
+
+    with client.application.app_context():
+        cfg = SiteConfig.query.filter_by(config_key='weekly_report_template').first()
+        cfg.config_value = {
+            'title': '研发周报',
+            'fields': [
+                {'key': 'progress', 'label': '进展说明', 'required': True, 'placeholder': '', 'rows': 3},
+                {'key': 'support', 'label': '需要支持', 'required': False, 'placeholder': '', 'rows': 2},
+            ],
+        }
+        db.session.commit()
+
+    try:
+        created = client.post(
+            '/api/member/weekly-reports',
+            headers=headers,
+            json={'content': {'progress': '完成模板字段接入', 'support': '需要老师确认排期'}},
+        )
+        assert created.status_code == 201
+        report_id = created.get_json()['report']['id']
+
+        FakeAI.responses = [AI_RESPONSE]
+        monkeypatch.setattr('services.assistant_tools.AIService', CapturingAI)
+
+        analyzed = client.post(
+            f'/api/member/weekly-reports/{report_id}/analyze',
+            headers=headers,
+        )
+        assert analyzed.status_code == 200
+
+        prompt = CapturingAI.captured_messages[0][1]['content']
+        assert '进展说明：完成模板字段接入' in prompt
+        assert '需要支持：需要老师确认排期' in prompt
+    finally:
+        with client.application.app_context():
+            if report_id is not None:
+                report = db.session.get(WeeklyReport, report_id)
+                if report is not None:
+                    db.session.delete(report)
+            cfg = SiteConfig.query.filter_by(config_key='weekly_report_template').first()
+            if cfg is not None:
+                cfg.config_value = {
+                    'title': '周报模板',
+                    'fields': [
+                        {'key': 'done', 'label': '本周完成', 'required': True, 'placeholder': '本周完成了哪些工作？', 'rows': 3},
+                        {'key': 'plan', 'label': '下周计划', 'required': False, 'placeholder': '下周计划做什么？', 'rows': 2},
+                        {'key': 'issues', 'label': '遇到的问题', 'required': False, 'placeholder': '遇到的问题、风险或需要帮助的地方（可选）', 'rows': 2},
+                        {'key': 'summary', 'label': '一句话总结', 'required': False, 'placeholder': '本周整体进展的一句话总结', 'rows': 2},
+                    ],
+                }
+            db.session.commit()
 
 
 def test_weekly_report_analyze_requires_configuration(client):

@@ -15,6 +15,7 @@ import {
   type MemberProfile, type AssistantStatus, type RequirementPlan,
   type WeeklyReportData, type ConversationData, type ReminderData,
 } from '../../services/memberApi'
+import { fetchSiteConfig, type WeeklyReportTemplate } from '../../services/api'
 
 type Tab = 'chat' | 'plan' | 'report' | 'reminder'
 
@@ -35,6 +36,58 @@ const STATUS_META: Record<string, { label: string; className: string }> = {
   draft: { label: '草稿', className: 'bg-[#f0ece6] text-[#273C46]' },
   submitted: { label: '已提交', className: 'bg-blue-50 text-blue-600' },
   reviewed: { label: '已审阅', className: 'bg-emerald-50 text-emerald-600' },
+}
+
+const DEFAULT_WEEKLY_TEMPLATE: Required<WeeklyReportTemplate> = {
+  title: '周报模板',
+  fields: [
+    { key: 'done', label: '本周完成', required: true, placeholder: '本周完成了哪些工作？', rows: 3 },
+    { key: 'plan', label: '下周计划', required: false, placeholder: '下周计划做什么？', rows: 2 },
+    { key: 'issues', label: '遇到的问题', required: false, placeholder: '遇到的问题、风险或需要帮助的地方（可选）', rows: 2 },
+    { key: 'summary', label: '一句话总结', required: false, placeholder: '本周整体进展的一句话总结', rows: 2 },
+  ],
+}
+
+function normalizeWeeklyTemplate(template?: WeeklyReportTemplate): Required<WeeklyReportTemplate> {
+  const sourceFields = Array.isArray(template?.fields) && template.fields.length > 0
+    ? template.fields
+    : DEFAULT_WEEKLY_TEMPLATE.fields
+  const fields = sourceFields
+    .filter(field => field.key && field.label)
+    .map(field => ({
+      key: field.key,
+      label: field.label,
+      required: !!field.required,
+      placeholder: field.placeholder || '',
+      rows: Math.max(1, Math.min(6, Number(field.rows || 2))),
+    }))
+  return {
+    title: template?.title || DEFAULT_WEEKLY_TEMPLATE.title,
+    fields: fields.length ? fields : DEFAULT_WEEKLY_TEMPLATE.fields,
+  }
+}
+
+function emptyWeeklyContent(template: WeeklyReportTemplate): Record<string, string> {
+  return (template.fields || []).reduce<Record<string, string>>((acc, field) => {
+    acc[field.key] = ''
+    return acc
+  }, {})
+}
+
+function reportContentRows(content: Record<string, string | undefined>, template: WeeklyReportTemplate) {
+  const used = new Set<string>()
+  const rows: { key: string; label: string; value: string }[] = []
+  ;(template.fields || []).forEach(field => {
+    const value = String(content[field.key] || '').trim()
+    used.add(field.key)
+    if (value) rows.push({ key: field.key, label: field.label, value })
+  })
+  Object.entries(content).forEach(([key, raw]) => {
+    if (used.has(key)) return
+    const value = String(raw || '').trim()
+    if (value) rows.push({ key, label: key, value })
+  })
+  return rows
 }
 
 export default function AssistantChat({ member }: { member: MemberProfile }) {
@@ -784,11 +837,16 @@ function PlanPanel() {
 
 function ReportPanel() {
   const [reports, setReports] = useState<WeeklyReportData[]>([])
+  const [template, setTemplate] = useState<Required<WeeklyReportTemplate>>(DEFAULT_WEEKLY_TEMPLATE)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [analyzingId, setAnalyzingId] = useState<number | null>(null)
   const [actionError, setActionError] = useState('')
-  const [form, setForm] = useState({ weekStart: '', weekEnd: '', done: '', plan: '', issues: '', summary: '' })
+  const [form, setForm] = useState({
+    weekStart: '',
+    weekEnd: '',
+    content: emptyWeeklyContent(DEFAULT_WEEKLY_TEMPLATE),
+  })
 
   const load = () => {
     setLoading(true)
@@ -800,6 +858,19 @@ function ReportPanel() {
 
   useEffect(load, [])
 
+  useEffect(() => {
+    fetchSiteConfig()
+      .then(config => {
+        const nextTemplate = normalizeWeeklyTemplate(config.weekly_report_template)
+        setTemplate(nextTemplate)
+        setForm(current => ({
+          ...current,
+          content: { ...emptyWeeklyContent(nextTemplate), ...current.content },
+        }))
+      })
+      .catch(() => {})
+  }, [])
+
   const create = async (e: FormEvent) => {
     e.preventDefault()
     setActionError('')
@@ -807,12 +878,9 @@ function ReportPanel() {
       await memberCreateWeeklyReport({
         weekStart: form.weekStart || undefined,
         weekEnd: form.weekEnd || undefined,
-        done: form.done,
-        plan: form.plan,
-        issues: form.issues,
-        summary: form.summary,
+        content: form.content,
       })
-      setForm({ weekStart: '', weekEnd: '', done: '', plan: '', issues: '', summary: '' })
+      setForm({ weekStart: '', weekEnd: '', content: emptyWeeklyContent(template) })
       setShowForm(false)
       load()
     } catch (err) {
@@ -857,7 +925,15 @@ function ReportPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-[#273C46]/50">共 {reports.length} 份周报 · 提交后可由教师审阅，也可先用 AI 分析</p>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary-sm inline-flex items-center gap-1.5">
+        <button
+          onClick={() => {
+            setShowForm(!showForm)
+            if (!showForm) {
+              setForm(current => ({ ...current, content: { ...emptyWeeklyContent(template), ...current.content } }))
+            }
+          }}
+          className="btn-primary-sm inline-flex items-center gap-1.5"
+        >
           <Plus className="w-3.5 h-3.5" /> 新建周报
         </button>
       </div>
@@ -881,24 +957,24 @@ function ReportPanel() {
             <input type="date" value={form.weekEnd} onChange={e => setForm({ ...form, weekEnd: e.target.value })}
               className="mt-1 w-full rounded-xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] px-3 py-2 text-sm focus:outline-none focus:border-[#051A24]/30" />
           </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-[#273C46]/60">本周完成 <span className="text-red-400">*</span></label>
-            <textarea rows={3} value={form.done} onChange={e => setForm({ ...form, done: e.target.value })} required
-              className="mt-1 w-full resize-none rounded-xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] px-3 py-2 text-sm focus:outline-none focus:border-[#051A24]/30"
-              placeholder="本周完成了哪些工作？" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-[#273C46]/60">下周计划</label>
-            <textarea rows={2} value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}
-              className="mt-1 w-full resize-none rounded-xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] px-3 py-2 text-sm focus:outline-none focus:border-[#051A24]/30"
-              placeholder="下周计划做什么？" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-[#273C46]/60">遇到的问题</label>
-            <textarea rows={2} value={form.issues} onChange={e => setForm({ ...form, issues: e.target.value })}
-              className="mt-1 w-full resize-none rounded-xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] px-3 py-2 text-sm focus:outline-none focus:border-[#051A24]/30"
-              placeholder="遇到的问题、风险或需要帮助的地方（可选）" />
-          </div>
+          {template.fields.map(field => (
+            <div key={field.key} className="md:col-span-2">
+              <label className="text-xs font-medium text-[#273C46]/60">
+                {field.label} {field.required && <span className="text-red-400">*</span>}
+              </label>
+              <textarea
+                rows={field.rows || 2}
+                value={form.content[field.key] || ''}
+                onChange={e => setForm({
+                  ...form,
+                  content: { ...form.content, [field.key]: e.target.value },
+                })}
+                required={!!field.required}
+                className="mt-1 w-full resize-none rounded-xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] px-3 py-2 text-sm focus:outline-none focus:border-[#051A24]/30"
+                placeholder={field.placeholder || field.label}
+              />
+            </div>
+          ))}
           <div className="md:col-span-2 flex items-center gap-3">
             <button type="submit" className="btn-primary inline-flex items-center gap-2">
               <FileText className="w-4 h-4" /> 保存草稿
@@ -947,15 +1023,11 @@ function ReportPanel() {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  {report.content.done && (
-                    <p className="text-[#051A24] leading-relaxed"><span className="text-[#273C46]/40 mr-1.5">完成</span>{report.content.done}</p>
-                  )}
-                  {report.content.plan && (
-                    <p className="text-[#051A24]/70 leading-relaxed"><span className="text-[#273C46]/40 mr-1.5">计划</span>{report.content.plan}</p>
-                  )}
-                  {report.content.issues && (
-                    <p className="text-amber-600/80 leading-relaxed"><span className="text-[#273C46]/40 mr-1.5">风险</span>{report.content.issues}</p>
-                  )}
+                  {reportContentRows(report.content, template).map(row => (
+                    <p key={row.key} className="text-[#051A24] leading-relaxed">
+                      <span className="text-[#273C46]/40 mr-1.5">{row.label}</span>{row.value}
+                    </p>
+                  ))}
                 </div>
 
                 {report.aiAnalysis && (

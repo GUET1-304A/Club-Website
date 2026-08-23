@@ -79,6 +79,42 @@ DEFAULT_SITE_CONFIG = {
         'awards_enabled': True,      # 获奖荣誉
         'join_enabled': True,        # 加入我们
     },
+
+    # ─── 周报模板 ───
+    # 成员端按字段渲染周报表单；AI 分析也按相同字段标签读取内容。
+    'weekly_report_template': {
+        'title': '周报模板',
+        'fields': [
+            {
+                'key': 'done',
+                'label': '本周完成',
+                'required': True,
+                'placeholder': '本周完成了哪些工作？',
+                'rows': 3,
+            },
+            {
+                'key': 'plan',
+                'label': '下周计划',
+                'required': False,
+                'placeholder': '下周计划做什么？',
+                'rows': 2,
+            },
+            {
+                'key': 'issues',
+                'label': '遇到的问题',
+                'required': False,
+                'placeholder': '遇到的问题、风险或需要帮助的地方（可选）',
+                'rows': 2,
+            },
+            {
+                'key': 'summary',
+                'label': '一句话总结',
+                'required': False,
+                'placeholder': '本周整体进展的一句话总结',
+                'rows': 2,
+            },
+        ],
+    },
 }
 
 # ────────────────────────────────────────────────────────────────

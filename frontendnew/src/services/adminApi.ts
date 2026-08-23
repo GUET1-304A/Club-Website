@@ -301,6 +301,7 @@ export interface AdminWeeklyReportContent {
   plan?: string
   issues?: string
   summary?: string
+  [key: string]: string | undefined
 }
 
 export interface AdminWeeklyReportAnalysis {

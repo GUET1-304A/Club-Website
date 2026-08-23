@@ -72,6 +72,7 @@ def create_app(config_name=None):
                 app.config['BOOTSTRAP_ADMIN_USERNAME'],
                 app.config['BOOTSTRAP_ADMIN_PASSWORD'],
             )
+        _ensure_site_config_defaults()
         _ensure_pages()           # 确保所有默认 CMS 页面存在
 
     # ── 5.1 启动智能体定时提醒扫描（后台守护线程，须在数据库建表之后）──
@@ -245,6 +246,18 @@ def _ensure_pages():
                     updated = True
             if updated:
                 db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _ensure_site_config_defaults():
+    """Add newly introduced default site configuration keys to existing DBs."""
+    try:
+        existing = {cfg.config_key for cfg in SiteConfig.query.all()}
+        for key, value in DEFAULT_SITE_CONFIG.items():
+            if key not in existing:
+                db.session.add(SiteConfig(config_key=key, config_value=value))
+        db.session.commit()
     except Exception:
         db.session.rollback()
 

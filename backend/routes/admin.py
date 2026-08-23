@@ -68,6 +68,7 @@ from services.assistant_tools import _analyze_report_with_ai, compute_project_he
 from services.notification_service import notify_all_admins
 from services.reminder_service import send_reminder_notification
 from services.storage_service import StorageNotConfigured, StorageService
+from services.weekly_report_template import normalize_weekly_report_template
 from services.security_service import (
     UploadContentInvalid,
     is_rate_limited,
@@ -1247,6 +1248,8 @@ def admin_update_config():
         return jsonify({'error': 'bad_request', 'message': '请求体为空'}), 400
 
     for key, value in data.items():
+        if key == 'weekly_report_template':
+            value = normalize_weekly_report_template(value)
         cfg = SiteConfig.query.filter_by(config_key=key).first()
         if cfg:
             cfg.config_value = value    # 更新已有配置
@@ -1280,10 +1283,11 @@ def admin_update_config_key(key):
         return jsonify({'error': 'bad_request', 'message': '缺少 value 字段'}), 400
 
     cfg = SiteConfig.query.filter_by(config_key=key).first()
+    value = normalize_weekly_report_template(data['value']) if key == 'weekly_report_template' else data['value']
     if cfg:
-        cfg.config_value = data['value']
+        cfg.config_value = value
     else:
-        cfg = SiteConfig(config_key=key, config_value=data['value'])
+        cfg = SiteConfig(config_key=key, config_value=value)
         db.session.add(cfg)
 
     db.session.commit()

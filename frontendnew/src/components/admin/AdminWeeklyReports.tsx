@@ -9,6 +9,7 @@ import {
   adminReviewWeeklyReport, adminAnalyzeWeeklyReport,
   type AdminWeeklyReport,
 } from '../../services/adminApi'
+import { fetchSiteConfig, type WeeklyReportTemplate } from '../../services/api'
 import { useToast } from './Toast'
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
@@ -24,9 +25,60 @@ const TABS = [
   { value: 'draft', label: '草稿' },
 ]
 
+const DEFAULT_WEEKLY_TEMPLATE: Required<WeeklyReportTemplate> = {
+  title: '周报模板',
+  fields: [
+    { key: 'done', label: '本周完成', required: true, placeholder: '本周完成了哪些工作？', rows: 3 },
+    { key: 'plan', label: '下周计划', required: false, placeholder: '下周计划做什么？', rows: 2 },
+    { key: 'issues', label: '遇到的问题', required: false, placeholder: '遇到的问题、风险或需要帮助的地方（可选）', rows: 2 },
+    { key: 'summary', label: '一句话总结', required: false, placeholder: '本周整体进展的一句话总结', rows: 2 },
+  ],
+}
+
+function normalizeWeeklyTemplate(template?: WeeklyReportTemplate): Required<WeeklyReportTemplate> {
+  const sourceFields = Array.isArray(template?.fields) && template.fields.length > 0
+    ? template.fields
+    : DEFAULT_WEEKLY_TEMPLATE.fields
+  const fields = sourceFields
+    .filter(field => field.key && field.label)
+    .map(field => ({
+      key: field.key,
+      label: field.label,
+      required: !!field.required,
+      placeholder: field.placeholder || '',
+      rows: Math.max(1, Math.min(6, Number(field.rows || 2))),
+    }))
+  return {
+    title: template?.title || DEFAULT_WEEKLY_TEMPLATE.title,
+    fields: fields.length ? fields : DEFAULT_WEEKLY_TEMPLATE.fields,
+  }
+}
+
+function reportContentRows(content: AdminWeeklyReport['content'], template: WeeklyReportTemplate) {
+  const values = content || {}
+  const used = new Set<string>()
+  const rows: { key: string; label: string; value: string }[] = []
+  ;(template.fields || []).forEach(field => {
+    used.add(field.key)
+    const value = String(values[field.key] || '').trim()
+    if (value) rows.push({ key: field.key, label: field.label, value })
+  })
+  Object.entries(values).forEach(([key, raw]) => {
+    if (used.has(key)) return
+    const value = String(raw || '').trim()
+    if (value) rows.push({ key, label: key, value })
+  })
+  return rows
+}
+
+function reportSummary(content: AdminWeeklyReport['content'], template: WeeklyReportTemplate) {
+  return reportContentRows(content, template)[0]?.value || '（未填写内容）'
+}
+
 export default function AdminWeeklyReports() {
   const { toast } = useToast()
   const [reports, setReports] = useState<AdminWeeklyReport[]>([])
+  const [template, setTemplate] = useState<Required<WeeklyReportTemplate>>(DEFAULT_WEEKLY_TEMPLATE)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('')
   const [detail, setDetail] = useState<AdminWeeklyReport | null>(null)
@@ -45,6 +97,12 @@ export default function AdminWeeklyReports() {
   }, [tab])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    fetchSiteConfig()
+      .then(config => setTemplate(normalizeWeeklyTemplate(config.weekly_report_template)))
+      .catch(() => {})
+  }, [])
 
   const openDetail = async (report: AdminWeeklyReport) => {
     setDetail(report)
@@ -168,7 +226,7 @@ export default function AdminWeeklyReports() {
                       )}
                     </div>
                     <p className="text-sm font-medium text-[#051A24] line-clamp-1">
-                      {(report.content || {}).done || '（未填写内容）'}
+                      {reportSummary(report.content, template)}
                     </p>
                     <div className="flex items-center gap-4 mt-1.5 text-[11px] text-[#273C46]/50 flex-wrap">
                       <span className="flex items-center gap-1"><User className="w-3 h-3" /> {report.memberName || '-'}</span>
@@ -214,10 +272,13 @@ export default function AdminWeeklyReports() {
               </div>
 
               <div className="space-y-4">
-                <ContentBlock label="本周完成" value={(detail.content || {}).done} />
-                <ContentBlock label="下周计划" value={(detail.content || {}).plan} />
-                <ContentBlock label="问题/风险" value={(detail.content || {}).issues} />
-                <ContentBlock label="总结" value={(detail.content || {}).summary} />
+                {reportContentRows(detail.content, template).length > 0 ? (
+                  reportContentRows(detail.content, template).map(row => (
+                    <ContentBlock key={row.key} label={row.label} value={row.value} />
+                  ))
+                ) : (
+                  <ContentBlock label="周报内容" value="" />
+                )}
               </div>
 
               {/* AI Analysis */}

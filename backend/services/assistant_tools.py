@@ -33,6 +33,10 @@ from models import (
     WeeklyReport,
 )
 from services.ai_service import AIService, AiNotConfigured, AiRequestFailed, response_text
+from services.weekly_report_template import (
+    format_weekly_report_content,
+    validate_weekly_report_content,
+)
 
 
 VALID_TASK_STATUSES = ('todo', 'in_progress', 'review', 'done', 'blocked')
@@ -616,8 +620,9 @@ def _create_weekly_report(args, member):
         'issues': str(args.get('issues') or '').strip(),
         'summary': str(args.get('summary') or '').strip(),
     }
-    if not content['done'] and not content['plan']:
-        return False, '周报内容不能为空'
+    validation_error = validate_weekly_report_content(content)
+    if validation_error:
+        return False, validation_error
     report = WeeklyReport(
         member_id=member.id,
         project_id=args.get('project_id'),
@@ -721,10 +726,7 @@ def _analyze_report_with_ai(report):
             'role': 'user',
             'content': (
                 f'周报提交者：{report.member.name if report.member else "未知"}（第 {report.week_start or "?"} 周）\n\n'
-                f'本周完成：{report.content.get("done", "")}\n'
-                f'下周计划：{report.content.get("plan", "")}\n'
-                f'遇到的问题：{report.content.get("issues", "")}\n'
-                f'总结：{report.content.get("summary", "")}\n\n'
+                f'{format_weekly_report_content(report.content)}\n\n'
                 f'关联任务要求：\n{task_summary}'
             ),
         },

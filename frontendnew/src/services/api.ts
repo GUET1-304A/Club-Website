@@ -19,6 +19,20 @@ export interface SiteConfigData {
   members?: { description?: string; groups?: { name: string; tag: string; description: string }[] }
   footer?: { brand?: string; slogan?: string; logo?: string }
   sections?: Record<string, unknown>
+  weekly_report_template?: WeeklyReportTemplate
+}
+
+export interface WeeklyReportTemplateField {
+  key: string
+  label: string
+  required?: boolean
+  placeholder?: string
+  rows?: number
+}
+
+export interface WeeklyReportTemplate {
+  title?: string
+  fields?: WeeklyReportTemplateField[]
 }
 
 export async function fetchSiteConfig(): Promise<SiteConfigData> {

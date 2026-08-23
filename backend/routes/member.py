@@ -65,6 +65,7 @@ from services.ai_service import AiNotConfigured, AiRequestFailed
 from services.assistant_tools import _analyze_report_with_ai
 from services.reminder_service import send_reminder_notification
 from services.notification_service import notify_all_admins
+from services.weekly_report_template import validate_weekly_report_content
 from services.storage_service import (
     StorageImageInvalid,
     StorageNotConfigured,
@@ -1394,8 +1395,9 @@ def member_create_weekly_report():
             'issues': data.get('issues', ''),
             'summary': data.get('summary', ''),
         }
-    if not str(content.get('done') or '').strip() and not str(content.get('plan') or '').strip():
-        return jsonify({'error': 'bad_request', 'message': '周报内容不能为空'}), 400
+    validation_error = validate_weekly_report_content(content)
+    if validation_error:
+        return jsonify({'error': 'bad_request', 'message': validation_error}), 400
 
     report = WeeklyReport(
         member_id=member.id,
@@ -1440,6 +1442,9 @@ def member_update_weekly_report(report_id):
     if 'projectId' in data:
         report.project_id = data['projectId']
     if 'content' in data and isinstance(data['content'], dict):
+        validation_error = validate_weekly_report_content(data['content'])
+        if validation_error:
+            return jsonify({'error': 'bad_request', 'message': validation_error}), 400
         report.content = data['content']
     db.session.commit()
     return jsonify({'success': True, 'report': report.to_dict()})
