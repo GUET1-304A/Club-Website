@@ -32,6 +32,9 @@ def test_production_compose_uses_private_backend_and_file_secrets():
         "oss_access_key_secret",
         "ocr_api_key",
         "ai_api_key",
+        "feishu_webhook_url",
+        "smtp_username",
+        "smtp_password",
     )
     for secret_name in secret_names:
         assert f"{secret_name}:" in compose
@@ -45,6 +48,9 @@ def test_production_compose_uses_private_backend_and_file_secrets():
         "OSS_ACCESS_KEY_SECRET_FILE": "oss_access_key_secret",
         "OCR_API_KEY_FILE": "ocr_api_key",
         "AI_API_KEY_FILE": "ai_api_key",
+        "FEISHU_WEBHOOK_URL_FILE": "feishu_webhook_url",
+        "SMTP_USERNAME_FILE": "smtp_username",
+        "SMTP_PASSWORD_FILE": "smtp_password",
     }
     for variable, secret_name in expected_secret_files.items():
         assert f"{variable}: /run/secrets/{secret_name}" in compose
@@ -98,6 +104,9 @@ def test_production_examples_never_store_real_secrets_and_gunicorn_is_pinned():
         "secrets/ocr_api_key.txt.example",
         "secrets/ai_api_key.txt.example",
         "secrets/bootstrap_admin_password.txt.example",
+        "secrets/feishu_webhook_url.txt.example",
+        "secrets/smtp_username.txt.example",
+        "secrets/smtp_password.txt.example",
     ):
         content = _read(example).strip()
         assert content

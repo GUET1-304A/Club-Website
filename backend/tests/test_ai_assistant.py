@@ -235,6 +235,55 @@ def test_weekly_report_submit_notifies_admins(client):
                     db.session.commit()
 
 
+def test_weekly_report_submit_dispatches_external_admin_notification(client, monkeypatch):
+    headers = _member_headers(client)
+    report_id = None
+    dispatched = []
+
+    def fake_dispatch(payload, recipients=None):
+        dispatched.append((payload, recipients))
+        return [{'channel': 'email', 'success': True, 'recipients': len(recipients or [])}]
+
+    monkeypatch.setattr('services.notification_service.dispatch_external_notification', fake_dispatch)
+
+    with client.application.app_context():
+        from models import AdminUser
+
+        admin = AdminUser.query.filter_by(username='admin').first()
+        admin.email = 'teacher@example.com'
+        db.session.commit()
+
+    try:
+        created = client.post(
+            '/api/member/weekly-reports',
+            headers=headers,
+            json={'done': '完成外部通知', 'plan': '接入飞书邮件', 'issues': ''},
+        )
+        assert created.status_code == 201
+        report_id = created.get_json()['report']['id']
+
+        submitted = client.post(
+            f'/api/member/weekly-reports/{report_id}/submit',
+            headers=headers,
+        )
+        assert submitted.status_code == 200
+
+        assert len(dispatched) == 1
+        payload, recipients = dispatched[0]
+        assert payload.title.startswith('新周报待审阅')
+        assert payload.link == '/admin/weekly-reports'
+        assert payload.notification_type == 'weekly_report_submitted'
+        assert recipients == ['teacher@example.com']
+    finally:
+        if report_id is not None:
+            with client.application.app_context():
+                report = db.session.get(WeeklyReport, report_id)
+                if report is not None:
+                    db.session.delete(report)
+                    AdminNotification.query.filter_by(link='/admin/weekly-reports').delete()
+                    db.session.commit()
+
+
 def test_weekly_report_permission_isolation(client):
     headers_a = _member_headers(client, '2023001')
     headers_b = _member_headers(client, '2023002')
@@ -1111,6 +1160,49 @@ def test_admin_can_create_reminder_for_member(client):
                 if reminder is not None:
                     db.session.delete(reminder)
                     db.session.commit()
+
+
+def test_due_reminder_dispatches_external_member_notification(client, monkeypatch):
+    headers = _member_headers(client, '2022001')
+    reminder_id = None
+    dispatched = []
+
+    def fake_dispatch(payload, recipients=None):
+        dispatched.append((payload, recipients))
+        return [{'channel': 'email', 'success': True, 'recipients': len(recipients or [])}]
+
+    monkeypatch.setattr('services.reminder_service.dispatch_external_notification', fake_dispatch)
+
+    try:
+        created = client.post(
+            '/api/member/reminders',
+            headers=headers,
+            json={
+                'title': '立即提醒测试',
+                'message': '需要同步外部通道',
+            },
+        )
+        assert created.status_code == 201
+        reminder = created.get_json()['reminder']
+        reminder_id = reminder['id']
+        assert reminder['status'] == 'sent'
+        assert created.get_json()['sentImmediately'] is True
+
+        assert len(dispatched) == 1
+        payload, recipients = dispatched[0]
+        assert payload.title == '立即提醒测试'
+        assert payload.body == '需要同步外部通道'
+        assert payload.link == '/member/notifications'
+        assert payload.notification_type == 'announcement'
+        assert recipients == ['xingyu@example.com']
+    finally:
+        if reminder_id is not None:
+            with client.application.app_context():
+                reminder = db.session.get(Reminder, reminder_id)
+                if reminder is not None:
+                    db.session.delete(reminder)
+                Notification.query.filter_by(title='立即提醒测试').delete()
+                db.session.commit()
 
 
 def test_reminder_scan_sends_notification(client):

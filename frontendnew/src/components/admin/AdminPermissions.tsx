@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Plus, KeyRound } from 'lucide-react'
+import { Mail, Users, Plus, KeyRound } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import AdminModal, { Field, Input, Select } from './AdminModal'
 import {
@@ -14,7 +14,7 @@ export default function AdminPermissions() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AdminUserData | null>(null)
-  const [form, setForm] = useState({ username: '', password: '', role: 'teacher' as 'admin' | 'teacher' })
+  const [form, setForm] = useState({ username: '', password: '', role: 'teacher' as 'admin' | 'teacher', email: '' })
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -28,13 +28,13 @@ export default function AdminPermissions() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ username: '', password: '', role: 'teacher' })
+    setForm({ username: '', password: '', role: 'teacher', email: '' })
     setModalOpen(true)
   }
 
   const openEdit = (user: AdminUserData) => {
     setEditing(user)
-    setForm({ username: user.username, password: '', role: user.role })
+    setForm({ username: user.username, password: '', role: user.role, email: user.email || '' })
     setModalOpen(true)
   }
 
@@ -44,12 +44,12 @@ export default function AdminPermissions() {
     setSaving(true)
     try {
       if (editing) {
-        const payload: { password?: string; role: 'admin' | 'teacher' } = { role: form.role }
+        const payload: { password?: string; role: 'admin' | 'teacher'; email: string } = { role: form.role, email: form.email.trim() }
         if (form.password) payload.password = form.password
         await adminUpdateUser(editing.id, payload)
         toast('success', '账号已更新')
       } else {
-        await adminCreateUser({ username: form.username.trim(), password: form.password, role: form.role })
+        await adminCreateUser({ username: form.username.trim(), password: form.password, role: form.role, email: form.email.trim() })
         toast('success', '账号已创建')
       }
       setModalOpen(false)
@@ -97,6 +97,7 @@ export default function AdminPermissions() {
                   <p className="text-sm font-medium text-[#051A24]">{user.username}</p>
                   <p className="text-[11px] text-[#273C46]/50 mt-0.5">
                     {user.role === 'teacher' ? '教师' : '管理员'}
+                    {user.email ? ` · ${user.email}` : ''}
                   </p>
                 </div>
                 <button onClick={() => openEdit(user)}
@@ -113,6 +114,12 @@ export default function AdminPermissions() {
           <div className="space-y-4">
             <Field label="用户名">
               <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} disabled={!!editing} />
+            </Field>
+            <Field label="通知邮箱">
+              <div className="relative">
+                <Mail className="w-4 h-4 text-[#273C46]/35 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="teacher@example.com" className="pl-9" />
+              </div>
             </Field>
             <Field label={editing ? '新密码（留空不修改）' : '密码'}>
               <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="至少6个字符" />

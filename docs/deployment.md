@@ -34,7 +34,7 @@ Verify with `docker compose ps`, `curl http://localhost:5000/health`, and
 1. Copy each `secrets/*.txt.example` file to the matching untracked `.txt`
    file and replace every `REPLACE_*` value with a generated secret. Restrict
    file permissions to the deployment operator.
-2. Set the seven host-file variables: `SECRET_KEY_FILE`, `JWT_SECRET_KEY_FILE`,
+2. Set the seven required host-file variables: `SECRET_KEY_FILE`, `JWT_SECRET_KEY_FILE`,
    `OSS_ACCESS_KEY_ID_FILE`, `OSS_ACCESS_KEY_SECRET_FILE`, `OCR_API_KEY_FILE`,
    `AI_API_KEY_FILE`, and `BOOTSTRAP_ADMIN_PASSWORD_FILE`. Set a non-secret
    `BOOTSTRAP_ADMIN_USERNAME` and the required public `CORS_ORIGINS` value.
@@ -56,6 +56,41 @@ docker compose -f docker-compose.prod.yml -f docker-compose.prod.tls.yml up -d
 
 `deploy/nginx/tls.conf` is mounted read-only. Update its `server_name` before
 deployment; `tls.conf.example` is the tracked reference configuration.
+
+## External notifications
+
+Internal database notifications are always written. Feishu and SMTP email are
+optional best-effort channels for reminders, weekly report submissions, and AI
+weekly report analysis summaries. External delivery failures are logged and do
+not roll back the main workflow.
+
+To enable Feishu, copy `secrets/feishu_webhook_url.txt.example` to an
+untracked secret file, replace the `REPLACE_*` value, and set:
+
+```sh
+NOTIFICATION_FEISHU_ENABLED=true
+FEISHU_WEBHOOK_URL_FILE=/absolute/path/to/feishu_webhook_url.txt
+PUBLIC_BASE_URL=https://your-domain.example
+```
+
+To enable SMTP email, configure teacher/admin notification email addresses in
+the admin permissions page, copy the SMTP example files to untracked secret
+files, and set:
+
+```sh
+NOTIFICATION_EMAIL_ENABLED=true
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_FROM=noreply@example.com
+SMTP_USERNAME_FILE=/absolute/path/to/smtp_username.txt
+SMTP_PASSWORD_FILE=/absolute/path/to/smtp_password.txt
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+PUBLIC_BASE_URL=https://your-domain.example
+```
+
+The production Compose file mounts placeholder example secrets by default so
+the channels remain disabled until their explicit `*_ENABLED` flags are set.
 
 ## Backup
 

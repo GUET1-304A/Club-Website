@@ -117,6 +117,20 @@ class Config:
     AI_MODEL = os.environ.get('AI_MODEL', '')
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
 
+    # ─── 外部通知通道 ───
+    # 站内通知始终写入数据库；飞书/邮件仅在显式启用且配置完整时旁路发送。
+    NOTIFICATION_EXTERNAL_TIMEOUT = int(os.environ.get('NOTIFICATION_EXTERNAL_TIMEOUT', 10))
+    NOTIFICATION_FEISHU_ENABLED = _get_bool('NOTIFICATION_FEISHU_ENABLED', False)
+    FEISHU_WEBHOOK_URL = _read_secret('FEISHU_WEBHOOK_URL')
+    NOTIFICATION_EMAIL_ENABLED = _get_bool('NOTIFICATION_EMAIL_ENABLED', False)
+    SMTP_HOST = os.environ.get('SMTP_HOST', '')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_FROM = os.environ.get('SMTP_FROM', '')
+    SMTP_USERNAME = _read_secret('SMTP_USERNAME')
+    SMTP_PASSWORD = _read_secret('SMTP_PASSWORD')
+    SMTP_USE_TLS = _get_bool('SMTP_USE_TLS', True)
+    SMTP_USE_SSL = _get_bool('SMTP_USE_SSL', False)
+
     # ─── 智能体定时提醒扫描 ───
     # REMINDER_SCAN_ENABLED: 是否启动后台提醒扫描线程
     # REMINDER_SCAN_INTERVAL: 扫描间隔（秒）

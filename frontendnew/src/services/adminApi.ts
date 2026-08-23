@@ -99,6 +99,7 @@ export interface AdminUserData {
   id: number
   username: string
   role: 'admin' | 'teacher'
+  email?: string | null
   mustChangePassword?: boolean
   securityWarnings?: string[]
   created_at?: string
@@ -112,14 +113,14 @@ export async function adminListUsers(): Promise<AdminUserData[]> {
   return authRequest('/admin/users')
 }
 
-export async function adminCreateUser(data: { username: string; password: string; role: 'admin' | 'teacher' }): Promise<{ success: boolean; user: AdminUserData }> {
+export async function adminCreateUser(data: { username: string; password: string; role: 'admin' | 'teacher'; email?: string }): Promise<{ success: boolean; user: AdminUserData }> {
   return authRequest('/admin/users', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 }
 
-export async function adminUpdateUser(userId: number, data: { password?: string; role?: 'admin' | 'teacher' }): Promise<{ success: boolean; user: AdminUserData }> {
+export async function adminUpdateUser(userId: number, data: { password?: string; role?: 'admin' | 'teacher'; email?: string }): Promise<{ success: boolean; user: AdminUserData }> {
   return authRequest(`/admin/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(data),

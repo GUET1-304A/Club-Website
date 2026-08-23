@@ -126,6 +126,7 @@ class AdminUser(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)     # 管理员用户名（唯一）
     password_hash = db.Column(db.String(255), nullable=False)            # bcrypt 哈希后的密码
     role = db.Column(db.String(20), nullable=False, default='admin')      # admin / teacher
+    email = db.Column(db.String(120), nullable=True)                     # 外部通知邮箱
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
@@ -161,6 +162,7 @@ class AdminUser(db.Model):
             'id': self.id,
             'username': self.username,
             'role': self.role,
+            'email': self.email,
             'mustChangePassword': must_change_password,
             'securityWarnings': (
                 ['默认管理员密码仍在使用，请立即在权限管理中修改。']

@@ -593,10 +593,24 @@ def test_teacher_role_login_and_permission_boundaries(client):
     created = client.post(
         "/api/admin/users",
         headers=admin_headers,
-        json={"username": username, "password": "teacher456", "role": "teacher"},
+        json={
+            "username": username,
+            "password": "teacher456",
+            "role": "teacher",
+            "email": "teacher@example.com",
+        },
     )
     assert created.status_code == 201
     assert created.get_json()["user"]["role"] == "teacher"
+    assert created.get_json()["user"]["email"] == "teacher@example.com"
+
+    updated = client.put(
+        f"/api/admin/users/{created.get_json()['user']['id']}",
+        headers=admin_headers,
+        json={"role": "teacher", "email": "teacher-updated@example.com"},
+    )
+    assert updated.status_code == 200
+    assert updated.get_json()["user"]["email"] == "teacher-updated@example.com"
 
     with client.application.app_context():
         user = AdminUser.query.filter_by(username=username).first()

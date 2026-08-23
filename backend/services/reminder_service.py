@@ -12,7 +12,10 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 
-from models import Notification, Project, Reminder, Task, WeeklyReport, db
+from flask import current_app
+
+from models import Member, Notification, Project, Reminder, Task, WeeklyReport, db
+from services.notification_channels import NotificationPayload, send_external_notification
 
 
 def run_reminder_scan(app):
@@ -110,9 +113,33 @@ def send_reminder_notification(reminder):
         link=reminder.link or '/member/notifications',
         is_read=False,
     ))
+    recipient = reminder.member or db.session.get(Member, reminder.member_id)
+    recipient_email = recipient.email if recipient else None
+    dispatch_external_notification(
+        NotificationPayload(
+            title=reminder.title,
+            body=reminder.message or '',
+            link=reminder.link or '/member/notifications',
+            notification_type=notification_type,
+        ),
+        recipients=[recipient_email] if recipient_email else [],
+    )
     reminder.status = 'sent'
     reminder.sent_at = now
     return True
+
+
+def dispatch_external_notification(payload, recipients=None):
+    """Best-effort external delivery for configured member reminder channels."""
+    try:
+        return send_external_notification(
+            current_app.config,
+            payload,
+            recipients=recipients,
+        )
+    except Exception:
+        current_app.logger.exception('External reminder notification delivery failed')
+        return []
 
 
 def _already_reminded_recently(task, window_hours=24):

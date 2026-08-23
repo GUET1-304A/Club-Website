@@ -268,6 +268,7 @@ def _migrate_columns(app):
     migrations = [
         # ── 管理员角色 ──
         ('admin_users', 'role', 'VARCHAR(20) DEFAULT "admin"'),
+        ('admin_users', 'email', 'VARCHAR(120)'),
 
         # ── Member 展示字段 ──
         ('members', 'role', 'VARCHAR(100)'),

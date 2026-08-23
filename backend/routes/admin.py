@@ -226,6 +226,7 @@ def admin_create_user():
     _admin_or_403()
     data = request.get_json()
     username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip() or None
     password = data.get('password') or ''
     role = data.get('role') or 'teacher'
 
@@ -238,7 +239,7 @@ def admin_create_user():
     if AdminUser.query.filter_by(username=username).first():
         return jsonify({'error': 'conflict', 'message': '该用户名已存在'}), 409
 
-    user = AdminUser(username=username, role=role)
+    user = AdminUser(username=username, role=role, email=email)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -261,6 +262,8 @@ def admin_update_user(user_id):
         user.set_password(data['password'])
     if data.get('role') in ('admin', 'teacher'):
         user.role = data['role']
+    if 'email' in data:
+        user.email = (data.get('email') or '').strip() or None
 
     db.session.commit()
     return jsonify({'success': True, 'user': user.to_dict()})

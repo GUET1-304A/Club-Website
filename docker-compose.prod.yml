@@ -35,6 +35,17 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      NOTIFICATION_EXTERNAL_TIMEOUT: ${NOTIFICATION_EXTERNAL_TIMEOUT:-10}
+      NOTIFICATION_FEISHU_ENABLED: ${NOTIFICATION_FEISHU_ENABLED:-false}
+      FEISHU_WEBHOOK_URL_FILE: /run/secrets/feishu_webhook_url
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_USERNAME_FILE: /run/secrets/smtp_username
+      SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
     secrets:
       - source: secret_key
         target: secret_key
@@ -50,6 +61,12 @@ services:
         target: ai_api_key
       - source: bootstrap_admin_password
         target: bootstrap_admin_password
+      - source: feishu_webhook_url
+        target: feishu_webhook_url
+      - source: smtp_username
+        target: smtp_username
+      - source: smtp_password
+        target: smtp_password
     volumes:
       - db_data_prod:/app/data
       - upload_data_prod:/app/uploads
@@ -91,3 +108,9 @@ secrets:
     file: ${AI_API_KEY_FILE:?Set AI_API_KEY_FILE to the secret file path.}
   bootstrap_admin_password:
     file: ${BOOTSTRAP_ADMIN_PASSWORD_FILE:?Set BOOTSTRAP_ADMIN_PASSWORD_FILE to the secret file path.}
+  feishu_webhook_url:
+    file: ${FEISHU_WEBHOOK_URL_FILE:-./secrets/feishu_webhook_url.txt.example}
+  smtp_username:
+    file: ${SMTP_USERNAME_FILE:-./secrets/smtp_username.txt.example}
+  smtp_password:
+    file: ${SMTP_PASSWORD_FILE:-./secrets/smtp_password.txt.example}
