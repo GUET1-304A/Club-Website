@@ -4,7 +4,9 @@ FROM node:24-alpine AS build
 WORKDIR /app
 
 COPY frontendnew/package.json frontendnew/package-lock.json ./
-RUN npm ci
+# 可用 --build-arg NPM_REGISTRY=... 指定镜像源（默认官方源，行为不变）
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm ci --registry="$NPM_REGISTRY"
 
 COPY frontendnew/ ./
 

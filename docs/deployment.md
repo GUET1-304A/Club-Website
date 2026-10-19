@@ -117,8 +117,8 @@ project name, for example:
 
 ```sh
 docker compose -f docker-compose.prod.yml stop backend
-docker run --rm -v final-prompt_db_data_prod:/data -v "$PWD/backups:/backup" alpine tar czf /backup/db-data.tgz -C /data .
-docker run --rm -v final-prompt_upload_data_prod:/data -v "$PWD/backups:/backup" alpine tar czf /backup/uploads.tgz -C /data .
+docker run --rm -v shetuanwebnew_db_data_prod:/data -v "$PWD/backups:/backup" alpine tar czf /backup/db-data.tgz -C /data .
+docker run --rm -v shetuanwebnew_upload_data_prod:/data -v "$PWD/backups:/backup" alpine tar czf /backup/uploads.tgz -C /data .
 ```
 
 ## Restore
@@ -128,8 +128,8 @@ archives into the matching volumes and restart the stack:
 
 ```sh
 docker compose -f docker-compose.prod.yml down
-docker run --rm -v final-prompt_db_data_prod:/data -v "$PWD/backups:/backup" alpine sh -c 'rm -rf /data/* && tar xzf /backup/db-data.tgz -C /data'
-docker run --rm -v final-prompt_upload_data_prod:/data -v "$PWD/backups:/backup" alpine sh -c 'rm -rf /data/* && tar xzf /backup/uploads.tgz -C /data'
+docker run --rm -v shetuanwebnew_db_data_prod:/data -v "$PWD/backups:/backup" alpine sh -c 'rm -rf /data/* && tar xzf /backup/db-data.tgz -C /data'
+docker run --rm -v shetuanwebnew_upload_data_prod:/data -v "$PWD/backups:/backup" alpine sh -c 'rm -rf /data/* && tar xzf /backup/uploads.tgz -C /data'
 docker compose -f docker-compose.prod.yml up -d
 ```
 

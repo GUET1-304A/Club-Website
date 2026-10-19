@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     command: >-
       gunicorn --workers 1 --threads 4 --bind 0.0.0.0:5000
       --access-logfile - --error-logfile - 'app:create_app()'
@@ -87,6 +89,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend.prod
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     ports:
       - "80:80"
     depends_on:

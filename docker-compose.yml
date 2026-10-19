@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+      args:
+        # 网络受限时在 .env 里设置 PIP_INDEX_URL（如清华/阿里云 PyPI 镜像）
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     container_name: xingyu-backend
     ports:
       - "5000:5000"
@@ -49,6 +52,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     container_name: xingyu-frontend
     ports:
       - "3000:3000"

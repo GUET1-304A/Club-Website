@@ -4,8 +4,10 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Python dependencies (pure Python — no system compiler needed)
+# 可用 --build-arg PIP_INDEX_URL=... 指定镜像源（默认官方源，行为不变）
+ARG PIP_INDEX_URL=https://pypi.org/simple
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --index-url "$PIP_INDEX_URL" -r requirements.txt
 
 # Copy backend source
 COPY backend/ .
