@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import Card from '../ui/Card'
+import { fetchPage } from '../../services/api'
 
-const steps = [
+interface OnboardingStep {
+  title: string
+  content: string
+}
+
+const FALLBACK_STEPS: OnboardingStep[] = [
   { title: '第一步：了解社团', content: '浏览官网，了解各组别方向，找到你感兴趣的方向。阅读博客和项目展示，感受社团的技术氛围。' },
   { title: '第二步：提交报名', content: '在加入页面填写报名表，包括基本信息、意向组别和申请动机。我们会认真阅读每一份申请。' },
   { title: '第三步：等待通知', content: '提交后 1 周内，我们会通过邮件通知筛选结果和面试安排。请留意你的邮箱。' },
@@ -12,6 +18,16 @@ const steps = [
 
 export default function OnboardingPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
+  const [steps, setSteps] = useState<OnboardingStep[]>(FALLBACK_STEPS)
+
+  useEffect(() => {
+    fetchPage('onboarding')
+      .then(page => {
+        const remote = (page.content as { steps?: OnboardingStep[] }).steps
+        if (Array.isArray(remote) && remote.length > 0) setSteps(remote)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="page-enter max-w-[800px] mx-auto px-6 py-24">

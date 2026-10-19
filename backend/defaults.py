@@ -193,6 +193,9 @@ DEFAULT_PAGES = {
                 {'question': '没有项目经验怎么办？',
                  'answer': '没关系，我们会提供学习路径和mentor指导，帮助你快速成长。'},
             ],
+            'cta_title': '准备好加入我们了吗？',
+            'cta_note': '2026 春季招新进行中',
+            'cta_button': '立即报名',
         },
     },
 
