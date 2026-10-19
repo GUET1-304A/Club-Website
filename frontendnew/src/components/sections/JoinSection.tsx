@@ -1,6 +1,6 @@
-import { useRef } from 'react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
+import LunarBoardingPass from '../ui/lunar-boarding-pass'
 import { useSiteData } from '../../store/useSiteData'
 import { renderRichText } from '../../lib/richText'
 import { Users, Code, Rocket, Heart } from 'lucide-react'
@@ -12,114 +12,111 @@ const benefits = [
   { icon: Heart, title: '温暖社群', desc: '不止是技术，这里有一群懂你的朋友' },
 ]
 
-function createSpawner(thumbnails: string[]) {
-  let lastSpawn = 0
-  return (container: HTMLDivElement | null, particlesEl: HTMLDivElement | null, clientX: number, clientY: number) => {
-    if (!container || !particlesEl) return
-    const now = performance.now()
-    if (now - lastSpawn < 80) return
-    lastSpawn = now
-    const rect = container.getBoundingClientRect()
-    const x = clientX - rect.left
-    const y = clientY - rect.top
-    const src = thumbnails[Math.floor(Math.random() * thumbnails.length)]
-    const rotation = (Math.random() - 0.5) * 20
-    const el = document.createElement('img')
-    el.src = src
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:40px;height:40px;border-radius:8px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;transform:translate(-50%,-50%) rotate(${rotation}deg) scale(1);opacity:1;`
-    const animation = el.animate(
-      [
-        { transform: `translate(-50%,-50%) rotate(${rotation}deg) scale(1)`, opacity: '1' },
-        { transform: `translate(-50%,-50%) rotate(${rotation}deg) scale(0)`, opacity: '0' },
-      ],
-      { duration: 1000, easing: 'ease-out', fill: 'forwards' }
-    )
-    animation.addEventListener('finish', () => el.remove(), { once: true })
-    particlesEl.appendChild(el)
-  }
-}
-
 export default function JoinSection() {
-  const { ref, isInView } = useInViewAnimation({ threshold: 0.1 })
-  const { projects, members, config } = useSiteData()
-  const thumbnails = [...projects.map((p) => p.coverImage), ...members.map((m) => m.avatar)]
-  // Left card refs
-  const leftCardRef = useRef<HTMLDivElement>(null)
-  const leftParticlesRef = useRef<HTMLDivElement>(null)
-  const spawnLeft = useRef(createSpawner(thumbnails)).current
-  // Right card refs
-  const rightCardRef = useRef<HTMLDivElement>(null)
-  const rightParticlesRef = useRef<HTMLDivElement>(null)
-  const spawnRight = useRef(createSpawner(thumbnails)).current
+  const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
+  const { config } = useSiteData()
 
   return (
-    <section ref={ref} className="py-24 md:py-36">
-      <div className="max-w-[1200px] mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* ===== Left — Benefits ===== */}
-          <div className={isInView ? 'animate-slide-in-left' : 'opacity-0'}>
-            <div ref={leftCardRef} className="rounded-[40px] bg-white shadow-lg p-10 md:p-14 h-full relative overflow-hidden">
-              <div ref={leftParticlesRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }} />
-              <div
-                className="relative z-10"
-                onMouseMove={(e) => spawnLeft(leftCardRef.current, leftParticlesRef.current, e.clientX, e.clientY)}
-              >
-              <p className="font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4">
-                {config.joinEyebrow}
-              </p>
-              <h2 className="text-[28px] md:text-[36px] text-[#051A24] leading-[1.15] tracking-tight mb-10">
-                {renderRichText(config.joinTitle)}
-              </h2>
+    <section ref={ref} className="relative z-10 py-24 md:py-32">
+      <div className="max-w-[1000px] mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-10 md:mb-12">
+          <p className="font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4">
+            {config.joinEyebrow}
+          </p>
+          <h2 className="text-[28px] md:text-[36px] text-[#051A24] leading-[1.15] tracking-tight">
+            {renderRichText(config.joinTitle)}
+          </h2>
+          <p className="text-sm md:text-base text-[#273C46] leading-relaxed max-w-2xl mx-auto mt-4">
+            {config.joinCtaDescription}
+          </p>
+        </div>
 
-              <div className="space-y-6">
-                {benefits.map((b, i) => {
-                  const Icon = b.icon
-                  return (
-                    <div key={i} className="flex gap-4 items-start group">
-                      <div className="w-10 h-10 rounded-xl bg-[#051A24]/5 flex items-center justify-center shrink-0 group-hover:bg-[#051A24] transition-colors duration-300">
-                        <Icon className="w-5 h-5 text-[#051A24] group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-medium text-[#051A24]">{b.title}</h3>
-                        <p className="text-sm text-[#273C46] mt-1 leading-relaxed">{b.desc}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-            </div>
+        {/* Boarding pass */}
+        <div className={isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'}>
+          <div className="hidden md:block">
+            <LunarBoardingPass
+              title={config.siteName}
+              tier="CREW"
+              date="2026"
+              welcome={'加入我们\n一起造点东西'}
+              eyebrow={'A pass to\nbuild real things'}
+              words={['Build', 'Together']}
+              notes={['学生开发者社群 · 长期招新', '前端 / 后端 / 设计 / 算法 / 产品']}
+              passenger="YOUR NAME"
+              from="CAMPUS"
+              to="XINGYU"
+              craft="STUDIO-01"
+              dateCode="OPEN2026"
+              gate="A1"
+              group="CREW"
+              seat="01"
+              boardingTime="ANYTIME"
+              site="GUILIN"
+              lat={25.2736}
+              lon={110.29}
+              seq=""
+              featuring="前端 · 后端 · 设计 · 算法 · 产品"
+              headline="Join the crew"
+              stamp="WELCOME"
+              sideLabels={['成员凭证', '加入须知']}
+              night="#051A24"
+              starInk="#e8eef2"
+              paper="#f0ece6"
+              paperInk="#0d212c"
+              stampColor="#3457ff"
+              maxWidth={960}
+            />
           </div>
 
-          {/* ===== Right — CTA with particles ===== */}
-          <div className={isInView ? 'animate-slide-in-right' : 'opacity-0'}>
-            <div ref={rightCardRef} className="rounded-[40px] bg-[#051A24] shadow-xl overflow-hidden h-full flex flex-col justify-center relative">
-              <div ref={rightParticlesRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }} />
-              <div
-                className="px-10 md:px-14 py-20 md:py-28 text-center cursor-default relative z-10"
-                onMouseMove={(e) => spawnRight(rightCardRef.current, rightParticlesRef.current, e.clientX, e.clientY)}
-              >
-                {/* Decorative top highlight */}
-                <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-                <p className="font-mono text-xs text-[#E0EBF0]/60 tracking-widest uppercase mb-6">
-                  {config.joinCtaEyebrow}
-                </p>
-                <h2 className="text-[40px] md:text-[52px] lg:text-[60px] text-[#F6FCFF] leading-[1.05] mb-6">
-                  {renderRichText(config.joinCtaTitle)}
-                </h2>
-                <p className="text-sm md:text-base text-[#E0EBF0]/70 max-w-sm mx-auto leading-relaxed mb-10">
-                  {config.joinCtaDescription}
-                </p>
-                <Button variant="secondary" size="lg" href="/join">
-                  {config.joinCtaButton}
-                </Button>
-
-                {/* Bottom glow */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              </div>
+          {/* Mobile: a compact version of the same ticket */}
+          <div className="md:hidden relative overflow-hidden rounded-[28px] bg-[#051A24] text-[#F6FCFF] px-6 py-7 shadow-xl">
+            <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.24em] text-white/45 uppercase">
+              <span>{config.siteName}</span>
+              <span>CREW PASS</span>
             </div>
+            <p className="mt-10 text-[32px] leading-[1.05] tracking-tight">
+              加入我们
+              <br />
+              一起造点东西
+            </p>
+            <div className="mt-8 grid grid-cols-3 gap-3 border-t border-dashed border-white/20 pt-5 font-mono text-[10px] uppercase tracking-widest text-white/40">
+              <div><span className="block text-white/30">From</span>CAMPUS</div>
+              <div><span className="block text-white/30">To</span>XINGYU</div>
+              <div><span className="block text-white/30">Gate</span>A1</div>
+            </div>
+            <p className="mt-5 text-[11px] leading-relaxed text-white/50">
+              学生开发者社群 · 长期招新
+              <br />
+              前端 / 后端 / 设计 / 算法 / 产品
+            </p>
+            <Button variant="secondary" href="/join" className="w-full mt-6">
+              {config.joinCtaButton}
+            </Button>
           </div>
+        </div>
+
+        {/* Benefits */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 md:mt-14">
+          {benefits.map((benefit) => {
+            const Icon = benefit.icon
+            return (
+              <div key={benefit.title} className="rounded-[24px] bg-white/70 backdrop-blur-sm border border-[#051A24]/8 p-5">
+                <div className="w-9 h-9 rounded-xl bg-[#051A24]/5 flex items-center justify-center mb-4">
+                  <Icon className="w-4.5 h-4.5 text-[#051A24]" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-sm font-medium text-[#051A24]">{benefit.title}</h3>
+                <p className="text-xs text-[#273C46] leading-relaxed mt-1.5">{benefit.desc}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* CTA */}
+        <div className="text-center mt-10">
+          <Button variant="primary" size="lg" href="/join">
+            {config.joinCtaButton}
+          </Button>
         </div>
       </div>
     </section>
