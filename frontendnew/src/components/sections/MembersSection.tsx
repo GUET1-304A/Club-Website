@@ -11,7 +11,7 @@ export default function MembersSection() {
   const memberTestimonials: Testimonial[] = members.map((m) => ({
     quote: m.bio || '热爱技术，乐于分享，用代码创造价值。',
     name: m.name,
-    designation: `${m.role} · ${m.grade}`,
+    designation: [m.role, m.grade].filter(Boolean).join(' · '),
     src: m.avatar,
   }))
 

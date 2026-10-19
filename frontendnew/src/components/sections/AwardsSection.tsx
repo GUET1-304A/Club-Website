@@ -2,6 +2,7 @@ import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
 import FanCards from '../ui/FanCards'
 import { useSiteData } from '../../store/useSiteData'
+import { thumbUrl } from '../../lib/ossImage'
 import type { CardItem } from '../ui/FanCards'
 
 // Award cover images using Unsplash
@@ -21,7 +22,7 @@ export default function AwardsSection() {
   const { awards } = useSiteData()
 
   const awardCards: CardItem[] = awards.map((a, i) => ({
-    imgUrl: a.certificateImages[0] || awardCovers[i % awardCovers.length],
+    imgUrl: thumbUrl(a.certificateImages[0]) || awardCovers[i % awardCovers.length],
     alt: a.name,
     linkUrl: `/award/${a.slug}`,
     title: a.name,

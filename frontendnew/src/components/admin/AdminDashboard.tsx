@@ -31,7 +31,7 @@ function StatCard({ icon: Icon, label, value, href, gradient }: StatItem) {
       </div>
       <div>
         <p className="text-[28px] font-semibold text-[#051A24] leading-none tracking-tight"
-          style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif" }}>
+          style={{ fontFamily: "var(--font-sans)" }}>
           {value}
         </p>
         <p className="text-xs text-[#273C46]/50 mt-1 font-medium">{label}</p>
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               {greeting}，管理员
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">欢迎回到星雨作坊管理后台</p>

@@ -4,6 +4,7 @@ import TagPill from '../ui/TagPill'
 import Card from '../ui/Card'
 import Markdown from '../ui/Markdown'
 import { useSiteData } from '../../store/useSiteData'
+import { handleImageError } from '../../lib/imageFallback'
 import { fetchBlog, fetchBlogs } from '../../services/api'
 import type { BlogPost } from '../../types'
 import type { BlogData } from '../../services/api'
@@ -146,7 +147,12 @@ export default function BlogDetailPage({ slug }: { slug: string }) {
       {/* Cover image */}
       {post.coverImage && (
         <div className="w-full h-[250px] md:h-[350px] rounded-[32px] overflow-hidden shadow-lg mb-10">
-          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className="w-full h-full object-cover"
+                onError={handleImageError}
+              />
         </div>
       )}
 

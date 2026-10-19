@@ -39,7 +39,7 @@ export default function MemberDashboard({ member: initialMember }: { member: Mem
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               {greeting}，{initialMember.name}
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">
@@ -70,7 +70,7 @@ export default function MemberDashboard({ member: initialMember }: { member: Mem
                   </div>
                   <div>
                     <p className="text-[28px] font-semibold text-[#051A24] leading-none tracking-tight"
-                      style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif" }}>
+                      style={{ fontFamily: "var(--font-sans)" }}>
                       {item.value}
                     </p>
                     <p className="text-xs text-[#273C46]/50 mt-1 font-medium">{item.label}</p>
@@ -130,7 +130,7 @@ export default function MemberDashboard({ member: initialMember }: { member: Mem
               }
             </div>
             <h3 className="text-base font-medium text-[#051A24]"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               {initialMember.name}
             </h3>
             <p className="text-xs text-[#273C46]/50 mt-1">{initialMember.role || initialMember.group || '成员'}</p>

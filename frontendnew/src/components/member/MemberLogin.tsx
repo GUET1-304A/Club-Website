@@ -57,7 +57,7 @@ export default function MemberLogin({ onLogin }: Props) {
             <Logo size="lg" className="mb-4" />
             <h1
               className="text-xl text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}
             >
               成员门户
             </h1>

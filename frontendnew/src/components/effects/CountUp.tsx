@@ -18,7 +18,7 @@ export default function CountUp({
   const value = useCountUp(end, duration)
 
   return (
-    <span className={className} style={{ fontFamily: "'PP Mondwest', 'Noto Serif SC', serif" }}>
+    <span className={className} style={{ fontFamily: 'var(--font-accent)' }}>
       {prefix}
       {value}
       {suffix}

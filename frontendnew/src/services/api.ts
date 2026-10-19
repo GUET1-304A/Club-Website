@@ -18,6 +18,7 @@ export interface SiteConfigData {
   about?: { title?: string; description?: string; items?: { title: string; description: string }[] }
   members?: { description?: string; groups?: { name: string; tag: string; description: string }[] }
   footer?: { brand?: string; slogan?: string; logo?: string }
+  icp?: { number?: string; url?: string; police_number?: string; police_url?: string }
   sections?: Record<string, unknown>
   weekly_report_template?: WeeklyReportTemplate
 }

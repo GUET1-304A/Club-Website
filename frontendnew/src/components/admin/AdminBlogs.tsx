@@ -113,7 +113,7 @@ export default function AdminBlogs() {
     <AdminLayout>
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div><h1 className="text-[28px] font-medium text-[#051A24] tracking-tight" style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>博客管理</h1><p className="text-sm text-[#273C46]/50 mt-1">{blogs.length} 篇文章 · {blogs.filter(b => b.isPublished !== false).length} 已发布</p></div>
+          <div><h1 className="text-[28px] font-medium text-[#051A24] tracking-tight" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>博客管理</h1><p className="text-sm text-[#273C46]/50 mt-1">{blogs.length} 篇文章 · {blogs.filter(b => b.isPublished !== false).length} 已发布</p></div>
           <button onClick={openCreate} className="btn-primary text-sm px-5 py-2.5 flex items-center gap-2 shadow-lg shadow-[#051A24]/10"><Plus className="w-4 h-4" /> 写文章</button>
         </div>
         <div className="flex gap-1.5 flex-wrap mb-6">

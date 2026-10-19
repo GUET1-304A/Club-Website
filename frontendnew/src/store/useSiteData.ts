@@ -135,6 +135,7 @@ export function useSiteData(): SiteData {
               }))
             : localConfig.stats,
           footerText: apiConfig?.footer?.slogan || localConfig.footerText,
+          icp: apiConfig?.icp || localConfig.icp,
         }
 
         const result: SiteData = {

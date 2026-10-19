@@ -121,6 +121,12 @@
   /* 底色 */
   --bg: #FFFFFF;
 
+  /* 字体栈：中文优先使用系统字体，不再依赖境外 CDN（详见 docs/上线检查清单.md） */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
+  --font-accent: 'PP Mondwest', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', STSong, SimSun, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
+
   /* 边框 */
   --border: rgba(0, 0, 0, 0.08);
   --border-hover: rgba(0, 0, 0, 0.15);
@@ -133,33 +139,37 @@
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.14);
 }
 
-/* ===== PP Neue Montreal — 正文 ===== */
+/* ===== Inter — 正文西文（自托管可变字体 latin 子集，48KB，SIL OFL 授权）===== */
 @font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('https://assets.website-files.com/6009ec8cda7f305645c9d91b/60176f9bb43e36419997ecfe_PPNeueMontreal-Book.otf')
-    format('opentype');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('https://assets.website-files.com/6009ec8cda7f305645c9d91b/60176f9b39c5673e51a86f5a_PPNeueMontreal-Medium.otf')
-    format('opentype');
-  font-weight: 500;
+  font-family: 'Inter';
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
   font-display: swap;
 }
 
-/* ===== PP Mondwest — 衬线 accent ===== */
+/*
+  原先正文西文用 PP Neue Montreal，来自 Webflow CDN 的商业字体（外链 + 不宜自托管分发），
+  现已换成开源的 Inter。中文部分由 --font-sans 中的系统中文兜底。
+*/
+
+/* ===== JetBrains Mono — 自托管（可变字体 latin 子集，约 31KB，不再走 Google Fonts）===== */
 @font-face {
-  font-family: 'PP Mondwest';
-  src: url('/PPMondwest-Regular.woff2') format('woff2');
-  font-weight: 400;
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  font-weight: 100 800;
+  font-style: normal;
   font-display: swap;
 }
+
+/*
+  PP Mondwest 的 @font-face 已移除：字体文件从未随仓库提供（/PPMondwest-Regular.woff2 一直 404），
+  衬线 accent 现由 --font-accent 中的中文衬线兜底。
+*/
 
 /* ===== 全局基础样式 ===== */
 body {
-  font-family: 'PP Neue Montreal', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   color: var(--dark-primary);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -170,12 +180,12 @@ body {
 
 /* 衬线 accent */
 .font-mondwest {
-  font-family: 'PP Mondwest', 'Noto Serif SC', serif;
+  font-family: var(--font-accent);
 }
 
 /* 等宽标签 */
 .font-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
 }
 
 /* ===== 按钮系统 ===== */

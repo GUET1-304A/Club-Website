@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500" role="img" aria-label="暂无封面">
+  <defs>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M50 0H0v50" fill="none" stroke="#e3ddd2" stroke-width="1" />
+    </pattern>
+  </defs>
+  <rect width="800" height="500" fill="#f5f2ec" />
+  <rect width="800" height="500" fill="url(#grid)" />
+  <g fill="none" stroke="#b9b1a4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="300" y="165" width="200" height="150" rx="14" />
+    <circle cx="352" cy="212" r="13" />
+    <path d="M312 302l52-58 44 44 30-28 50 42" />
+  </g>
+  <text
+    x="400"
+    y="378"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+    font-size="26"
+    fill="#9a9186"
+  >暂无封面</text>
+</svg>

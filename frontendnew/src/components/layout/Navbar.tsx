@@ -107,7 +107,7 @@ export default function Navbar() {
           {/* Brand — clickable home */}
           <a href="/" data-logo className="flex items-center gap-2 shrink-0 mr-2" style={{ height: PANEL_H }}>
             <Logo size="md" className="hover:scale-105 transition-transform" />
-            <span className="text-sm font-medium text-[#051A24] tracking-tight" style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+            <span className="text-sm font-medium text-[#051A24] tracking-tight" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               星雨作坊
             </span>
           </a>
@@ -134,7 +134,7 @@ export default function Navbar() {
         <div className="md:hidden flex items-center justify-between w-full">
           <a href="/" className="flex items-center gap-2">
             <Logo size="sm" />
-            <span className="text-sm font-medium text-[#051A24]" style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>星雨作坊</span>
+            <span className="text-sm font-medium text-[#051A24]" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>星雨作坊</span>
           </a>
           <button className="p-2 text-[#051A24]" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

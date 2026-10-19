@@ -73,6 +73,7 @@ export default function AdminConfig() {
     { key: 'about', label: '关于我们' },
     { key: 'members', label: '成员区域' },
     { key: 'footer', label: '页脚' },
+    { key: 'icp', label: '备案信息' },
     { key: 'contact', label: '联系我们' },
     { key: 'sections', label: '区块开关' },
     { key: 'weekly_report_template', label: '周报模板' },
@@ -150,6 +151,19 @@ export default function AdminConfig() {
                     { key: 'brand', label: '品牌名', type: 'text' },
                     { key: 'slogan', label: '标语', type: 'text' },
                     { key: 'logo', label: 'Logo 路径', type: 'text' },
+                  ]}
+                />
+              )}
+              {activeSection === 'icp' && (
+                <SectionEditor
+                  title="备案信息"
+                  data={config.icp as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('icp', val)}
+                  fields={[
+                    { key: 'number', label: 'ICP 备案号', type: 'text' },
+                    { key: 'url', label: '备案查询链接', type: 'text' },
+                    { key: 'police_number', label: '公安联网备案号（办好后填）', type: 'text' },
+                    { key: 'police_url', label: '公安备案链接', type: 'text' },
                   ]}
                 />
               )}

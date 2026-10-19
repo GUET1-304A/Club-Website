@@ -153,7 +153,7 @@ export default function ProjectKanban({ member, projectId }: Props) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-                style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+                style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
                 {project.name}
               </h1>
               <div className="flex items-center gap-3 mt-2 text-xs text-[#273C46]/50">

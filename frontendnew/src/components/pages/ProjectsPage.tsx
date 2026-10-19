@@ -7,6 +7,7 @@ import type { SearchItem } from '../ui/SearchModal'
 import EmptyState from '../ui/EmptyState'
 import Button from '../ui/Button'
 import { useSiteData } from '../../store/useSiteData'
+import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
 
 const categories = [
   { key: 'all', label: '全部' },
@@ -53,7 +54,13 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
           {filtered.map((project) => (
             <Card key={project.id} className="overflow-hidden !p-0">
-              <img src={project.coverImage} alt={project.name} className="w-full h-52 object-cover" loading="lazy" />
+              <img
+                src={project.coverImage || COVER_PLACEHOLDER}
+                alt={project.name}
+                className="w-full h-52 object-cover"
+                loading="lazy"
+                onError={handleImageError}
+              />
               <div className="p-6">
                 <h3 className="text-xl font-medium text-[#051A24]">{project.name}</h3>
                 <p className="text-sm text-[#273C46] mt-2 line-clamp-2">{project.description}</p>

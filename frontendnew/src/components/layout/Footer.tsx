@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react'
 import GithubIcon from '../ui/GithubIcon'
 import Logo from '../ui/Logo'
+import { useSiteData } from '../../store/useSiteData'
 
 const quickLinks = [
   { label: '关于我们', href: '/about' },
@@ -14,6 +15,12 @@ const quickLinks = [
 ]
 
 export default function Footer() {
+  const { config } = useSiteData()
+  const icpNumber = config.icp?.number?.trim()
+  const icpUrl = config.icp?.url?.trim() || 'https://beian.miit.gov.cn/'
+  const policeNumber = config.icp?.police_number?.trim()
+  const policeUrl = config.icp?.police_url?.trim() || 'https://beian.mps.gov.cn/'
+
   return (
     <footer className="border-t border-[rgba(0,0,0,0.08)]">
       <div className="max-w-[1200px] mx-auto px-6 py-16">
@@ -22,7 +29,7 @@ export default function Footer() {
           <div>
             <a href="/" className="flex items-center gap-3 mb-4">
               <Logo size="md" />
-              <span className="text-lg font-medium text-[#051A24]" style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              <span className="text-lg font-medium text-[#051A24]" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
                 星雨作坊
               </span>
             </a>
@@ -76,6 +83,32 @@ export default function Footer() {
           <span className="text-xs text-[#273C46]">© 2026 星雨作坊 Xingyu Studio</span>
           <span className="text-xs text-[#273C46]">以协作连接灵感，以开源延续成长。</span>
         </div>
+
+        {/* 备案信息 — 工信部要求备案号在首页可见且可点击跳转 */}
+        {(icpNumber || policeNumber) && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#273C46]/70">
+            {icpNumber && (
+              <a
+                href={icpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#051A24] transition-colors"
+              >
+                {icpNumber}
+              </a>
+            )}
+            {policeNumber && (
+              <a
+                href={policeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#051A24] transition-colors"
+              >
+                {policeNumber}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </footer>
   )

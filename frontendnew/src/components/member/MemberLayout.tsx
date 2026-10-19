@@ -100,7 +100,7 @@ export default function MemberLayout({ children, member }: Props) {
             <span
               className="text-sm font-medium text-[#051A24] whitespace-nowrap tracking-tight transition-opacity duration-200"
               style={{
-                fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif",
+                fontFamily: "var(--font-sans)",
                 fontWeight: 500,
                 opacity: sidebarOpen ? 1 : 0,
                 width: sidebarOpen ? 'auto' : 0,

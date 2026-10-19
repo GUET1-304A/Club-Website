@@ -169,7 +169,7 @@ export default function MemberProfilePage({ member: initialMember, onUpdate }: P
           </div>
           <div>
             <h2 className="text-lg font-medium text-[#051A24]"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               {member.name}
             </h2>
             <p className="text-xs text-[#273C46]/50">{member.role || member.group || '成员'}</p>
@@ -235,7 +235,7 @@ export default function MemberProfilePage({ member: initialMember, onUpdate }: P
     return (
       <div className="card p-6" style={{ borderRadius: 24 }}>
         <h3 className="text-base font-medium text-[#051A24] mb-1"
-          style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+          style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
           修改密码
         </h3>
         <p className="text-xs text-[#273C46]/50 mb-5">修改你的登录密码。修改后需要重新登录。</p>
@@ -287,7 +287,7 @@ export default function MemberProfilePage({ member: initialMember, onUpdate }: P
     return (
       <div className="card p-6" style={{ borderRadius: 24 }}>
         <h3 className="text-base font-medium text-[#051A24] mb-1"
-          style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+          style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
           通知偏好
         </h3>
         <p className="text-xs text-[#273C46]/50 mb-5">选择你希望接收的通知类型。</p>
@@ -333,7 +333,7 @@ export default function MemberProfilePage({ member: initialMember, onUpdate }: P
         {/* Header */}
         <div className="mb-2">
           <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-            style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+            style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
             个人设置
           </h1>
           <p className="text-sm text-[#273C46]/50 mt-1">管理你的个人资料、密码和通知偏好</p>

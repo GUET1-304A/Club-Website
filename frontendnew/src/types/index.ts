@@ -9,7 +9,7 @@ export interface Member {
   blog?: string
   email?: string
   bio?: string
-  grade: string
+  grade?: string
   isAlumni: boolean
 }
 
@@ -72,4 +72,10 @@ export interface SiteConfig {
   aboutImage: string
   stats: { label: string; value: number; suffix?: string }[]
   footerText: string
+  icp?: {
+    number?: string
+    url?: string
+    police_number?: string
+    police_url?: string
+  }
 }

@@ -99,7 +99,7 @@ export default function AssistantChat({ member }: { member: MemberProfile }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               智能项目管理助手
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">
@@ -729,7 +729,7 @@ function PlanPanel() {
             {/* Project */}
             <div className="rounded-2xl bg-[#051A24] text-white p-5 mb-4">
               <p className="text-lg font-medium tracking-tight"
-                style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+                style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
                 {plan.project.name || '未命名项目'}
               </p>
               {plan.project.description && (

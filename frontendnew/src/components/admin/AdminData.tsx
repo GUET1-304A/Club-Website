@@ -95,7 +95,7 @@ export default function AdminData() {
     <AdminLayout>
       <div className="max-w-3xl">
         <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-          style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+          style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
           数据管理
         </h1>
         <p className="text-sm text-[#273C46]/50 mt-1">导入 / 导出网站数据</p>

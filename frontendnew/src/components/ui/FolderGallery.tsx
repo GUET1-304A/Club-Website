@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useId } from 'react'
 import { motion } from 'framer-motion'
 import { useSiteData } from '../../store/useSiteData'
+import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
 
 export interface GalleryPhoto {
   id: string | number
@@ -27,6 +28,7 @@ export default function FolderGallery({
   const [isFolderOpen, setIsFolderOpen] = useState(false)
   const [hoverFolder, setHoverFolder] = useState(false)
   const isDraggingRef = useRef(false)
+  const dotPatternId = `folder-dots-${useId().replace(/:/g, '')}`
 
   // Dynamic spread: fewer items = wider spacing, more items = tighter
   // Max 7 visible at once; beyond that, paginate
@@ -131,7 +133,12 @@ export default function FolderGallery({
                   whileDrag={isFolderOpen ? { scale: openScale + 0.1, rotate: 5, zIndex: 150 } : {}}
                   transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                 >
-                  <img src={photo.image} alt={photo.title || '作品'} className="w-full h-full object-cover pointer-events-none" />
+                  <img
+                    src={photo.image || COVER_PLACEHOLDER}
+                    alt={photo.title || '作品'}
+                    className="w-full h-full object-cover pointer-events-none"
+                    onError={handleImageError}
+                  />
                   {/* Title overlay */}
                   {isFolderOpen && photo.title && (
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#051A24]/80 to-transparent p-3 pt-8 pointer-events-none">
@@ -160,6 +167,56 @@ export default function FolderGallery({
             <div className="w-full h-full bg-gradient-to-b from-white to-[#f0ece6] rounded-2xl border border-[rgba(0,0,0,0.05)] shadow-[inset_0_2px_10px_rgba(0,0,0,0.03)] relative overflow-hidden flex items-end justify-center pb-8">
               {/* Top highlight line */}
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#051A24]/10 to-transparent" />
+
+              {/* 装饰层：点阵纸纹 + 星座连线 + 四角标记 + 琥珀色星芒 */}
+              <div
+                className="absolute inset-0 pointer-events-none text-[#051A24]/15 dark:text-white/20"
+                aria-hidden="true"
+              >
+                <svg className="w-full h-full" viewBox="0 0 340 176" preserveAspectRatio="none">
+                  <defs>
+                    <pattern id={dotPatternId} width="18" height="18" patternUnits="userSpaceOnUse">
+                      <circle cx="1.2" cy="1.2" r="1.2" fill="currentColor" />
+                    </pattern>
+                  </defs>
+                  <rect width="340" height="176" fill={`url(#${dotPatternId})`} />
+
+                  {/* 星座连线 */}
+                  <g fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.75">
+                    <path d="M246 40 L272 24 L300 42" />
+                    <path d="M96 58 L120 44 L146 60" />
+                  </g>
+                  <g fill="currentColor">
+                    <circle cx="246" cy="40" r="1.8" />
+                    <circle cx="272" cy="24" r="2.3" />
+                    <circle cx="300" cy="42" r="1.6" />
+                    <circle cx="96" cy="58" r="1.6" />
+                    <circle cx="120" cy="44" r="2" />
+                    <circle cx="146" cy="60" r="1.5" />
+                  </g>
+
+                  {/* 四角标记 */}
+                  <g fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.6">
+                    <path d="M12 16 h12 M12 16 v12" />
+                    <path d="M328 16 h-12 M328 16 v12" />
+                    <path d="M12 160 h12 M12 160 v-12" />
+                    <path d="M328 160 h-12 M328 160 v-12" />
+                  </g>
+
+                  {/* 琥珀色四角星 */}
+                  <path
+                    d="M292 92 l3 7.2 7.2 3 -7.2 3 -3 7.2 -3 -7.2 -7.2 -3 7.2 -3z"
+                    fill="#facc15"
+                    opacity="0.85"
+                  />
+                </svg>
+              </div>
+
+              {/* 档案小标签 */}
+              <div className="absolute top-3 left-4 font-mono text-[9px] tracking-[0.22em] text-[#051A24]/35 dark:text-white/35">
+                ARCHIVE · 星雨作坊
+              </div>
+
               {/* Label */}
               <div className="px-5 py-2.5 bg-white rounded-lg border border-[rgba(0,0,0,0.05)] shadow-sm flex items-center justify-center">
                 <span className="text-[#051A24] text-sm font-medium tracking-wide">

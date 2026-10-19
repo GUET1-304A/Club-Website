@@ -53,8 +53,8 @@ export default function AboutSection() {
           <Card hover={false} className="overflow-hidden p-2">
             <img
               src={config.aboutImage}
-              alt="星雨作坊团队合影"
-              className="w-full rounded-[24px] md:rounded-[32px] object-cover aspect-[4/3]"
+              alt="星雨作坊成员围桌开发项目"
+              className="w-full rounded-[24px] md:rounded-[32px] object-cover aspect-video"
               loading="lazy"
             />
           </Card>

@@ -183,7 +183,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               证书管理
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">{certs.length} 个证书记录</p>
@@ -329,7 +329,7 @@ export default function CertificateManager({ member }: { member: MemberProfile }
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-medium text-[#051A24]"
-                  style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+                  style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
                   {editing ? '编辑证书' : '添加证书'}
                 </h2>
                 <button onClick={() => setShowModal(false)} className="p-1.5 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/50">

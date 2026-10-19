@@ -9,6 +9,7 @@ import { useSiteData } from '../../store/useSiteData'
 import { fetchProject } from '../../services/api'
 import { mapApiProject } from '../../store/useSiteData'
 import type { Project } from '../../types'
+import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
 
 const CAT_LABELS: Record<string, string> = {
   web: 'Web应用', miniapp: '小程序', ai: 'AI/算法', tools: '工具库', game: '游戏',
@@ -64,7 +65,12 @@ export default function ProjectDetailPage({ slug }: { slug: string }) {
 
       {/* Cover image */}
       <div className="w-full h-[300px] md:h-[450px] rounded-[32px] overflow-hidden shadow-lg">
-        <img src={project.coverImage} alt={project.name} className="w-full h-full object-cover" />
+        <img
+          src={project.coverImage || COVER_PLACEHOLDER}
+          alt={project.name}
+          className="w-full h-full object-cover"
+          onError={handleImageError}
+        />
       </div>
 
       {/* Screenshots — shown right after cover */}
@@ -81,7 +87,12 @@ export default function ProjectDetailPage({ slug }: { slug: string }) {
                 onClick={() => setLightbox(i)}
                 className="relative group rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
-                <img src={url} alt={`${project.name} 截图 ${i + 1}`} className="w-full h-36 md:h-44 object-cover" />
+                <img
+                  src={url}
+                  alt={`${project.name} 截图 ${i + 1}`}
+                  className="w-full h-36 md:h-44 object-cover"
+                  onError={handleImageError}
+                />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <Maximize2 className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                 </div>
