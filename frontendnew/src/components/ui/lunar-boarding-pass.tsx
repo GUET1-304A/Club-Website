@@ -261,6 +261,15 @@ export type LunarBoardingPassProps = {
   headline?: string
   /** What the stamp says when the stub comes off. */
   stamp?: string
+  /** Extra content layered over the front face (e.g. a status check). */
+  frontOverlay?: React.ReactNode
+  /** Replaces the boarding fields on the back with custom content. */
+  backForm?: React.ReactNode
+  /** Replaces the content inside the tear-off stub. */
+  stubContent?: React.ReactNode
+  /** `submit` makes the stub a submit button instead of a tear-off stub. */
+  stubMode?: "tear" | "submit"
+  onStubSubmit?: () => void
   /** Labels for the switch under the ticket. */
   sideLabels?: [string, string]
   night?: string
@@ -322,7 +331,10 @@ const CSS = [
   "-webkit-mask:radial-gradient(circle at 0 50%,#0000 .2cqw,#000 .24cqw) 0 0/100% .86cqw repeat-y;",
   "mask:radial-gradient(circle at 0 50%,#0000 .2cqw,#000 .24cqw) 0 0/100% .86cqw repeat-y}",
   ".lbp-stub:active{cursor:grabbing}",
+  ".lbp-stub.is-submit{cursor:pointer}",
   ".lbp-stub:focus-visible{outline:2px solid var(--lbp-stamp);outline-offset:-4px}",
+  ".lbp-front-extra{position:absolute;inset:0;z-index:5}",
+  ".lbp-front-extra input::placeholder{color:rgba(232,238,242,.45)}",
   ".lbp-stub.is-torn{transform:translate(2.4cqw,1.1cqw) rotate(4deg);cursor:pointer}",
   ".lbp-foil{background:linear-gradient(115deg,transparent calc(var(--mx,50%) - 24%),rgba(255,255,255,.62) var(--mx,50%),transparent calc(var(--mx,50%) + 24%)) no-repeat;mix-blend-mode:soft-light}",
   ".lbp-main .lbp-foil{background-size:129.2% 100%;background-position:0 0}",
@@ -554,6 +566,11 @@ export default function LunarBoardingPass({
   featuring = "Featuring all stars crew",
   headline = "Space Jazz",
   stamp = "Boarded",
+  frontOverlay,
+  backForm,
+  stubContent,
+  stubMode = "tear",
+  onStubSubmit,
   sideLabels = ["VIP pass", "Boarding pass"],
   night = "#0b0b0c",
   starInk = "#f1f0eb",
@@ -588,8 +605,8 @@ export default function LunarBoardingPass({
   const redraw = React.useRef<() => void>(() => {})
   const drag = React.useRef<{ x: number; t: number; dx: number; v: number; moved: boolean } | null>(null)
   const swallowClick = React.useRef(false)
-  const cbs = React.useRef({ onSideChange, onTear })
-  cbs.current = { onSideChange, onTear }
+  const cbs = React.useRef({ onSideChange, onTear, onStubSubmit })
+  cbs.current = { onSideChange, onTear, onStubSubmit }
 
   React.useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -770,12 +787,15 @@ export default function LunarBoardingPass({
     redraw.current()
   }
 
+  const submitMode = stubMode === "submit"
+
   const stubDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (torn || e.button !== 0) return
+    if (submitMode || torn || e.button !== 0) return
     drag.current = { x: e.clientX, t: performance.now(), dx: 0, v: 0, moved: false }
     e.currentTarget.setPointerCapture(e.pointerId)
   }
   const stubMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (submitMode) return
     const d = drag.current
     const el = stubRef.current
     if (!d || !el) return
@@ -791,6 +811,7 @@ export default function LunarBoardingPass({
     el.style.transform = "translateX(" + shown.toFixed(1) + "px) rotate(" + ((shown / Math.max(1, w)) * 7).toFixed(2) + "deg)"
   }
   const stubUp = () => {
+    if (submitMode) return
     const d = drag.current
     const el = stubRef.current
     drag.current = null
@@ -804,6 +825,10 @@ export default function LunarBoardingPass({
   }
   const stubClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (submitMode) {
+      if (!torn) cbs.current.onStubSubmit?.()
+      return
+    }
     if (swallowClick.current) {
       swallowClick.current = false
       return
@@ -890,6 +915,15 @@ export default function LunarBoardingPass({
                 <div className="lbp-at lbp-c" style={{ right: "2.8%", top: (296 / VIEW_H) * 100 + "%", fontSize: ".85cqw" }}>
                   [{dms}]
                 </div>
+                {frontOverlay && (
+                  <div
+                    className="lbp-front-extra"
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    {frontOverlay}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -899,10 +933,20 @@ export default function LunarBoardingPass({
                 <Grain id={uid + "gm"} />
                 <div className="lbp-layer lbp-foil" />
                 <div className="lbp-head">
-                  <span className="lbp-c" style={{ fontSize: "1.65cqw" }}>Member pass</span>
+                  <span className="lbp-c" style={{ fontSize: "1.65cqw" }}>Application pass</span>
                   <span className="lbp-c" style={{ fontSize: "2.75cqw" }}>{title}</span>
                   <span className="lbp-c" style={{ fontSize: "2.3cqw" }}>{tier}</span>
                 </div>
+                {backForm ? (
+                  <div
+                    style={{ flex: 1, minHeight: 0, marginTop: "1cqw", position: "relative" }}
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    {backForm}
+                  </div>
+                ) : (
+                  <>
                 <div className="lbp-grid">
                   <div className="lbp-cell">
                     <Field label="Name" value={passenger} size={1.45} d={0.1} />
@@ -938,6 +982,8 @@ export default function LunarBoardingPass({
                     <div className="lbp-d" style={{ fontSize: "4.3cqw" }}>{headline}</div>
                   </div>
                 </div>
+                  </>
+                )}
                 <div className="lbp-stamp" aria-hidden="true">
                   <span>
                     <span className="lbp-c" style={{ display: "block", fontSize: "2.2cqw", letterSpacing: ".18em" }}>{stamp}</span>
@@ -950,10 +996,10 @@ export default function LunarBoardingPass({
               <button
                 ref={stubRef}
                 type="button"
-                className={"lbp-piece lbp-stub" + (torn ? " is-torn" : "")}
+                className={"lbp-piece lbp-stub" + (torn ? " is-torn" : "") + (submitMode ? " is-submit" : "")}
                 tabIndex={front ? -1 : 0}
-                aria-pressed={torn}
-                aria-label={torn ? "找回存根" : "撕下存根"}
+                aria-pressed={submitMode ? undefined : torn}
+                aria-label={submitMode ? (torn ? "已提交" : "提交报名") : torn ? "找回存根" : "撕下存根"}
                 onPointerDown={stubDown}
                 onPointerMove={stubMove}
                 onPointerUp={stubUp}
@@ -962,8 +1008,14 @@ export default function LunarBoardingPass({
               >
                 <Grain id={uid + "gs"} />
                 <span className="lbp-layer lbp-foil" />
+                {stubContent ? (
+                  <span style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
+                    {stubContent}
+                  </span>
+                ) : (
+                  <>
                 <span className="lbp-c" style={{ display: "block", fontSize: "1.65cqw", paddingBottom: "1cqw", borderBottom: "1px solid var(--lbp-rule)" }}>
-                  Member pass
+                  Application
                 </span>
                 <span className="lbp-sf" style={{ display: "block" }}>
                   <Field label="Name" value={passenger} size={1.25} d={0.3} />
@@ -984,8 +1036,10 @@ export default function LunarBoardingPass({
                   <Field label="Date" value={dateCode} size={1.2} d={1.05} />
                   <Field label="Join time" value={boardingTime} size={1.2} d={1.15} />
                 </span>
+                  </>
+                )}
               </button>
-              <span className="lbp-hint" aria-hidden="true">撕下存根</span>
+              <span className="lbp-hint" aria-hidden="true">{submitMode ? (torn ? "已提交" : "提交申请") : "撕下存根"}</span>
             </div>
           </div>
         </div>
