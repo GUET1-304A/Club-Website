@@ -72,6 +72,9 @@ export default function AdminConfig() {
     { key: 'hero', label: 'Hero 区域' },
     { key: 'about', label: '关于我们' },
     { key: 'members', label: '成员区域' },
+    { key: 'projects', label: '作品区域' },
+    { key: 'awards', label: '奖项区域' },
+    { key: 'join', label: '加入区域' },
     { key: 'footer', label: '页脚' },
     { key: 'icp', label: '备案信息' },
     { key: 'contact', label: '联系我们' },
@@ -115,9 +118,13 @@ export default function AdminConfig() {
                   onChange={(val) => updateSection('hero', val)}
                   fields={[
                     { key: 'eyebrow', label: '标签文字', type: 'text' },
-                    { key: 'title', label: '主标题', type: 'textarea' },
-                    { key: 'description', label: '描述', type: 'textarea' },
+                    { key: 'title', label: '主标题（**文字** 为衬线强调，换行即换行）', type: 'textarea' },
+                    { key: 'description', label: '描述（空一行分段）', type: 'textarea' },
                     { key: 'video_url', label: '背景视频 URL（留空使用默认）', type: 'text' },
+                    { key: 'primary_label', label: '主按钮文字', type: 'text' },
+                    { key: 'primary_href', label: '主按钮链接', type: 'text' },
+                    { key: 'secondary_label', label: '次按钮文字', type: 'text' },
+                    { key: 'secondary_href', label: '次按钮链接', type: 'text' },
                   ]}
                 />
               )}
@@ -127,8 +134,9 @@ export default function AdminConfig() {
                   data={config.about as Record<string, unknown> || {}}
                   onChange={(val) => updateSection('about', val)}
                   fields={[
-                    { key: 'title', label: '标题', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为衬线强调，换行即换行）', type: 'text' },
                     { key: 'description', label: '描述', type: 'textarea' },
+                    { key: 'extra', label: '第二段描述（可选）', type: 'textarea' },
                   ]}
                 />
               )}
@@ -138,7 +146,49 @@ export default function AdminConfig() {
                   data={config.members as Record<string, unknown> || {}}
                   onChange={(val) => updateSection('members', val)}
                   fields={[
+                    { key: 'eyebrow', label: '英文标签（如 TEAM）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
                     { key: 'description', label: '描述', type: 'textarea' },
+                    { key: 'cta', label: '底部按钮文字', type: 'text' },
+                  ]}
+                />
+              )}
+              {activeSection === 'projects' && (
+                <SectionEditor
+                  title="作品区域"
+                  data={config.projects as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('projects', val)}
+                  fields={[
+                    { key: 'eyebrow', label: '英文标签（如 WORKS）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'cta', label: '底部按钮文字', type: 'text' },
+                  ]}
+                />
+              )}
+              {activeSection === 'awards' && (
+                <SectionEditor
+                  title="奖项区域"
+                  data={config.awards as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('awards', val)}
+                  fields={[
+                    { key: 'eyebrow', label: '英文标签（如 HONORS）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'cta', label: '底部按钮文字', type: 'text' },
+                  ]}
+                />
+              )}
+              {activeSection === 'join' && (
+                <SectionEditor
+                  title="加入区域"
+                  data={config.join as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('join', val)}
+                  fields={[
+                    { key: 'eyebrow', label: '左侧英文标签', type: 'text' },
+                    { key: 'title', label: '左侧标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'cta_eyebrow', label: '右侧英文标签', type: 'text' },
+                    { key: 'cta_title', label: '右侧标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'cta_description', label: '右侧描述', type: 'textarea' },
+                    { key: 'cta_button', label: '右侧按钮文字', type: 'text' },
                   ]}
                 />
               )}
@@ -151,6 +201,9 @@ export default function AdminConfig() {
                     { key: 'brand', label: '品牌名', type: 'text' },
                     { key: 'slogan', label: '标语', type: 'text' },
                     { key: 'logo', label: 'Logo 路径', type: 'text' },
+                    { key: 'description', label: '页脚介绍', type: 'textarea' },
+                    { key: 'github_url', label: 'GitHub 链接', type: 'text' },
+                    { key: 'email', label: '联系邮箱', type: 'text' },
                   ]}
                 />
               )}
@@ -191,6 +244,7 @@ export default function AdminConfig() {
                     { key: 'members_enabled', label: '成员', type: 'toggle' },
                     { key: 'projects_enabled', label: '项目', type: 'toggle' },
                     { key: 'awards_enabled', label: '奖项', type: 'toggle' },
+                    { key: 'announcement_enabled', label: '公告动态', type: 'toggle' },
                     { key: 'join_enabled', label: '加入 CTA', type: 'toggle' },
                   ]}
                 />

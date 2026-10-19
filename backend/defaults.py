@@ -20,20 +20,25 @@ DEFAULT_SITE_CONFIG = {
     # 控制首页顶部大标题、描述和统计数字的显示内容
     'hero': {
         'eyebrow': 'XINGYU STUDIO',                         # 眉题（标题上方的标签文字）
-        'title': '用代码点亮创想，让热爱掷地有声。',            # 主标题
-        'description': '星雨作坊是一个由学生自主运营的开发社团。我们相信，每一行代码背后都藏着改变世界的力量。这里聚集了一群热爱技术的创造者——从前端到后端，从算法到产品，我们用项目说话。',
+        'title': '把灵感变成**作品**，\n把热爱做成**长效主义**。',  # 主标题（**文字** 渲染为衬线强调）
+        'description': '星雨作坊是一个面向产品、设计与技术协作的校园创意社团。我们围绕真实项目进行学习、共创和开源。\n\n把想法一步步做成可被看见、可被使用、可持续迭代的作品。',
         'stats': [                                           # 统计数据（显示在 Hero 下方的数字卡片）
             {'label': '成立年份', 'value': '2020'},
             {'label': '成员数', 'value': '42+'},
             {'label': '获奖数', 'value': '28+'},
             {'label': '项目数', 'value': '36+'},
         ],
+        'primary_label': '了解我们',                          # 主按钮文字
+        'primary_href': '/about',                            # 主按钮链接
+        'secondary_label': '加入社团',                        # 次按钮文字
+        'secondary_href': '/join',                           # 次按钮链接
     },
 
     # ─── 关于我们区域 ───
     'about': {
-        'title': '一个由学生打造的创造者社群',
+        'title': '一个由**学生**打造的\n**创造者**社群',
         'description': '星雨作坊成立于 2020 年，从最初的几人小组发展为涵盖前端、后端、设计、算法、产品五大方向的综合性学生开发社团。我们承接真实项目、参与各类竞赛、举办技术分享，致力于让每一位成员在实践中成长。',
+        'extra': '在这里，没有严格的上下级，只有共同热爱技术的伙伴。每一个想法都值得被认真对待，每一行代码都在创造价值。',
         'items': [                                           # 特色条目（图标 + 标题 + 描述）
             {'title': '项目驱动', 'description': '以真实项目为核心，在实践中学习和成长'},
             {'title': '技术分享', 'description': '定期举办技术分享会，互相学习共同进步'},
@@ -45,6 +50,9 @@ DEFAULT_SITE_CONFIG = {
     # ─── 成员展示区域 ───
     'members': {
         'description': '来自不同专业、不同年级的创造者们',
+        'eyebrow': 'TEAM',
+        'title': '我们的**成员**',
+        'cta': '查看全部成员 →',
         'groups': [                                          # 成员分组定义（对应 Member.group 字段）
             {'name': '流光组', 'tag': '产品', 'description': '负责产品设计、用户研究、需求分析'},
             {'name': '星绘组', 'tag': '设计', 'description': '负责UI/UX设计、品牌视觉'},
@@ -53,11 +61,34 @@ DEFAULT_SITE_CONFIG = {
         ],
     },
 
+    # ─── 首页作品/奖项/加入区域标题 ───
+    'projects': {
+        'eyebrow': 'WORKS',
+        'title': '我们的**作品**',
+        'cta': '查看全部作品 →',
+    },
+    'awards': {
+        'eyebrow': 'HONORS',
+        'title': '比赛**奖项**',
+        'cta': '查看全部奖项 →',
+    },
+    'join': {
+        'eyebrow': 'WHY JOIN',
+        'title': '为什么**加入**我们',
+        'cta_eyebrow': 'JOIN US',
+        'cta_title': '**加入**我们',
+        'cta_description': '无论你是编程新手还是技术大牛，只要你对技术充满热情，星雨作坊都欢迎你的加入。',
+        'cta_button': '立即报名',
+    },
+
     # ─── 页脚配置 ───
     'footer': {
         'brand': '星雨作坊',
-        'slogan': '星雨作坊 — 用代码编织创意，让热爱发光。',
+        'slogan': '以协作连接灵感，以开源延续成长。',
         'logo': '/logo.png',
+        'description': '星雨作坊是一个由学生自主运营的开发社团。我们相信，每一行代码背后都藏着改变世界的力量。',
+        'github_url': 'https://github.com/xingyu-studio',
+        'email': 'hello@xingyu.studio',
     },
 
     # ─── 备案信息（页脚展示；工信部要求备案号必须可见且可点击跳转）───
@@ -90,6 +121,7 @@ DEFAULT_SITE_CONFIG = {
         'members_enabled': True,     # 成员展示
         'projects_enabled': True,    # 项目作品
         'awards_enabled': True,      # 获奖荣誉
+        'announcement_enabled': True,  # 公告动态
         'join_enabled': True,        # 加入我们
     },
 

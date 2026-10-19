@@ -67,11 +67,35 @@ export interface SiteConfig {
   heroTagline: string
   heroTitle: string
   heroSubtitle: string
+  heroPrimaryLabel: string
+  heroPrimaryHref: string
+  heroSecondaryLabel: string
+  heroSecondaryHref: string
   aboutTitle: string
   aboutDescription: string
+  aboutExtra: string
   aboutImage: string
   stats: { label: string; value: number; suffix?: string }[]
+  membersEyebrow: string
+  membersTitle: string
+  membersCta: string
+  projectsEyebrow: string
+  projectsTitle: string
+  projectsCta: string
+  awardsEyebrow: string
+  awardsTitle: string
+  awardsCta: string
+  joinEyebrow: string
+  joinTitle: string
+  joinCtaEyebrow: string
+  joinCtaTitle: string
+  joinCtaDescription: string
+  joinCtaButton: string
   footerText: string
+  footerDescription: string
+  footerGithub: string
+  footerEmail: string
+  sections: Record<string, boolean>
   icp?: {
     number?: string
     url?: string

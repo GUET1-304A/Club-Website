@@ -2,13 +2,7 @@ import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import CountUp from '../effects/CountUp'
 import Card from '../ui/Card'
 import { useSiteData } from '../../store/useSiteData'
-
-const stats = [
-  { label: '成立年份', value: 2020 },
-  { label: '成员数', value: 42, suffix: '+' },
-  { label: '获奖数', value: 28, suffix: '+' },
-  { label: '项目数', value: 36, suffix: '+' },
-]
+import { renderRichText } from '../../lib/richText'
 
 export default function AboutSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.15 })
@@ -23,20 +17,20 @@ export default function AboutSection() {
             ABOUT US
           </p>
           <h2 className="text-[28px] md:text-[36px] leading-[1.15] text-[#051A24] tracking-tight">
-            一个由<span className="font-mondwest">学生</span>打造的
-            <br />
-            <span className="font-mondwest">创造者</span>社群
+            {renderRichText(config.aboutTitle)}
           </h2>
           <p className="text-sm md:text-base text-[#0D212C] leading-relaxed mt-5">
-            星雨作坊成立于 2020 年，从最初的几人小组发展为涵盖前端、后端、设计、算法、产品五大方向的综合性学生开发社团。我们承接真实项目、参与各类竞赛、举办技术分享，致力于让每一位成员在实践中成长。
+            {config.aboutDescription}
           </p>
-          <p className="text-sm md:text-base text-[#0D212C] leading-relaxed mt-3">
-            在这里，没有严格的上下级，只有共同热爱技术的伙伴。每一个想法都值得被认真对待，每一行代码都在创造价值。
-          </p>
+          {config.aboutExtra && (
+            <p className="text-sm md:text-base text-[#0D212C] leading-relaxed mt-3">
+              {config.aboutExtra}
+            </p>
+          )}
 
           {/* Stats */}
           <div className="flex gap-10 mt-8">
-            {stats.map((stat) => (
+            {config.stats.map((stat) => (
               <div key={stat.label}>
                 <div className="text-[28px] font-medium text-[#051A24]">
                   {isInView && <CountUp end={stat.value} suffix={stat.suffix} />}

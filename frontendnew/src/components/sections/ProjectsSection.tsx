@@ -1,9 +1,12 @@
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
 import FolderGallery from '../ui/FolderGallery'
+import { useSiteData } from '../../store/useSiteData'
+import { renderRichText } from '../../lib/richText'
 
 export default function ProjectsSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
+  const { config } = useSiteData()
 
   return (
     <section ref={ref} className="max-w-[1100px] mx-auto px-6 py-20 md:py-28">
@@ -14,14 +17,14 @@ export default function ProjectsSection() {
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
           }`}
         >
-          WORKS
+          {config.projectsEyebrow}
         </p>
         <h2
           className={`text-[28px] md:text-[36px] text-[#051A24] ${
             isInView ? 'animate-fade-in-up delay-200' : 'opacity-0'
           }`}
         >
-          我们的<span className="font-mondwest">作品</span>
+          {renderRichText(config.projectsTitle)}
         </h2>
       </div>
 
@@ -31,7 +34,7 @@ export default function ProjectsSection() {
       {/* CTA */}
       <div className="text-center mt-2">
         <Button variant="tertiary" href="/projects">
-          查看全部作品 →
+          {config.projectsCta}
         </Button>
       </div>
     </section>

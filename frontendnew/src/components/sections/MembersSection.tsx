@@ -3,10 +3,11 @@ import Button from '../ui/Button'
 import CircularCards from '../ui/CircularCards'
 import { useSiteData } from '../../store/useSiteData'
 import type { Testimonial } from '../ui/CircularCards'
+import { renderRichText } from '../../lib/richText'
 
 export default function MembersSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { members } = useSiteData()
+  const { members, config } = useSiteData()
 
   const memberTestimonials: Testimonial[] = members.map((m) => ({
     quote: m.bio || '热爱技术，乐于分享，用代码创造价值。',
@@ -24,14 +25,14 @@ export default function MembersSection() {
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
           }`}
         >
-          TEAM
+          {config.membersEyebrow}
         </p>
         <h2
           className={`text-[28px] md:text-[36px] text-[#051A24] ${
             isInView ? 'animate-fade-in-up delay-200' : 'opacity-0'
           }`}
         >
-          我们的<span className="font-mondwest">成员</span>
+          {renderRichText(config.membersTitle)}
         </h2>
       </div>
 
@@ -41,7 +42,7 @@ export default function MembersSection() {
       {/* CTA */}
       <div className="text-center mt-12">
         <Button variant="tertiary" href="/members">
-          查看全部成员 →
+          {config.membersCta}
         </Button>
       </div>
     </section>

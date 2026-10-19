@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
 import { useSiteData } from '../../store/useSiteData'
+import { renderRichText } from '../../lib/richText'
 import { Users, Code, Rocket, Heart } from 'lucide-react'
 
 const benefits = [
@@ -40,7 +41,7 @@ function createSpawner(thumbnails: string[]) {
 
 export default function JoinSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.1 })
-  const { projects, members } = useSiteData()
+  const { projects, members, config } = useSiteData()
   const thumbnails = [...projects.map((p) => p.coverImage), ...members.map((m) => m.avatar)]
   // Left card refs
   const leftCardRef = useRef<HTMLDivElement>(null)
@@ -64,10 +65,10 @@ export default function JoinSection() {
                 onMouseMove={(e) => spawnLeft(leftCardRef.current, leftParticlesRef.current, e.clientX, e.clientY)}
               >
               <p className="font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4">
-                WHY JOIN
+                {config.joinEyebrow}
               </p>
               <h2 className="text-[28px] md:text-[36px] text-[#051A24] leading-[1.15] tracking-tight mb-10">
-                为什么<span className="font-mondwest">加入</span>我们
+                {renderRichText(config.joinTitle)}
               </h2>
 
               <div className="space-y-6">
@@ -102,16 +103,16 @@ export default function JoinSection() {
                 <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
                 <p className="font-mono text-xs text-[#E0EBF0]/60 tracking-widest uppercase mb-6">
-                  JOIN US
+                  {config.joinCtaEyebrow}
                 </p>
                 <h2 className="text-[40px] md:text-[52px] lg:text-[60px] text-[#F6FCFF] leading-[1.05] mb-6">
-                  <span className="font-mondwest">加入</span>我们
+                  {renderRichText(config.joinCtaTitle)}
                 </h2>
                 <p className="text-sm md:text-base text-[#E0EBF0]/70 max-w-sm mx-auto leading-relaxed mb-10">
-                  无论你是编程新手还是技术大牛，只要你对技术充满热情，星雨作坊都欢迎你的加入。
+                  {config.joinCtaDescription}
                 </p>
                 <Button variant="secondary" size="lg" href="/join">
-                  立即报名
+                  {config.joinCtaButton}
                 </Button>
 
                 {/* Bottom glow */}

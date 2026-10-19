@@ -4,6 +4,7 @@ import FanCards from '../ui/FanCards'
 import { useSiteData } from '../../store/useSiteData'
 import { thumbUrl } from '../../lib/ossImage'
 import type { CardItem } from '../ui/FanCards'
+import { renderRichText } from '../../lib/richText'
 
 // Award cover images using Unsplash
 const awardCovers = [
@@ -19,7 +20,7 @@ const levelLabels: Record<string, string> = {
 
 export default function AwardsSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { awards } = useSiteData()
+  const { awards, config } = useSiteData()
 
   const awardCards: CardItem[] = awards.map((a, i) => ({
     imgUrl: thumbUrl(a.certificateImages[0]) || awardCovers[i % awardCovers.length],
@@ -39,14 +40,14 @@ export default function AwardsSection() {
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
           }`}
         >
-          HONORS
+          {config.awardsEyebrow}
         </p>
         <h2
           className={`text-[28px] md:text-[36px] text-[#051A24] ${
             isInView ? 'animate-fade-in-up delay-200' : 'opacity-0'
           }`}
         >
-          比赛<span className="font-mondwest">奖项</span>
+          {renderRichText(config.awardsTitle)}
         </h2>
       </div>
 
@@ -56,7 +57,7 @@ export default function AwardsSection() {
       {/* CTA */}
       <div className="text-center mt-6">
         <Button variant="tertiary" href="/awards">
-          查看全部奖项 →
+          {config.awardsCta}
         </Button>
       </div>
     </section>

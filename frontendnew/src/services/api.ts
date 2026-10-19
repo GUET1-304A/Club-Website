@@ -14,10 +14,35 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 // ─── Public: Config ───
 export interface SiteConfigData {
-  hero?: { eyebrow?: string; title?: string; description?: string; stats?: { label: string; value: string }[] }
-  about?: { title?: string; description?: string; items?: { title: string; description: string }[] }
-  members?: { description?: string; groups?: { name: string; tag: string; description: string }[] }
-  footer?: { brand?: string; slogan?: string; logo?: string }
+  hero?: {
+    eyebrow?: string
+    title?: string
+    description?: string
+    stats?: { label: string; value: string }[]
+    primary_label?: string
+    primary_href?: string
+    secondary_label?: string
+    secondary_href?: string
+  }
+  about?: { title?: string; description?: string; extra?: string; items?: { title: string; description: string }[] }
+  members?: {
+    description?: string
+    eyebrow?: string
+    title?: string
+    cta?: string
+    groups?: { name: string; tag: string; description: string }[]
+  }
+  projects?: { eyebrow?: string; title?: string; cta?: string }
+  awards?: { eyebrow?: string; title?: string; cta?: string }
+  join?: {
+    eyebrow?: string
+    title?: string
+    cta_eyebrow?: string
+    cta_title?: string
+    cta_description?: string
+    cta_button?: string
+  }
+  footer?: { brand?: string; slogan?: string; logo?: string; description?: string; github_url?: string; email?: string }
   icp?: { number?: string; url?: string; police_number?: string; police_url?: string }
   sections?: Record<string, unknown>
   weekly_report_template?: WeeklyReportTemplate

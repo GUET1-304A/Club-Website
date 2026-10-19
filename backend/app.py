@@ -14,6 +14,7 @@
     或通过 Flask CLI: FLASK_APP=app:create_app flask run
 """
 
+import copy
 import os
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
@@ -232,15 +233,39 @@ def _ensure_pages():
 
 
 def _ensure_site_config_defaults():
-    """Add newly introduced default site configuration keys to existing DBs."""
+    """Add newly introduced default site configuration keys to existing DBs.
+
+    只补充缺失的键，绝不覆盖管理员已在后台修改过的值；嵌套字典（如
+    hero / members / footer）会逐层补齐，方便新版本给老库加字段。
+    """
     try:
-        existing = {cfg.config_key for cfg in SiteConfig.query.all()}
+        existing = {cfg.config_key: cfg for cfg in SiteConfig.query.all()}
         for key, value in DEFAULT_SITE_CONFIG.items():
-            if key not in existing:
+            cfg = existing.get(key)
+            if cfg is None:
                 db.session.add(SiteConfig(config_key=key, config_value=value))
+            elif isinstance(cfg.config_value, dict) and isinstance(value, dict):
+                merged = copy.deepcopy(cfg.config_value)
+                if _merge_missing_keys(merged, value):
+                    cfg.config_value = merged
         db.session.commit()
     except Exception:
         db.session.rollback()
+
+
+def _merge_missing_keys(target, defaults):
+    """递归补齐 target 中缺失、但 defaults 中存在的键；返回是否有改动。"""
+    if not isinstance(target, dict) or not isinstance(defaults, dict):
+        return False
+    changed = False
+    for key, value in defaults.items():
+        if key not in target:
+            target[key] = copy.deepcopy(value)
+            changed = True
+        elif isinstance(target[key], dict) and isinstance(value, dict):
+            if _merge_missing_keys(target[key], value):
+                changed = True
+    return changed
 
 
 def _migrate_columns(app):

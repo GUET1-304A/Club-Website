@@ -16,6 +16,10 @@ const quickLinks = [
 
 export default function Footer() {
   const { config } = useSiteData()
+  const brand = config.siteName || '星雨作坊'
+  const description = config.footerDescription
+  const githubUrl = config.footerGithub || 'https://github.com/xingyu-studio'
+  const email = config.footerEmail || 'hello@xingyu.studio'
   const icpNumber = config.icp?.number?.trim()
   const icpUrl = config.icp?.url?.trim() || 'https://beian.miit.gov.cn/'
   const policeNumber = config.icp?.police_number?.trim()
@@ -30,11 +34,11 @@ export default function Footer() {
             <a href="/" className="flex items-center gap-3 mb-4">
               <Logo size="md" />
               <span className="text-lg font-medium text-[#051A24]" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
-                星雨作坊
+                {brand}
               </span>
             </a>
             <p className="text-sm text-[#273C46] leading-relaxed max-w-xs">
-              星雨作坊是一个由学生自主运营的开发社团。我们相信，每一行代码背后都藏着改变世界的力量。
+              {description}
             </p>
           </div>
 
@@ -59,7 +63,7 @@ export default function Footer() {
             <h4 className="text-sm font-medium text-[#051A24] mb-4">联系我们</h4>
             <div className="flex flex-col gap-3">
               <a
-                href="https://github.com/xingyu-studio"
+                href={githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-[#273C46] hover:text-[#051A24] transition-colors"
@@ -68,7 +72,7 @@ export default function Footer() {
                 GitHub
               </a>
               <a
-                href="mailto:hello@xingyu.studio"
+                href={`mailto:${email}`}
                 className="flex items-center gap-2 text-sm text-[#273C46] hover:text-[#051A24] transition-colors"
               >
                 <Mail className="w-4 h-4" />
@@ -81,7 +85,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-[rgba(0,0,0,0.08)] mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-2">
           <span className="text-xs text-[#273C46]">© 2026 星雨作坊 Xingyu Studio</span>
-          <span className="text-xs text-[#273C46]">以协作连接灵感，以开源延续成长。</span>
+          <span className="text-xs text-[#273C46]">{config.footerText}</span>
         </div>
 
         {/* 备案信息 — 工信部要求备案号在首页可见且可点击跳转 */}
