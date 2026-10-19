@@ -175,6 +175,7 @@ export default function JoinPage() {
           maxWidth={960}
           defaultSide="back"
           flipOnClick={false}
+          tilt={0}
           defaultTorn={submitted}
           stubMode="submit"
           onStubSubmit={handleSubmit}

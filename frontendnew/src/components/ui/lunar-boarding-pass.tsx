@@ -325,6 +325,7 @@ const CSS = [
   ".lbp-piece{position:absolute;top:0;bottom:0;overflow:hidden;color:var(--lbp-ink);",
   "background:linear-gradient(162deg,color-mix(in srgb,var(--lbp-paper) 82%,#fff) 0%,var(--lbp-paper) 48%,color-mix(in srgb,var(--lbp-paper) 88%,#000) 100%)}",
   ".lbp-main{left:0;width:77.4%;border-radius:.35cqw 0 0 .35cqw;padding:2.3cqw 2.6cqw 2.1cqw;display:flex;flex-direction:column;",
+  "cursor:default;",
   "-webkit-mask:radial-gradient(circle at 100% 50%,#0000 .2cqw,#000 .24cqw) 0 0/100% .86cqw repeat-y;",
   "mask:radial-gradient(circle at 100% 50%,#0000 .2cqw,#000 .24cqw) 0 0/100% .86cqw repeat-y}",
   ".lbp-stub{left:77.4%;width:22.6%;border-radius:0 .35cqw .35cqw 0;padding:2.3cqw 1.9cqw 2.1cqw;display:flex;flex-direction:column;",
@@ -337,6 +338,9 @@ const CSS = [
   ".lbp-stub:focus-visible{outline:2px solid var(--lbp-stamp);outline-offset:-4px}",
   ".lbp-front-extra{position:absolute;inset:0;z-index:5}",
   ".lbp-front-extra input::placeholder{color:rgba(232,238,242,.45)}",
+  ".lbp-main label{cursor:default}",
+  ".lbp-main input,.lbp-main textarea,.lbp-night input{cursor:text}",
+  ".lbp-main select,.lbp-main button,.lbp-night button{cursor:pointer}",
   ".lbp-stub.is-torn{transform:translate(2.4cqw,1.1cqw) rotate(4deg);cursor:pointer}",
   ".lbp-foil{background:linear-gradient(115deg,transparent calc(var(--mx,50%) - 24%),rgba(255,255,255,.62) var(--mx,50%),transparent calc(var(--mx,50%) + 24%)) no-repeat;mix-blend-mode:soft-light}",
   ".lbp-main .lbp-foil{background-size:129.2% 100%;background-position:0 0}",
@@ -866,7 +870,11 @@ export default function LunarBoardingPass({
         onPointerLeave={onLeave}
       >
         <div ref={tiltRef} className="lbp-tilt">
-          <div className="lbp-flip" style={{ transform: "rotateY(" + turns * 180 + "deg)" }} onClick={flipOnClick ? flip : undefined}>
+          <div
+            className="lbp-flip"
+            style={{ transform: "rotateY(" + turns * 180 + "deg", cursor: flipOnClick ? "pointer" : "default" }}
+            onClick={flipOnClick ? flip : undefined}
+          >
             {/* ---------------- front: VIP ---------------- */}
             <div className="lbp-face" aria-hidden={!front}>
               <div className="lbp-night">
