@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Save, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import { useToast } from './Toast'
 import { adminGetConfig, adminUpdateConfig } from '../../services/adminApi'
@@ -15,6 +15,12 @@ type WeeklyTemplateField = {
 type WeeklyTemplate = {
   title: string
   fields: WeeklyTemplateField[]
+}
+
+type TimelineEvent = {
+  date: string
+  title: string
+  description: string
 }
 
 const DEFAULT_WEEKLY_TEMPLATE: WeeklyTemplate = {
@@ -75,6 +81,7 @@ export default function AdminConfig() {
     { key: 'projects', label: '作品区域' },
     { key: 'awards', label: '奖项区域' },
     { key: 'join', label: '加入区域' },
+    { key: 'timeline', label: '时间线' },
     { key: 'footer', label: '页脚' },
     { key: 'icp', label: '备案信息' },
     { key: 'contact', label: '联系我们' },
@@ -196,6 +203,12 @@ export default function AdminConfig() {
                     { key: 'cta_description', label: '右侧描述', type: 'textarea' },
                     { key: 'cta_button', label: '右侧按钮文字', type: 'text' },
                   ]}
+                />
+              )}
+              {activeSection === 'timeline' && (
+                <TimelineEditor
+                  data={config.timeline as Record<string, unknown> || {}}
+                  onChange={(val) => updateSection('timeline', val)}
                 />
               )}
               {activeSection === 'footer' && (
@@ -440,6 +453,109 @@ function StatsEditor({ data, onChange }: {
         {data.length === 0 && (
           <p className="text-xs text-[#273C46]/50">还没有指标，点击「添加」创建。</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+function TimelineEditor({ data, onChange }: {
+  data: Record<string, unknown>
+  onChange: (val: Record<string, unknown>) => void
+}) {
+  const events = Array.isArray(data.events) ? data.events as TimelineEvent[] : []
+
+  const updateEvent = (index: number, patch: Partial<TimelineEvent>) => {
+    onChange({ ...data, events: events.map((event, i) => i === index ? { ...event, ...patch } : event) })
+  }
+
+  const moveEvent = (index: number, direction: -1 | 1) => {
+    const target = index + direction
+    if (target < 0 || target >= events.length) return
+    const next = [...events]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange({ ...data, events: next })
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-[#051A24] mb-4">时间线</h3>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-[#273C46]/60 mb-1.5">页面标题（**文字** 为衬线强调）</label>
+          <input
+            type="text"
+            value={String(data.title || '')}
+            onChange={e => onChange({ ...data, title: e.target.value })}
+            className="w-full px-4 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24]"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[#273C46]/60 mb-1.5">简介（可选）</label>
+          <textarea
+            value={String(data.intro || '')}
+            onChange={e => onChange({ ...data, intro: e.target.value })}
+            rows={2}
+            className="w-full px-4 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24] resize-none"
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <div>
+            <h4 className="text-sm font-medium text-[#051A24]">大事记</h4>
+            <p className="text-xs text-[#273C46]/50 mt-1">按当前顺序从上到下展示。</p>
+          </div>
+          <button
+            onClick={() => onChange({ ...data, events: [...events, { date: '', title: '', description: '' }] })}
+            className="btn-secondary text-xs px-3 py-2 inline-flex items-center gap-1.5 shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" /> 添加一条
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {events.map((event, index) => (
+            <div key={index} className="rounded-2xl border border-[rgba(0,0,0,0.08)] p-4">
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={event.date}
+                  onChange={e => updateEvent(index, { date: e.target.value })}
+                  placeholder="2026-10"
+                  className="w-28 px-3 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24]"
+                />
+                <input
+                  type="text"
+                  value={event.title}
+                  onChange={e => updateEvent(index, { title: e.target.value })}
+                  placeholder="事件标题"
+                  className="flex-1 px-3 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24]"
+                />
+                <button onClick={() => moveEvent(index, -1)} disabled={index === 0}
+                  className="p-2 rounded-xl text-[#273C46]/40 hover:text-[#051A24] hover:bg-[rgba(0,0,0,0.04)] disabled:opacity-30" aria-label="上移">
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+                <button onClick={() => moveEvent(index, 1)} disabled={index === events.length - 1}
+                  className="p-2 rounded-xl text-[#273C46]/40 hover:text-[#051A24] hover:bg-[rgba(0,0,0,0.04)] disabled:opacity-30" aria-label="下移">
+                  <ArrowDown className="w-4 h-4" />
+                </button>
+                <button onClick={() => onChange({ ...data, events: events.filter((_, i) => i !== index) })}
+                  className="p-2 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50" aria-label="删除">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <textarea
+                value={event.description}
+                onChange={e => updateEvent(index, { description: e.target.value })}
+                placeholder="事件描述（可选）"
+                rows={2}
+                className="w-full mt-2 px-3 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24] resize-none"
+              />
+            </div>
+          ))}
+          {events.length === 0 && (
+            <p className="text-xs text-[#273C46]/50">还没有大事记，点击「添加一条」创建。</p>
+          )}
+        </div>
       </div>
     </div>
   )

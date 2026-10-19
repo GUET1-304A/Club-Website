@@ -154,6 +154,15 @@ export function useSiteData(): SiteData {
           joinCtaTitle: apiConfig?.join?.cta_title || localConfig.joinCtaTitle,
           joinCtaDescription: apiConfig?.join?.cta_description || localConfig.joinCtaDescription,
           joinCtaButton: apiConfig?.join?.cta_button || localConfig.joinCtaButton,
+          timelineTitle: apiConfig?.timeline?.title || localConfig.timelineTitle,
+          timelineIntro: apiConfig?.timeline?.intro || localConfig.timelineIntro,
+          timelineEvents: apiConfig?.timeline?.events
+            ? apiConfig.timeline.events.map(event => ({
+                date: event.date || '',
+                title: event.title || '',
+                description: event.description || '',
+              }))
+            : localConfig.timelineEvents,
           footerText: apiConfig?.footer?.slogan || localConfig.footerText,
           footerDescription: apiConfig?.footer?.description || localConfig.footerDescription,
           footerGithub: apiConfig?.footer?.github_url || localConfig.footerGithub,

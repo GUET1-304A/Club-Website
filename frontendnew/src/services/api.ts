@@ -42,6 +42,11 @@ export interface SiteConfigData {
     cta_description?: string
     cta_button?: string
   }
+  timeline?: {
+    title?: string
+    intro?: string
+    events?: { date?: string; title?: string; description?: string }[]
+  }
   footer?: { brand?: string; slogan?: string; logo?: string; description?: string; github_url?: string; email?: string }
   icp?: { number?: string; url?: string; police_number?: string; police_url?: string }
   sections?: Record<string, unknown>

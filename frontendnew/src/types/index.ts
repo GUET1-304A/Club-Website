@@ -91,6 +91,9 @@ export interface SiteConfig {
   joinCtaTitle: string
   joinCtaDescription: string
   joinCtaButton: string
+  timelineTitle: string
+  timelineIntro: string
+  timelineEvents: { date: string; title: string; description: string }[]
   footerText: string
   footerDescription: string
   footerGithub: string
