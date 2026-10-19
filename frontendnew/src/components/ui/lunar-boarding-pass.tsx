@@ -282,6 +282,8 @@ export type LunarBoardingPassProps = {
   fontDisplay?: string
   defaultSide?: Side
   onSideChange?: (side: Side) => void
+  /** Clicking the ticket flips it. Set false to switch only with the labels below. */
+  flipOnClick?: boolean
   defaultTorn?: boolean
   onTear?: (torn: boolean) => void
   /** Largest tilt in degrees. `0` holds it flat. */
@@ -582,6 +584,7 @@ export default function LunarBoardingPass({
   fontDisplay = DISPLAY,
   defaultSide = "front",
   onSideChange,
+  flipOnClick = true,
   defaultTorn = false,
   onTear,
   tilt = 6,
@@ -863,7 +866,7 @@ export default function LunarBoardingPass({
         onPointerLeave={onLeave}
       >
         <div ref={tiltRef} className="lbp-tilt">
-          <div className="lbp-flip" style={{ transform: "rotateY(" + turns * 180 + "deg)" }} onClick={flip}>
+          <div className="lbp-flip" style={{ transform: "rotateY(" + turns * 180 + "deg)" }} onClick={flipOnClick ? flip : undefined}>
             {/* ---------------- front: VIP ---------------- */}
             <div className="lbp-face" aria-hidden={!front}>
               <div className="lbp-night">

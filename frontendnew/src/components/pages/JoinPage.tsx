@@ -41,6 +41,7 @@ export default function JoinPage() {
     setErrors(current => ({ ...current, [field]: undefined }))
     setErrorSummary('')
     setSubmitError('')
+    setStatusResult(null)
   }
 
   const validate = () => {
@@ -64,11 +65,13 @@ export default function JoinPage() {
     setSubmitting(true)
     setSubmitError('')
     try {
+      const studentId = form.studentId.trim()
+      const contact = form.phone.trim()
       const result = await submitApplication({
         name: form.name.trim(),
-        student_id: form.studentId.trim(),
+        student_id: studentId,
         grade_major: form.grade.trim(),
-        phone: form.phone.trim(),
+        phone: contact,
         email: form.email.trim(),
         group_id: form.group,
         group_name: form.group,
@@ -77,6 +80,8 @@ export default function JoinPage() {
           })
       setApplicationId(result.id)
       setSubmitted(true)
+      setStatusForm({ studentId, phone: contact })
+      void runStatusQuery(studentId, contact)
     } catch (error: unknown) {
       setSubmitError(error instanceof Error ? error.message : '提交失败，请稍后重试')
     } finally {
@@ -92,22 +97,27 @@ export default function JoinPage() {
     })
   }
 
-  const queryStatus = async () => {
-    if (!statusForm.studentId.trim() || !statusForm.phone.trim()) {
-      setStatusError('请输入学号和手机号')
-      return
-    }
+  async function runStatusQuery(studentId: string, contact: string) {
     setStatusLoading(true)
     setStatusError('')
     setStatusResult(null)
     try {
-      const result = await queryApplicationStatus(statusForm.studentId.trim(), statusForm.phone.trim())
-      setStatusResult(result)
+      setStatusResult(await queryApplicationStatus(studentId, contact))
     } catch (error: unknown) {
       setStatusError(error instanceof Error ? error.message : '查询失败，请稍后重试')
     } finally {
       setStatusLoading(false)
     }
+  }
+
+  const queryStatus = () => {
+    const studentId = statusForm.studentId.trim()
+    const contact = statusForm.phone.trim()
+    if (!studentId || !contact) {
+      setStatusError('请输入学号和手机号/邮箱')
+      return
+    }
+    void runStatusQuery(studentId, contact)
   }
 
   return (
@@ -134,7 +144,7 @@ export default function JoinPage() {
         <LunarBoardingPass
           key={submitted ? 'issued' : 'draft'}
           title="星雨作坊"
-          tier={submitted ? 'CREW' : 'APPLICANT'}
+          tier={statusResult?.status === 'approved' ? 'CREW' : submitted ? 'APPLIED' : 'APPLICANT'}
           date="2026"
           welcome={'加入我们\n一起造点东西'}
           eyebrow={'A pass to\nbuild real things'}
@@ -154,9 +164,9 @@ export default function JoinPage() {
           lon={110.29}
           seq=""
           featuring={selectedGroup?.name || '前端 · 后端 · 设计 · 算法 · 产品'}
-          headline={submitted ? 'Welcome aboard' : 'Join the crew'}
+          headline={submitted ? 'Application received' : 'Join the crew'}
           stamp={submitted ? 'APPLIED' : 'PENDING'}
-          sideLabels={['查询状态', '填写报名']}
+          sideLabels={['查询状态', submitted ? '查看报名' : '填写报名']}
           night="#051A24"
           starInk="#e8eef2"
           paper="#f0ece6"
@@ -164,6 +174,7 @@ export default function JoinPage() {
           stampColor="#3457ff"
           maxWidth={960}
           defaultSide="back"
+          flipOnClick={false}
           defaultTorn={submitted}
           stubMode="submit"
           onStubSubmit={handleSubmit}
@@ -174,12 +185,12 @@ export default function JoinPage() {
               </span>
               <div>
                 <p className="lbp-c" style={{ fontSize: '1.15cqw', lineHeight: 1.35 }}>
-                  {submitted ? '报名已提交' : '确认信息后'}
+                  {submitted ? '报名已提交' : submitting ? '正在提交…' : '确认信息后'}
                   {!submitted && <br />}
-                  {!submitted && '点击提交'}
+                  {!submitted && (submitting ? '请稍候' : '点击提交')}
                 </p>
                 <p className="lbp-m" style={{ fontSize: '0.72cqw', marginTop: '0.6cqw', opacity: 0.55 }}>
-                  {submitted ? `#${applicationId}` : 'CLICK TO BOARD'}
+                  {submitted ? `#${applicationId}` : submitting ? 'PLEASE WAIT' : 'CLICK TO BOARD'}
                 </p>
               </div>
               <span className="lbp-d" style={{ fontSize: '1.7cqw', alignSelf: 'flex-end' }}>
@@ -277,7 +288,14 @@ export default function JoinPage() {
       {submitted && (
         <div className="mt-8 rounded-[24px] border border-emerald-700/15 bg-emerald-50/90 px-6 py-4 text-center">
           <p className="text-sm font-medium text-emerald-900">报名已提交 · 申请编号 #{applicationId}</p>
-          <p className="text-xs text-emerald-800/65 mt-1">票面已记名并盖章；翻到正面可查验审核状态。</p>
+          <p className="text-xs text-emerald-800/65 mt-1">票面已记名并盖章；切到另一面可查验审核状态。</p>
+        </div>
+      )}
+
+      {/* Validation / API error banner */}
+      {!submitted && (submitError || errorSummary) && (
+        <div className="mt-6 rounded-[20px] border border-red-500/20 bg-red-50/95 px-6 py-3 text-center">
+          <p className="text-xs text-red-700">{submitError || errorSummary}</p>
         </div>
       )}
     </div>
@@ -299,17 +317,18 @@ function TicketForm({ form, errors, errorSummary, submitting, submitted, onChang
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0.65cqw' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr 1.2fr', gap: '0.5cqw 1.2cqw' }}>
-        <TicketInput label="姓名" value={form.name} error={errors.name} placeholder="你的姓名" onChange={value => onChange('name', value)} />
-        <TicketInput label="学号" value={form.studentId} error={errors.studentId} placeholder="6-12 位数字" onChange={value => onChange('studentId', value)} />
-        <TicketInput label="年级专业" value={form.grade} error={errors.grade} placeholder="如 2024级 计算机" onChange={value => onChange('grade', value)} />
-        <TicketInput label="手机" value={form.phone} error={errors.phone} placeholder="11 位手机号" onChange={value => onChange('phone', value)} />
-        <TicketInput label="邮箱" value={form.email} error={errors.email} placeholder="you@example.com" onChange={value => onChange('email', value)} />
+        <TicketInput label="姓名" value={form.name} error={errors.name} placeholder="你的姓名" readOnly={submitted} onChange={value => onChange('name', value)} />
+        <TicketInput label="学号" value={form.studentId} error={errors.studentId} placeholder="6-12 位数字" readOnly={submitted} onChange={value => onChange('studentId', value)} />
+        <TicketInput label="年级专业" value={form.grade} error={errors.grade} placeholder="如 2024级 计算机" readOnly={submitted} onChange={value => onChange('grade', value)} />
+        <TicketInput label="手机" value={form.phone} error={errors.phone} placeholder="11 位手机号" readOnly={submitted} onChange={value => onChange('phone', value)} />
+        <TicketInput label="邮箱" value={form.email} error={errors.email} placeholder="you@example.com" readOnly={submitted} onChange={value => onChange('email', value)} />
         <label style={{ display: 'block', minWidth: 0 }}>
           <span style={{ display: 'block', fontFamily: 'var(--lbp-mono)', fontSize: '0.92cqw', letterSpacing: '0.06em', opacity: 0.55, marginBottom: '0.2cqw', whiteSpace: 'nowrap' }}>
             意向方向
           </span>
           <select
             value={form.group}
+            disabled={submitted}
             onChange={event => onChange('group', event.target.value)}
             style={{
               width: '100%', appearance: 'none', background: 'transparent', border: 0,
@@ -330,6 +349,7 @@ function TicketForm({ form, errors, errorSummary, submitting, submitted, onChang
         </span>
         <textarea
           value={form.motivation}
+          readOnly={submitted}
           onChange={event => onChange('motivation', event.target.value)}
           rows={2}
           placeholder="为什么想加入星雨作坊？想做什么方向？"
@@ -342,7 +362,7 @@ function TicketForm({ form, errors, errorSummary, submitting, submitted, onChang
         />
       </label>
 
-      <TicketInput label="作品 / GitHub 链接（选填）" value={form.portfolio} placeholder="https://..." onChange={value => onChange('portfolio', value)} />
+      <TicketInput label="作品 / GitHub 链接（选填）" value={form.portfolio} placeholder="https://..." readOnly={submitted} onChange={value => onChange('portfolio', value)} />
 
       {errorSummary && (
             <p style={{ fontFamily: 'var(--lbp-mono)', fontSize: '0.8cqw', lineHeight: 1.3, color: '#b73a32', margin: 0 }}>
@@ -356,11 +376,12 @@ function TicketForm({ form, errors, errorSummary, submitting, submitted, onChang
   )
 }
 
-function TicketInput({ label, value, error, placeholder, onChange }: {
+function TicketInput({ label, value, error, placeholder, readOnly, onChange }: {
   label: string
   value: string
   error?: string
   placeholder: string
+  readOnly?: boolean
   onChange: (value: string) => void
 }) {
   return (
@@ -370,6 +391,7 @@ function TicketInput({ label, value, error, placeholder, onChange }: {
       </span>
       <input
         value={value}
+        readOnly={readOnly}
         onChange={event => onChange(event.target.value)}
         placeholder={placeholder}
         style={{
@@ -396,8 +418,9 @@ function TicketQuery({ form, result, error, loading, onChange, onQuery }: {
   onQuery: () => void
 }) {
   const label = result
-    ? result.status === 'approved' ? 'APPROVED' : result.status === 'rejected' ? 'REJECTED' : 'PENDING'
+    ? result.status === 'approved' ? '已通过' : result.status === 'rejected' ? '未通过' : '待审核'
     : ''
+  const code = result ? result.status.toUpperCase() : ''
   const color = result
     ? result.status === 'approved' ? '#8ff0c2' : result.status === 'rejected' ? '#ff9b93' : '#ffd37a'
     : '#e8eef2'
@@ -441,6 +464,9 @@ function TicketQuery({ form, result, error, loading, onChange, onQuery }: {
         }}>
           <span style={{ fontFamily: 'var(--lbp-cond)', fontWeight: 700, fontSize: '1.1cqw', letterSpacing: '0.12em', color }}>
             {label}
+          </span>
+          <span style={{ fontFamily: 'var(--lbp-mono)', fontSize: '0.55cqw', letterSpacing: '0.16em', color: 'rgba(232,238,242,.4)' }}>
+            {code}
           </span>
           {result.group_name && (
             <span style={{ fontFamily: 'var(--lbp-mono)', fontSize: '0.72cqw', color: 'rgba(232,238,242,.65)' }}>
