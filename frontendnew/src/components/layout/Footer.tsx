@@ -33,7 +33,7 @@ export default function Footer() {
           <div>
             <a href="/" className="flex items-center gap-3 mb-4">
               <Logo size="md" />
-              <span className="text-lg font-medium text-[#051A24]" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
+              <span className="font-display text-lg text-[#051A24] tracking-[0.04em]">
                 {brand}
               </span>
             </a>

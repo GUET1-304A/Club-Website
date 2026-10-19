@@ -126,7 +126,7 @@ export default function AdminConfig() {
                     onChange={(val) => updateSection('hero', val)}
                     fields={[
                       { key: 'eyebrow', label: '标签文字', type: 'text' },
-                      { key: 'title', label: '主标题（**文字** 为衬线强调，换行即换行）', type: 'textarea' },
+                      { key: 'title', label: '主标题（**文字** 为庆科黄油体强调，换行即换行）', type: 'textarea' },
                       { key: 'description', label: '描述（空一行分段）', type: 'textarea' },
                       { key: 'video_url', label: '背景视频 URL（留空使用默认）', type: 'text' },
                       { key: 'primary_label', label: '主按钮文字', type: 'text' },
@@ -147,7 +147,7 @@ export default function AdminConfig() {
                   data={config.about as Record<string, unknown> || {}}
                   onChange={(val) => updateSection('about', val)}
                   fields={[
-                    { key: 'title', label: '标题（**文字** 为衬线强调，换行即换行）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为庆科黄油体强调，换行即换行）', type: 'text' },
                     { key: 'description', label: '描述', type: 'textarea' },
                     { key: 'extra', label: '第二段描述（可选）', type: 'textarea' },
                   ]}
@@ -160,7 +160,7 @@ export default function AdminConfig() {
                   onChange={(val) => updateSection('members', val)}
                   fields={[
                     { key: 'eyebrow', label: '英文标签（如 TEAM）', type: 'text' },
-                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为庆科黄油体强调）', type: 'text' },
                     { key: 'description', label: '描述', type: 'textarea' },
                     { key: 'cta', label: '底部按钮文字', type: 'text' },
                   ]}
@@ -173,7 +173,7 @@ export default function AdminConfig() {
                   onChange={(val) => updateSection('projects', val)}
                   fields={[
                     { key: 'eyebrow', label: '英文标签（如 WORKS）', type: 'text' },
-                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为庆科黄油体强调）', type: 'text' },
                     { key: 'cta', label: '底部按钮文字', type: 'text' },
                   ]}
                 />
@@ -185,7 +185,7 @@ export default function AdminConfig() {
                   onChange={(val) => updateSection('awards', val)}
                   fields={[
                     { key: 'eyebrow', label: '英文标签（如 HONORS）', type: 'text' },
-                    { key: 'title', label: '标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'title', label: '标题（**文字** 为庆科黄油体强调）', type: 'text' },
                     { key: 'cta', label: '底部按钮文字', type: 'text' },
                   ]}
                 />
@@ -197,9 +197,9 @@ export default function AdminConfig() {
                   onChange={(val) => updateSection('join', val)}
                   fields={[
                     { key: 'eyebrow', label: '左侧英文标签', type: 'text' },
-                    { key: 'title', label: '左侧标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'title', label: '左侧标题（**文字** 为庆科黄油体强调）', type: 'text' },
                     { key: 'cta_eyebrow', label: '右侧英文标签', type: 'text' },
-                    { key: 'cta_title', label: '右侧标题（**文字** 为衬线强调）', type: 'text' },
+                    { key: 'cta_title', label: '右侧标题（**文字** 为庆科黄油体强调）', type: 'text' },
                     { key: 'cta_description', label: '右侧描述', type: 'textarea' },
                     { key: 'cta_button', label: '右侧按钮文字', type: 'text' },
                   ]}
@@ -481,7 +481,7 @@ function TimelineEditor({ data, onChange }: {
       <h3 className="text-sm font-medium text-[#051A24] mb-4">时间线</h3>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-[#273C46]/60 mb-1.5">页面标题（**文字** 为衬线强调）</label>
+          <label className="block text-xs font-medium text-[#273C46]/60 mb-1.5">页面标题（**文字** 为庆科黄油体强调）</label>
           <input
             type="text"
             value={String(data.title || '')}

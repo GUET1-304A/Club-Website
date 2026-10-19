@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 /**
  * 轻量富文本，供后台配置的标题/描述使用：
- *   **文字**  → 衬线强调（font-mondwest）
+ *   **文字**  → 庆科黄油体强调（font-mondwest 为历史类名）
  *   \n        → 换行
  * 不解析 HTML，避免后台输入带来 XSS 风险。
  */

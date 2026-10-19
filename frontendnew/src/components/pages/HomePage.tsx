@@ -13,7 +13,7 @@ export default function HomePage() {
   const enabled = (key: string) => sections[key] !== false
 
   return (
-    <main>
+    <main className="site-home">
       {enabled('hero_enabled') && <HeroSection />}
       {enabled('about_enabled') && <AboutSection />}
       {enabled('announcement_enabled') && <AnnouncementSection />}

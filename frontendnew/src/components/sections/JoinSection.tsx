@@ -67,7 +67,7 @@ export default function JoinSection() {
               <p className="font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4">
                 {config.joinEyebrow}
               </p>
-              <h2 className="text-[28px] md:text-[36px] text-[#051A24] leading-[1.15] tracking-tight mb-10">
+              <h2 className="join-display text-[30px] md:text-[38px] text-[#051A24] leading-[1.15] tracking-[0.035em] mb-10">
                 {renderRichText(config.joinTitle)}
               </h2>
 
@@ -80,7 +80,7 @@ export default function JoinSection() {
                         <Icon className="w-5 h-5 text-[#051A24] group-hover:text-white transition-colors duration-300" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h3 className="text-base font-medium text-[#051A24]">{b.title}</h3>
+                        <h3 className="font-ticket-cn text-[17px] tracking-[0.04em] text-[#051A24]">{b.title}</h3>
                         <p className="text-sm text-[#273C46] mt-1 leading-relaxed">{b.desc}</p>
                       </div>
                     </div>
@@ -105,13 +105,13 @@ export default function JoinSection() {
                 <p className="font-mono text-xs text-[#E0EBF0]/60 tracking-widest uppercase mb-6">
                   {config.joinCtaEyebrow}
                 </p>
-                <h2 className="text-[40px] md:text-[52px] lg:text-[60px] text-[#F6FCFF] leading-[1.05] mb-6">
+                <h2 className="join-display text-[42px] md:text-[54px] lg:text-[62px] text-[#F6FCFF] leading-[1.05] tracking-[0.045em] mb-6">
                   {renderRichText(config.joinCtaTitle)}
                 </h2>
                 <p className="text-sm md:text-base text-[#E0EBF0]/70 max-w-sm mx-auto leading-relaxed mb-10">
                   {config.joinCtaDescription}
                 </p>
-                <Button variant="secondary" size="lg" href="/join">
+                <Button variant="secondary" size="lg" href="/join" className="font-ticket-cn tracking-[0.08em]">
                   {config.joinCtaButton}
                 </Button>
 

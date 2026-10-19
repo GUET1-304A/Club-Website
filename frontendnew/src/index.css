@@ -121,10 +121,11 @@
   /* 底色 */
   --bg: #FFFFFF;
 
-  /* 字体栈：中文优先使用系统字体，不再依赖境外 CDN（详见 docs/上线检查清单.md） */
+  /* 字体栈：展示字用于标题/强调，正文保持高可读性的系统中文字体 */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
-  --font-accent: 'PP Mondwest', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', STSong, SimSun, serif;
+  --font-display: 'Smiley Sans', 'ZCOOL QingKe HuangYou', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-accent: 'ZCOOL QingKe HuangYou', 'Smiley Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
 
   /* 边框 */
@@ -162,10 +163,153 @@
   font-display: swap;
 }
 
+/* ===== 展示字体（均为 SIL OFL 开源授权，自托管）===== */
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('/fonts/bebas-neue-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 站酷庆科黄油体：按全站可见文案裁成约 205KB 子集，用于强调词和数字。 */
+@font-face {
+  font-family: 'ZCOOL QingKe HuangYou';
+  src: url('/fonts/zcool-qingke-huangyou.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 得意黑（SIL OFL）：全站中文展示字体，按当前文案裁成约 121KB 子集。 */
+@font-face {
+  font-family: 'Smiley Sans';
+  src: url('/fonts/smiley-sans.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
-  PP Mondwest 的 @font-face 已移除：字体文件从未随仓库提供（/PPMondwest-Regular.woff2 一直 404），
-  衬线 accent 现由 --font-accent 中的中文衬线兜底。
+  得意黑负责标题和行动按钮，庆科黄油体负责 ** 强调词、数字和日期。
+  正文、表单与后台密集信息继续使用 --font-sans。
 */
+.font-display,
+.font-ticket-cn,
+.join-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.join-display .font-mondwest {
+  font-family: var(--font-accent);
+  font-style: normal;
+}
+
+/*
+  展示字使用范围：
+  - 全站 h1（后台/会员中心也保留品牌感）
+  - 首页与公开页面的 h2–h4
+  - 公开页面 CTA 按钮与页脚小标题
+  表格、正文、表单和后台操作区不套展示字。
+*/
+h1:not(.font-mondwest) {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
+}
+
+:where(.site-home, .page-enter) :where(h2, h3, h4) {
+  font-family: var(--font-display);
+  font-synthesis: none;
+  letter-spacing: 0.02em;
+}
+
+:where(.site-home, .page-enter) :where(.btn-primary, .btn-secondary, .btn-tertiary) {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+footer h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+/* ===== 方向选择器 ===== */
+@keyframes join-direction-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.join-direction-menu {
+  animation: join-direction-in 160ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  transform-origin: top center;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.9), transparent 34%),
+    #f1ede6;
+  backdrop-filter: blur(14px);
+}
+
+.join-direction-option {
+  --direction-accent: #3457ff;
+  position: relative;
+  isolation: isolate;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.join-direction-option::before {
+  content: '';
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--direction-accent);
+  opacity: 0;
+  transform: scaleY(0.55);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.join-direction-option:hover,
+.join-direction-option:focus-visible {
+  background: color-mix(in srgb, var(--direction-accent) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--direction-accent) 12%, transparent);
+  transform: translateX(1px);
+  outline: none;
+}
+
+.join-direction-option:hover::before,
+.join-direction-option:focus-visible::before,
+.join-direction-option[aria-selected='true']::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.join-direction-option[aria-selected='true'] {
+  background: color-mix(in srgb, var(--direction-accent) 9%, transparent);
+}
+
+/* 历史类名 .font-mondwest 保留，实际字体已切换为站酷庆科黄油体。 */
 
 /* ===== 全局基础样式 ===== */
 body {
@@ -178,9 +322,10 @@ body {
   margin: 0;
 }
 
-/* 衬线 accent */
+/* 强调文字（兼容历史类名） */
 .font-mondwest {
   font-family: var(--font-accent);
+  font-synthesis: none;
 }
 
 /* 等宽标签 */
