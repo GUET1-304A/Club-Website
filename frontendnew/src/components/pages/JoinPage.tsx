@@ -10,6 +10,18 @@ const groups = [
   { name: '拾焰组（内容运营）', code: 'CONTENT', short: '内容运营' },
 ]
 
+const STATUS_META = {
+  pending: { label: '待审核', code: 'PENDING', color: '#f0b429' },
+  approved: { label: '已通过', code: 'APPROVED', color: '#3ddc97' },
+  rejected: { label: '未通过', code: 'REJECTED', color: '#ff8b80' },
+} as const
+
+function statusHint(status: ApplicationStatusResult['status']): string {
+  if (status === 'approved') return '欢迎加入，等待后续通知'
+  if (status === 'rejected') return '如有疑问请联系社团'
+  return '资料已收到，等待审核'
+}
+
 const EMPTY_FORM = {
   name: '', studentId: '', grade: '', email: '', phone: '',
   group: '', motivation: '', portfolio: '',
@@ -35,6 +47,7 @@ export default function JoinPage() {
 
   const selectedGroup = groups.find(group => group.name === form.group)
   const seat = form.studentId.replace(/\D/g, '').slice(-2) || '01'
+  const statusMeta = statusResult ? STATUS_META[statusResult.status] : null
 
   const update = (field: keyof ApplicationForm, value: string) => {
     setForm(current => ({ ...current, [field]: value }))
@@ -175,7 +188,7 @@ export default function JoinPage() {
           maxWidth={960}
           defaultSide="back"
           flipOnClick={false}
-          tilt={0}
+          tilt={6}
           defaultTorn={submitted}
           stubMode="submit"
           onStubSubmit={handleSubmit}
@@ -264,17 +277,34 @@ export default function JoinPage() {
             <PaperInput label="手机号" value={statusForm.phone} placeholder="提交申请时的手机号" onChange={value => setStatusForm(current => ({ ...current, phone: value }))} />
           </div>
           {statusError && <p className="text-[11px] text-red-500 mt-3">{statusError}</p>}
-          {statusResult && (
-            <div className="mt-4 rounded-2xl border border-dashed border-[#0d212c]/25 bg-white/55 p-4">
-              <span className={`inline-block rotate-[-4deg] rounded-md border-2 px-3 py-1 font-mono text-xs font-bold tracking-[0.18em] uppercase ${
-                statusResult.status === 'approved' ? 'border-emerald-600 text-emerald-700'
-                  : statusResult.status === 'rejected' ? 'border-red-500 text-red-600'
-                    : 'border-amber-500 text-amber-700'
-              }`}>
-                {statusResult.status === 'approved' ? '已通过' : statusResult.status === 'rejected' ? '未通过' : '待审核'}
-              </span>
-              {statusResult.group_name && <p className="text-xs text-[#0d212c]/55 mt-2">{statusResult.group_name}</p>}
-              {statusResult.admin_note && <p className="text-xs text-[#0d212c]/55 mt-2">备注：{statusResult.admin_note}</p>}
+          {statusResult && statusMeta && (
+            <div className="mt-5 overflow-hidden rounded-2xl border border-[#0d212c]/12 bg-white/65 shadow-sm">
+              <div className="flex items-center justify-between border-b border-dashed border-[#0d212c]/15 px-4 py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-[#0d212c]/40">
+                <span>Check-in result</span>
+                <span>
+                  {(statusResult.processed_at || statusResult.created_at)
+                    ? new Date(statusResult.processed_at || statusResult.created_at || '').toLocaleDateString('zh-CN')
+                    : ''}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 p-4">
+                <div className="shrink-0 -rotate-6 rounded-lg border-2 px-3 py-2 text-center" style={{ borderColor: statusMeta.color, color: statusMeta.color }}>
+                  <span className="block text-lg font-bold tracking-[0.18em]">{statusMeta.label}</span>
+                  <span className="block font-mono text-[8px] tracking-[0.22em] opacity-70">{statusMeta.code}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#0d212c]">{statusResult.group_name || '意向方向待定'}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#0d212c]/55">
+                    {statusResult.admin_note ? `备注：${statusResult.admin_note}` : statusHint(statusResult.status)}
+                  </p>
+                  {(statusResult.processed_at || statusResult.created_at) && (
+                    <p className="mt-1.5 font-mono text-[10px] text-[#0d212c]/35">
+                      {statusResult.processed_at ? '处理于 ' : '提交于 '}
+                      {new Date(statusResult.processed_at || statusResult.created_at || '').toLocaleString('zh-CN')}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           <div className="flex justify-end mt-5">
@@ -418,18 +448,13 @@ function TicketQuery({ form, result, error, loading, onChange, onQuery }: {
   onChange: (field: 'studentId' | 'phone', value: string) => void
   onQuery: () => void
 }) {
-  const label = result
-    ? result.status === 'approved' ? '已通过' : result.status === 'rejected' ? '未通过' : '待审核'
-    : ''
-  const code = result ? result.status.toUpperCase() : ''
-  const color = result
-    ? result.status === 'approved' ? '#8ff0c2' : result.status === 'rejected' ? '#ff9b93' : '#ffd37a'
-    : '#e8eef2'
+  const meta = result ? STATUS_META[result.status] : null
 
   return (
     <div
+      data-no-tilt
       style={{
-        position: 'absolute', left: '26.5%', right: '2.8%', top: '56%',
+        position: 'absolute', left: '26.5%', right: '2.8%', top: '49%',
         background: 'rgba(5,26,36,.94)', border: '1px solid rgba(232,238,242,.22)',
         borderRadius: '0.55cqw', padding: '0.8cqw 1cqw', backdropFilter: 'blur(8px)',
         boxShadow: '0 1cqw 2.4cqw rgba(0,0,0,.35)',
@@ -458,30 +483,54 @@ function TicketQuery({ form, result, error, loading, onChange, onQuery }: {
       {error && (
         <p style={{ margin: '0.4cqw 0 0', fontFamily: 'var(--lbp-mono)', fontSize: '0.66cqw', color: '#ff9b93' }}>{error}</p>
       )}
-      {result && (
+      {result && meta && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '0.9cqw', flexWrap: 'wrap',
-          marginTop: '0.55cqw', paddingTop: '0.5cqw', borderTop: '1px solid rgba(232,238,242,.14)',
+          display: 'flex', alignItems: 'center', gap: '1.05cqw',
+          marginTop: '0.6cqw', paddingTop: '0.55cqw',
+          borderTop: '1px dashed rgba(232,238,242,.18)',
         }}>
-          <span style={{ fontFamily: 'var(--lbp-cond)', fontWeight: 700, fontSize: '1.1cqw', letterSpacing: '0.12em', color }}>
-            {label}
-          </span>
-          <span style={{ fontFamily: 'var(--lbp-mono)', fontSize: '0.55cqw', letterSpacing: '0.16em', color: 'rgba(232,238,242,.4)' }}>
-            {code}
-          </span>
-          {result.group_name && (
-            <span style={{ fontFamily: 'var(--lbp-mono)', fontSize: '0.72cqw', color: 'rgba(232,238,242,.65)' }}>
-              {result.group_name}
-            </span>
-          )}
-          {result.admin_note && (
+          <div style={{
+            flex: '0 0 auto', transform: 'rotate(-7deg)', textAlign: 'center',
+            border: `2px solid ${meta.color}`, borderRadius: '0.3cqw',
+            padding: '0.3cqw 0.75cqw', opacity: 0.92,
+            boxShadow: `inset 0 0 0 1px ${meta.color}44, 0 0 1.2cqw ${meta.color}22`,
+          }}>
             <span style={{
-              fontFamily: 'var(--lbp-mono)', fontSize: '0.68cqw', color: 'rgba(232,238,242,.55)',
-              maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              display: 'block', fontFamily: 'var(--lbp-cond)', fontWeight: 700,
+              fontSize: '1.28cqw', letterSpacing: '0.16em', lineHeight: 1, color: meta.color,
             }}>
-              {result.admin_note}
+              {meta.label}
             </span>
-          )}
+            <span style={{
+              display: 'block', fontFamily: 'var(--lbp-mono)', fontSize: '0.52cqw',
+              letterSpacing: '0.22em', marginTop: '0.18cqw', color: meta.color, opacity: 0.7,
+            }}>
+              {meta.code}
+            </span>
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{
+              margin: 0, fontFamily: 'var(--lbp-cond)', fontSize: '1.02cqw',
+              letterSpacing: '0.06em', color: '#e8eef2',
+            }}>
+              {result.group_name || '意向方向待定'}
+            </p>
+            <p style={{
+              margin: '0.2cqw 0 0', fontFamily: 'var(--lbp-mono)', fontSize: '0.7cqw',
+              color: 'rgba(232,238,242,.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {result.admin_note ? `备注：${result.admin_note}` : statusHint(result.status)}
+            </p>
+            {(result.processed_at || result.created_at) && (
+              <p style={{
+                margin: '0.18cqw 0 0', fontFamily: 'var(--lbp-mono)', fontSize: '0.56cqw',
+                letterSpacing: '0.08em', color: 'rgba(232,238,242,.3)',
+              }}>
+                {result.processed_at ? '处理于 ' : '提交于 '}
+                {new Date(result.processed_at || result.created_at || '').toLocaleString('zh-CN')}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

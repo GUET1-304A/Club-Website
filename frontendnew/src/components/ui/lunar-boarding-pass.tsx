@@ -776,10 +776,14 @@ export default function LunarBoardingPass({
     const py = clamp01((e.clientY - r.top) / r.height)
     t.style.setProperty("--mx", (px * 100).toFixed(1) + "%")
     t.style.setProperty("--my", (py * 100).toFixed(1) + "%")
-    if (tilt && !reduced && e.pointerType === "mouse") {
+    const noTilt = !!(e.target as Element).closest?.("[data-no-tilt]")
+    if (tilt && !reduced && e.pointerType === "mouse" && !noTilt) {
       const a = tiltFrom(px, py, tilt)
       t.style.setProperty("--rx", a[0].toFixed(2) + "deg")
       t.style.setProperty("--ry", a[1].toFixed(2) + "deg")
+    } else {
+      t.style.setProperty("--rx", "0deg")
+      t.style.setProperty("--ry", "0deg")
     }
     pointer.current = [px, py]
     redraw.current()
@@ -950,6 +954,7 @@ export default function LunarBoardingPass({
                 </div>
                 {backForm ? (
                   <div
+                    data-no-tilt
                     style={{ flex: 1, minHeight: 0, marginTop: "1cqw", position: "relative" }}
                     onClick={(event) => event.stopPropagation()}
                     onPointerDown={(event) => event.stopPropagation()}
@@ -1007,6 +1012,7 @@ export default function LunarBoardingPass({
               <button
                 ref={stubRef}
                 type="button"
+                data-no-tilt
                 className={"lbp-piece lbp-stub" + (torn ? " is-torn" : "") + (submitMode ? " is-submit" : "")}
                 tabIndex={front ? -1 : 0}
                 aria-pressed={submitMode ? undefined : torn}
