@@ -965,6 +965,16 @@ def test_get_project_health_tool(client):
 
         member = Member.query.filter_by(student_id='2023001').first()
         project = Project.query.first()
+        if project is None:
+            # 项目已不再有默认种子数据，这里自建一个用于工具调用
+            project = Project(
+                slug='assistant-health-fixture',
+                name='智能体健康度测试项目',
+                category='ai',
+                status='active',
+            )
+            db.session.add(project)
+            db.session.commit()
         assert member is not None and project is not None
 
         ok, data = execute_tool(

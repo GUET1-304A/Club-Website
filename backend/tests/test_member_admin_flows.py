@@ -60,6 +60,17 @@ def test_member_can_manage_own_identity_without_exposing_password_data(client):
 
 
 def test_member_project_task_lifecycle(client):
+    with client.application.app_context():
+        # 项目不再有默认种子数据，这里自建一个用于成员任务流程
+        if not Project.query.first():
+            db.session.add(Project(
+                slug='member-task-fixture',
+                name='成员任务测试项目',
+                category='web',
+                status='active',
+            ))
+            db.session.commit()
+
     login = client.post(
         "/api/member/login",
         json={"account": "2023002", "password": "member123"},

@@ -70,7 +70,11 @@ def test_development_keeps_demo_seed_data(monkeypatch, tmp_path):
     with app.app_context():
         assert AdminUser.query.filter_by(username="admin").first().check_password("admin123")
         assert Member.query.count() > 0
-        assert Project.query.count() > 0
-        assert Award.query.count() > 0
-        assert BlogPost.query.count() > 0
-        assert Notification.query.count() > 0
+        # 项目不再有默认数据：作品由管理员在后台自行创建或导入
+        assert Project.query.count() == 0
+        # 奖项同样不再有默认数据
+        assert Award.query.count() == 0
+        # 博客同样不再有默认数据
+        assert BlogPost.query.count() == 0
+        # 通知同样不再有默认数据
+        assert Notification.query.count() == 0

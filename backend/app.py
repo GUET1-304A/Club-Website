@@ -20,8 +20,8 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from config import config
-from models import db, AdminUser, SiteConfig, Page, Member, Project, Award, BlogPost
-from defaults import DEFAULT_SITE_CONFIG, DEFAULT_PAGES
+from models import db, AdminUser, SiteConfig, Page, Member
+from defaults import DEFAULT_SITE_CONFIG, DEFAULT_PAGES, INITIAL_MEMBER_PASSWORD
 
 
 def create_app(config_name=None):
@@ -140,10 +140,8 @@ def _seed_defaults():
       1. 默认管理员账号（admin / admin123）
       2. 默认站点配置（从 defaults.py 的 DEFAULT_SITE_CONFIG）
       3. 示例成员数据
-      4. 示例项目数据
-      5. 示例获奖数据
-      6. 示例博客文章
-      7. 示例通知数据
+
+    注意：**不写入任何默认项目、奖项、博客与通知**——这些内容都由管理员在后台自行创建或导入。
 
     任何步骤失败都会回滚该批次操作，不影响应用启动。
     """
@@ -166,23 +164,6 @@ def _seed_defaults():
         # ── 示例成员数据（仅当成员表为空时写入）──
         if not Member.query.first():
             _seed_members()
-
-        # ── 示例项目数据（仅当项目表为空时写入）──
-        if not Project.query.first():
-            _seed_projects()
-
-        # ── 示例获奖数据（仅当获奖表为空时写入）──
-        if not Award.query.first():
-            _seed_awards()
-
-        # ── 示例博客文章（仅当博客表为空时写入）──
-        if not BlogPost.query.first():
-            _seed_blogs()
-
-        # ── 示例通知（仅当通知表为空时写入）──
-        from models import Notification
-        if not Notification.query.first():
-            _seed_notifications()
 
         db.session.commit()
     except Exception:
@@ -387,272 +368,68 @@ def _migrate_columns(app):
 # 以下函数仅在数据库为空时执行一次，用于生成演示数据。
 
 def _seed_members():
-    """生成 8 名示例成员。
+    """写入 12 名初始成员（来源：2026-09-23 的站点备份成员名录）。
 
-    包含产品、开发、设计、内容四个方向的成员，分布在 2022-2024 级。
-    每名成员预设了技能标签、联系方式和个人简介。
-    默认密码均为 'member123'。
+    分组对应关系：流光组→product、星绘组→design、逐云组→dev。
+    有学号的成员使用统一初始密码（defaults.INITIAL_MEMBER_PASSWORD）即可登录成员门户，
+    登录后可在个人中心自行改密；陶星宇（指导老师）与莫玉妃暂无学号，因此还不能登录。
+    头像使用社团 OSS 上的地址。
     """
     members_data = [
-        {'name': '陈星宇', 'role': '负责人 / 产品+开发', 'group': 'product',
-         'skills': ['React', 'Vue', 'Node.js', 'Python'],
-         'github': 'https://github.com', 'blog': 'https://blog.example.com',
-         'email': 'xingyu@example.com', 'bio': '热爱前端与开源，相信技术的力量可以改变世界。',
-         'grade': '2022级', 'is_alumni': False, 'student_id': '2022001',
-         'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face'},
-        {'name': '林雨晴', 'role': '副社长 / 后端开发', 'group': 'dev',
-         'skills': ['Go', 'Python', 'Docker', 'K8s'],
-         'github': 'https://github.com', 'email': 'yuqing@example.com',
-         'bio': '专注于后端架构和分布式系统。', 'grade': '2022级', 'is_alumni': False, 'student_id': '2022002',
-         'avatar': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face'},
-        {'name': '赵子涵', 'role': '前端组长', 'group': 'dev',
-         'skills': ['TypeScript', 'React', 'Next.js', 'Tailwind'],
-         'github': 'https://github.com', 'blog': 'https://blog.example.com',
-         'bio': '追求极致的用户体验和界面设计。', 'grade': '2023级', 'is_alumni': False, 'student_id': '2023001',
-         'avatar': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face'},
-        {'name': '王思远', 'role': '算法组长', 'group': 'dev',
-         'skills': ['Python', 'PyTorch', 'NLP', 'CV'],
-         'github': 'https://github.com', 'bio': '研究方向为自然语言处理和计算机视觉。',
-         'grade': '2023级', 'is_alumni': False, 'student_id': '2023002',
-         'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face'},
-        {'name': '张悦然', 'role': '设计组长', 'group': 'design',
-         'skills': ['Figma', 'PS', 'AI', 'Blender'],
-         'email': 'yueran@example.com', 'bio': '相信好的设计能让技术更有温度。',
-         'grade': '2023级', 'is_alumni': False, 'student_id': '2023003',
-         'avatar': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face'},
-        {'name': '刘明哲', 'role': '产品组长', 'group': 'product',
-         'skills': ['产品设计', '用户研究', '数据分析'],
-         'github': 'https://github.com', 'bio': '专注产品思维与用户体验。',
-         'grade': '2023级', 'is_alumni': False, 'student_id': '2023004',
-         'avatar': 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=face'},
-        {'name': '孙晓萌', 'role': '前端开发', 'group': 'dev',
-         'skills': ['Vue', 'TypeScript', 'GSAP', 'Three.js'],
-         'github': 'https://github.com', 'bio': '喜欢用动画和交互讲好每一个产品故事。',
-         'grade': '2024级', 'is_alumni': False, 'student_id': '2024001',
-         'avatar': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face'},
-        {'name': '周逸飞', 'role': '后端开发', 'group': 'dev',
-         'skills': ['Java', 'Spring', 'MySQL', 'Redis'],
-         'github': 'https://github.com', 'bio': '对高并发和系统稳定性充满热情。',
-         'grade': '2024级', 'is_alumni': False, 'student_id': '2024002',
-         'avatar': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face'},
+        {'name': '陶星宇', 'role': '指导老师', 'group': 'product',
+         'skills': ['产品设计', '用户研究', '项目管理'],
+         'github': 'https://github.com/GUET1-304A',
+         'bio': '专注于产品战略与用户体验设计，擅长将复杂需求转化为清晰的产品方案',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/b1ea77c6543a47769ee76f228a1f52a4.jpg'},
+        {'name': '穆天宇', 'role': '技术负责人', 'group': 'dev', 'student_id': '2400310419',
+         'skills': ['Vue', 'Python', 'Rust', 'DevOps'],
+         'github': 'https://github.com/GUET1-304A',
+         'bio': '全栈工程师，热衷于开源项目，主导多个核心系统的架构设计',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/37f42d36f6c342dc8cee28929fcf69e4.jpg'},
+        {'name': '梁天音', 'role': '设计负责人', 'group': 'design', 'student_id': '2400320104',
+         'skills': ['UI设计', '品牌设计', '动效设计'],
+         'github': 'https://github.com/GUET1-304A',
+         'bio': 'UI/UX 设计师，追求像素完美，负责社团整体视觉语言',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/15769f6271cf40bc99fe0ed8d241cde2.jpg'},
+        {'name': '曾麒兆', 'role': '技术人员', 'group': 'dev', 'student_id': '2400310331',
+         'skills': ['Vue', 'Python', 'Java'],
+         'github': 'https://github.com/zqzlq',
+         'bio': '全栈工程师，热衷于开源项目，主导多个核心系统的架构设计',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/d8bdadf92b734d408f263d28e2ec1e71.jpg'},
+        {'name': '兀泉晶', 'role': '技术人员', 'group': 'dev', 'student_id': '2300920214',
+         'skills': [],
+         'bio': 'UI/UX 设计师，追求像素完美，负责社团整体视觉语言',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/6fcbad9787534795a51b77b9b9d41652.jpg'},
+        {'name': '温慧珍', 'role': '技术人员', 'group': 'dev', 'student_id': '2400310107',
+         'skills': ['Vue'],
+         'bio': '擅长前端开发',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/03b91cdef85047e4899889d2e8b5933d.jpg'},
+        {'name': '丁林云', 'role': '技术人员', 'group': 'dev', 'student_id': '2400310501',
+         'skills': [],
+         'bio': '喜欢安卓开发',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/19dab2798001478b9c22271bc9239d6d.jpg'},
+        {'name': '张自强', 'role': '技术人员', 'group': 'design', 'student_id': '2400360333',
+         'skills': ['Java', 'Go'],
+         'bio': '热衷于后端开发',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/5e715eb2010746f7bdfed6c575a5ebc5.jpg'},
+        {'name': '郑承睿', 'role': '技术人员', 'group': 'design', 'student_id': '2400360132',
+         'skills': [],
+         'bio': '擅长安卓开发',
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/eecfbdf0f2a848c78805f1470ce7fc80.jpg'},
+        {'name': '莫玉妃', 'role': '技术人员', 'group': 'design',
+         'skills': [],
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/b14bd369469b4cd5a86547702ee82415.jpg'},
+        {'name': '赵欣苗', 'role': '技术人员', 'group': 'design', 'student_id': '2400310108',
+         'skills': [],
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/26d6c11cd5ee4579b1a71b0e7d25f1d1.jpg'},
+        {'name': '江昊宸', 'role': '技术人员', 'group': 'design', 'student_id': '2400350120',
+         'skills': [],
+         'avatar': 'https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/50771bec14b04ac38bf00405b63c426c.jpg'},
     ]
     for i, m in enumerate(members_data):
-        member = Member(sort_order=i, status='active', **m)
-        member.set_password('member123')
+        member = Member(sort_order=i, status='active', is_alumni=False, **m)
+        if member.student_id:
+            member.set_password(INITIAL_MEMBER_PASSWORD)
         db.session.add(member)
 
 
-def _seed_notifications():
-    """生成 3 条示例通知（发送给成员 1）。
-
-    包含欢迎通知、任务分配通知和状态变更通知，
-    用于演示通知中心功能。
-    """
-    from models import Notification
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
-
-    notifs = [
-        Notification(member_id=1, type='announcement',
-                     title='欢迎加入星雨作坊！',
-                     body='你已成功注册成员账号，可以开始使用成员门户的各项功能。',
-                     link='/member/dashboard', is_read=False, created_at=now),
-        Notification(member_id=1, type='task_assigned',
-                     title='新任务分配：完成登录页面设计',
-                     body='你被分配了任务「完成登录页面响应式适配」，项目：Campus Hub，截止日期：2026-07-15',
-                     link='/member/tasks', is_read=False, created_at=now),
-        Notification(member_id=1, type='status_change',
-                     title='任务状态变更：修复导航栏 bug',
-                     body='任务「修复导航栏 bug」已标记为完成 ✅',
-                     link='/member/tasks', is_read=True, created_at=now),
-    ]
-    for n in notifs:
-        db.session.add(n)
-
-
-def _seed_projects():
-    """生成 9 个示例项目。
-
-    涵盖 Web 应用、AI、小程序、工具、游戏等多个分类，
-    包含进行中、已完成、已归档三种状态。
-    每个项目包含技术栈、团队信息、GitHub 数据等完整信息。
-    """
-    from datetime import datetime, timezone
-    projects_data = [
-        {'slug': 'campus-hub', 'name': 'Campus Hub',
-         'category': 'web', 'tech_stack': ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
-         'description': '校园综合服务平台，集成了课表管理、社团活动、二手交易等功能。',
-         'content': '## Campus Hub\n\n校园综合服务平台...',
-         'github_url': 'https://github.com/xingyu/campus-hub',
-         'demo_url': 'https://campus-hub.example.com', 'stars': 128, 'forks': 36,
-         'screenshots': [],
-         'team': [{'name': '陈星宇', 'avatar': '', 'role': '全栈开发'},
-                   {'name': '赵子涵', 'avatar': '', 'role': '前端开发'}],
-         'start_date': datetime(2025, 9, 1, tzinfo=timezone.utc), 'status': 'active',
-         'cover_image': 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80'},
-        {'slug': 'ai-writer', 'name': 'AI 智能写作助手',
-         'category': 'ai', 'tech_stack': ['Python', 'FastAPI', 'React', 'LLM'],
-         'description': '基于大语言模型的智能写作辅助工具，支持多种文体和风格。',
-         'content': '## AI 智能写作助手\n\n基于 LLM 的写作工具...',
-         'github_url': 'https://github.com/xingyu/ai-writer', 'stars': 256, 'forks': 52,
-         'screenshots': [],
-         'team': [{'name': '王思远', 'avatar': '', 'role': '算法'},
-                   {'name': '林雨晴', 'avatar': '', 'role': '后端'}],
-         'start_date': datetime(2025, 6, 1, tzinfo=timezone.utc), 'status': 'active',
-         'cover_image': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80'},
-        {'slug': 'miniapp-toolkit', 'name': '校园工具箱小程序',
-         'category': 'miniapp', 'tech_stack': ['微信小程序', 'TypeScript', '云开发'],
-         'description': '集成成绩查询、课表导入、校园地图等实用功能的微信小程序。',
-         'content': '## 校园工具箱\n\n微信小程序...',
-         'github_url': 'https://github.com/xingyu/miniapp-toolkit', 'stars': 89, 'forks': 21,
-         'screenshots': [],
-         'team': [{'name': '孙晓萌', 'avatar': '', 'role': '前端'},
-                   {'name': '周逸飞', 'avatar': '', 'role': '后端'}],
-         'start_date': datetime(2025, 3, 1, tzinfo=timezone.utc),
-         'end_date': datetime(2025, 8, 1, tzinfo=timezone.utc), 'status': 'completed',
-         'cover_image': 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&q=80'},
-        {'slug': 'code-judge', 'name': 'Online Judge 平台',
-         'category': 'web', 'tech_stack': ['React', 'Go', 'Docker', 'Redis'],
-         'description': '在线编程评测系统，支持 C/C++/Java/Python 多语言判题。',
-         'content': '## Online Judge\n\n在线评测平台...',
-         'github_url': 'https://github.com/xingyu/code-judge', 'stars': 312, 'forks': 67,
-         'screenshots': [],
-         'team': [{'name': '林雨晴', 'avatar': '', 'role': '后端'},
-                   {'name': '周逸飞', 'avatar': '', 'role': '后端'}],
-         'start_date': datetime(2025, 1, 1, tzinfo=timezone.utc), 'status': 'active',
-         'cover_image': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80'},
-        {'slug': 'design-collab', 'name': 'Design Collab',
-         'category': 'web', 'tech_stack': ['Next.js', 'tRPC', 'Prisma', 'WebSocket'],
-         'description': '实时协作设计工具，支持多人同时编辑和白板讨论。',
-         'content': '## Design Collab\n\n实时协作工具...',
-         'github_url': 'https://github.com/xingyu/design-collab', 'stars': 178, 'forks': 34,
-         'screenshots': [],
-         'team': [{'name': '赵子涵', 'avatar': '', 'role': '前端'},
-                   {'name': '张悦然', 'avatar': '', 'role': '设计'}],
-         'start_date': datetime(2024, 10, 1, tzinfo=timezone.utc), 'status': 'completed',
-         'cover_image': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80'},
-        {'slug': 'stock-predictor', 'name': '智能选股助手',
-         'category': 'ai', 'tech_stack': ['Python', 'PyTorch', 'FastAPI', 'React'],
-         'description': '基于深度学习的股票趋势预测与智能选股推荐系统。',
-         'content': '## 智能选股\n\nAI 选股系统...',
-         'github_url': 'https://github.com/xingyu/stock-predictor', 'stars': 445, 'forks': 98,
-         'screenshots': [],
-         'team': [{'name': '王思远', 'avatar': '', 'role': '算法'},
-                   {'name': '刘明哲', 'avatar': '', 'role': '产品'}],
-         'start_date': datetime(2024, 6, 1, tzinfo=timezone.utc), 'status': 'active',
-         'cover_image': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80'},
-        {'slug': 'edu-game', 'name': '编程启蒙游戏',
-         'category': 'game', 'tech_stack': ['Unity', 'C#', 'Node.js', 'MongoDB'],
-         'description': '面向青少年的编程思维启蒙游戏，通过趣味关卡学习编程基础。',
-         'content': '## 编程游戏\n\n教育游戏...',
-         'github_url': 'https://github.com/xingyu/edu-game', 'stars': 203, 'forks': 55,
-         'screenshots': [],
-         'team': [{'name': '孙晓萌', 'avatar': '', 'role': '前端'},
-                   {'name': '陈星宇', 'avatar': '', 'role': '全栈'}],
-         'start_date': datetime(2024, 3, 1, tzinfo=timezone.utc),
-         'end_date': datetime(2024, 12, 1, tzinfo=timezone.utc), 'status': 'completed',
-         'cover_image': 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80'},
-        {'slug': 'club-dashboard', 'name': '社团数据看板',
-         'category': 'tools', 'tech_stack': ['Vue', 'ECharts', 'Express', 'SQLite'],
-         'description': '社团运营数据可视化看板，实时展示成员活跃度、项目进度等指标。',
-         'content': '## 数据看板\n\n可视化工具...',
-         'github_url': 'https://github.com/xingyu/club-dashboard', 'stars': 67, 'forks': 12,
-         'screenshots': [],
-         'team': [{'name': '赵子涵', 'avatar': '', 'role': '前端'},
-                   {'name': '周逸飞', 'avatar': '', 'role': '后端'}],
-         'start_date': datetime(2024, 1, 1, tzinfo=timezone.utc), 'status': 'archived',
-         'cover_image': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'},
-        {'slug': 'smart-schedule', 'name': '智能排课系统',
-         'category': 'tools', 'tech_stack': ['React', 'Python', 'Flask', 'PostgreSQL'],
-         'description': '基于约束满足算法的自动排课工具，支持教师、教室、时间多维度优化。',
-         'content': '## 排课系统\n\n智能排课...',
-         'github_url': 'https://github.com/xingyu/smart-schedule', 'stars': 156, 'forks': 28,
-         'screenshots': [],
-         'team': [{'name': '林雨晴', 'avatar': '', 'role': '后端'},
-                   {'name': '刘明哲', 'avatar': '', 'role': '产品'}],
-         'start_date': datetime(2023, 9, 1, tzinfo=timezone.utc),
-         'end_date': datetime(2024, 2, 1, tzinfo=timezone.utc), 'status': 'completed',
-         'cover_image': 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=800&q=80'},
-    ]
-    for p in projects_data:
-        db.session.add(Project(**p))
-
-
-def _seed_awards():
-    """生成 10 条示例获奖记录。
-
-    涵盖国家级、省级、校级三个等级，包含程序设计、Web 开发、
-    AI、设计、数学建模、网络安全等多个类别。
-    部分奖项关联了对应的项目 slug。
-    """
-    awards_data = [
-        {'slug': 'icpc-2025', 'name': 'ICPC 国际大学生程序设计竞赛 亚洲区银奖',
-         'level': 'national', 'category': '程序设计', 'winner': '陈星宇、王思远、周逸飞',
-         'issuer': 'ACM', 'date': '2025-12',
-         'description': '经过 5 小时激烈角逐，团队在 200+ 参赛队伍中脱颖而出。'},
-        {'slug': 'web-contest-2025', 'name': '全国大学生 Web 应用开发大赛 一等奖',
-         'level': 'national', 'category': 'Web 开发', 'winner': '星雨作坊前端组',
-         'issuer': '中国计算机学会', 'date': '2025-10',
-         'description': '凭借 Campus Hub 项目获得评委一致好评。', 'related_project': 'campus-hub'},
-        {'slug': 'ai-challenge-2025', 'name': '省高校 AI 创新挑战赛 特等奖',
-         'level': 'provincial', 'category': '人工智能', 'winner': '王思远、林雨晴',
-         'issuer': '省教育厅', 'date': '2025-08', 'related_project': 'ai-writer'},
-        {'slug': 'design-award-2024', 'name': '校园 UI 设计大赛 最佳视觉奖',
-         'level': 'school', 'category': '设计', 'winner': '张悦然',
-         'issuer': '校团委', 'date': '2024-12'},
-        {'slug': 'math-model-2024', 'name': '全国大学生数学建模竞赛 省一等奖',
-         'level': 'provincial', 'category': '数学建模',
-         'winner': '陈星宇、林雨晴、刘明哲', 'issuer': '中国工业与应用数学学会', 'date': '2024-09'},
-        {'slug': 'hackathon-2024', 'name': '校园黑客马拉松大赛 冠军',
-         'level': 'school', 'category': '创新开发', 'winner': '星雨作坊团队',
-         'issuer': '校创新创业中心', 'date': '2024-06'},
-        {'slug': 'security-ctf-2024', 'name': '全国大学生信息安全竞赛 二等奖',
-         'level': 'national', 'category': '网络安全', 'winner': '周逸飞、赵子涵',
-         'issuer': '教育部', 'date': '2024-05'},
-        {'slug': 'ui-design-2023', 'name': '中国大学生计算机设计大赛 省二等奖',
-         'level': 'provincial', 'category': '设计', 'winner': '张悦然、孙晓萌',
-         'issuer': '省教育厅', 'date': '2023-08'},
-        {'slug': 'robot-2023', 'name': '省大学生机器人大赛 三等奖',
-         'level': 'provincial', 'category': '机器人', 'winner': '王思远、陈星宇',
-         'issuer': '省科技协会', 'date': '2023-05'},
-        {'slug': 'startup-2022', 'name': '校园创新创业大赛 银奖',
-         'level': 'school', 'category': '创新创业', 'winner': '星雨作坊创业组',
-         'issuer': '校团委', 'date': '2022-11'},
-    ]
-    for i, a in enumerate(awards_data):
-        db.session.add(Award(sort_order=i, **a))
-
-
-def _seed_blogs():
-    """生成 4 篇示例博客文章。
-
-    包含技术文章（React 19、LLM 微调）、活动记录（ICPC 参赛）、
-    公告（招新通知）四种分类。
-    """
-    blogs_data = [
-        {'slug': 'react-19-new-features', 'title': 'React 19 新特性全解析：Server Components 与 Actions',
-         'excerpt': 'React 19 带来了许多令人兴奋的新特性，本文将深入探讨 Server Components 和 Server Actions 的使用方法。',
-         'content': '## React 19 新特性\n\n...',
-         'category': 'tech', 'tags': ['React', '前端', 'JavaScript'],
-         'author_name': '赵子涵', 'date': '2025-12-15',
-         'cover_image': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80'},
-        {'slug': 'llm-practice', 'title': '从零开始微调大语言模型：社团 AI 项目的实战经验',
-         'excerpt': '分享我们如何在有限的算力资源下完成 LLM 微调，以及在 AI 写作助手项目中的实践经验。',
-         'content': '## LLM 微调实战\n\n...',
-         'category': 'tech', 'tags': ['AI', 'LLM', 'Python'],
-         'author_name': '王思远', 'date': '2025-11-20',
-         'cover_image': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80'},
-        {'slug': 'icpc-2025-review', 'title': 'ICPC 2025 参赛回顾：那些不眠的刷题之夜',
-         'excerpt': '记录我们团队备战 ICPC 的半年历程，分享训练方法和比赛策略。',
-         'content': '## ICPC 参赛回顾\n\n...',
-         'category': 'event', 'tags': ['竞赛', 'ICPC', '算法'],
-         'author_name': '陈星宇', 'date': '2025-12-20'},
-        {'slug': 'new-semester-recruitment', 'title': '2026 春季招新公告：寻找下一个创造者',
-         'excerpt': '星雨作坊 2026 年春季招新正式开始！欢迎所有热爱技术的同学加入我们。',
-         'content': '## 招新公告\n\n...',
-         'category': 'announcement', 'tags': ['招新', '公告'],
-         'author_name': '陈星宇', 'date': '2026-02-01',
-         'cover_image': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80'},
-    ]
-    for b in blogs_data:
-        db.session.add(BlogPost(**b))

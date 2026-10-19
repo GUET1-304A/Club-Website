@@ -19,7 +19,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from cli.client import ApiClient  # noqa: E402
 from cli.xingyu import cli  # noqa: E402
-from models import Member, Milestone, Project, Task, WeeklyReport, db  # noqa: E402
+from models import Award, Member, Milestone, Project, Task, WeeklyReport, db  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -245,7 +245,19 @@ def test_cli_report_review_as_admin(runner, live_server, app):
             db.session.commit()
 
 
-def test_cli_award_export_csv(runner, live_server):
+def test_cli_award_export_csv(runner, live_server, app):
+    with app.app_context():
+        # 奖项不再有默认种子数据，这里自建一条用于导出验证
+        if not Award.query.first():
+            db.session.add(Award(
+                slug='cli-export-fixture',
+                name='CLI 导出测试奖项',
+                level='national',
+                winner='测试成员',
+                date='2025-01',
+            ))
+            db.session.commit()
+
     result = run_cli(runner, live_server, "award", "export", "--format", "csv")
     assert result.exit_code == 0, result.output
     assert "id,slug,name,level" in result.output
