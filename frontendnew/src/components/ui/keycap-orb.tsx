@@ -67,6 +67,8 @@ export type KeycapOrbProps = {
   palette?: KeycapPalette
   /** Base colour of the scene. Hex. */
   background?: string
+  /** Draw the orb over a transparent canvas instead of the scene background. */
+  transparent?: boolean
   /** The floor glow, the rim light and the bounce on the caps. Hex. */
   glow?: string
   /** Latitude rows from pole to pole. More rows, smaller caps. 5–15. */
@@ -878,6 +880,7 @@ export default function KeycapOrb({
   keys = DEFAULT_KEYS,
   palette,
   background = "#020206",
+  transparent = false,
   glow = "#1f30ff",
   rings = 9,
   scale = 0.62,
@@ -920,7 +923,7 @@ export default function KeycapOrb({
     const root = rootRef.current
     if (!canvas || !root) return
 
-    const gl = canvas.getContext("webgl2", { alpha: false, antialias: true, premultipliedAlpha: false })
+    const gl = canvas.getContext("webgl2", { alpha: transparent, antialias: true, premultipliedAlpha: false })
     if (!gl) {
       setFailed(true)
       return
@@ -1420,22 +1423,24 @@ export default function KeycapOrb({
 
       // ---- draw
       gl.viewport(0, 0, W, H)
-      gl.clearColor(0, 0, 0, 1)
+      gl.clearColor(0, 0, 0, transparent ? 0 : 1)
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
       const orbScreen = project(viewProj, center)
       const floorScreen = project(viewProj, [0, floorY, 0])
-      gl.disable(gl.DEPTH_TEST)
-      gl.disable(gl.BLEND)
-      gl.useProgram(bgProgram)
-      gl.bindVertexArray(vaos[0])
-      gl.uniform2f(ub.uRes, W, H)
-      gl.uniform3f(ub.uBg, bgLin[0], bgLin[1], bgLin[2])
-      gl.uniform3f(ub.uGlow, glowLin[0], glowLin[1], glowLin[2])
-      gl.uniform2f(ub.uOrb, (orbScreen[0] * aspect) / 2, orbScreen[1] / 2)
-      gl.uniform1f(ub.uHorizon, floorScreen[1] / 2)
-      gl.uniform1f(ub.uSeed, calm ? 0 : (now * 7.3) % 100)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (!transparent) {
+        gl.disable(gl.DEPTH_TEST)
+        gl.disable(gl.BLEND)
+        gl.useProgram(bgProgram)
+        gl.bindVertexArray(vaos[0])
+        gl.uniform2f(ub.uRes, W, H)
+        gl.uniform3f(ub.uBg, bgLin[0], bgLin[1], bgLin[2])
+        gl.uniform3f(ub.uGlow, glowLin[0], glowLin[1], glowLin[2])
+        gl.uniform2f(ub.uOrb, (orbScreen[0] * aspect) / 2, orbScreen[1] / 2)
+        gl.uniform1f(ub.uHorizon, floorScreen[1] / 2)
+        gl.uniform1f(ub.uSeed, calm ? 0 : (now * 7.3) % 100)
+        gl.drawArrays(gl.TRIANGLES, 0, 3)
+      }
 
       gl.useProgram(meshProgram)
       gl.uniformMatrix4fv(u.uViewProj, false, viewProj)
@@ -1596,7 +1601,7 @@ export default function KeycapOrb({
         "relative w-full select-none overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/40 " +
         className
       }
-      style={{ height, background: background, cursor: "grab", touchAction: "pan-y" }}
+      style={{ height, background: transparent ? "transparent" : background, cursor: "grab", touchAction: "pan-y" }}
     >
       {failed ? (
         <div
