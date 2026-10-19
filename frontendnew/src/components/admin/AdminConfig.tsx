@@ -112,21 +112,27 @@ export default function AdminConfig() {
           <div className="flex-1 min-w-0">
             <div className="card p-6" style={{ borderRadius: 24 }}>
               {activeSection === 'hero' && (
-                <SectionEditor
-                  title="Hero 区域"
-                  data={config.hero as Record<string, unknown> || {}}
-                  onChange={(val) => updateSection('hero', val)}
-                  fields={[
-                    { key: 'eyebrow', label: '标签文字', type: 'text' },
-                    { key: 'title', label: '主标题（**文字** 为衬线强调，换行即换行）', type: 'textarea' },
-                    { key: 'description', label: '描述（空一行分段）', type: 'textarea' },
-                    { key: 'video_url', label: '背景视频 URL（留空使用默认）', type: 'text' },
-                    { key: 'primary_label', label: '主按钮文字', type: 'text' },
-                    { key: 'primary_href', label: '主按钮链接', type: 'text' },
-                    { key: 'secondary_label', label: '次按钮文字', type: 'text' },
-                    { key: 'secondary_href', label: '次按钮链接', type: 'text' },
-                  ]}
-                />
+                <div className="space-y-8">
+                  <SectionEditor
+                    title="Hero 区域"
+                    data={config.hero as Record<string, unknown> || {}}
+                    onChange={(val) => updateSection('hero', val)}
+                    fields={[
+                      { key: 'eyebrow', label: '标签文字', type: 'text' },
+                      { key: 'title', label: '主标题（**文字** 为衬线强调，换行即换行）', type: 'textarea' },
+                      { key: 'description', label: '描述（空一行分段）', type: 'textarea' },
+                      { key: 'video_url', label: '背景视频 URL（留空使用默认）', type: 'text' },
+                      { key: 'primary_label', label: '主按钮文字', type: 'text' },
+                      { key: 'primary_href', label: '主按钮链接', type: 'text' },
+                      { key: 'secondary_label', label: '次按钮文字', type: 'text' },
+                      { key: 'secondary_href', label: '次按钮链接', type: 'text' },
+                    ]}
+                  />
+                  <StatsEditor
+                    data={(config.hero as Record<string, unknown>)?.stats as { label: string; value: string }[] || []}
+                    onChange={(stats) => updateSection('hero', { ...(config.hero as Record<string, unknown> || {}), stats })}
+                  />
+                </div>
               )}
               {activeSection === 'about' && (
                 <SectionEditor
@@ -378,6 +384,62 @@ function SectionEditor({ title, data, onChange, fields }: {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function StatsEditor({ data, onChange }: {
+  data: { label: string; value: string }[]
+  onChange: (val: { label: string; value: string }[]) => void
+}) {
+  const updateRow = (index: number, patch: Partial<{ label: string; value: string }>) => {
+    onChange(data.map((row, i) => i === index ? { ...row, ...patch } : row))
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-sm font-medium text-[#051A24]">统计数字</h3>
+          <p className="text-xs text-[#273C46]/50 mt-1">显示在首页「关于我们」下方，可增减；带 + 的数字请直接写在值里。</p>
+        </div>
+        <button
+          onClick={() => onChange([...data, { label: '新指标', value: '0' }])}
+          className="btn-secondary text-xs px-3 py-2 inline-flex items-center gap-1.5 shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" /> 添加
+        </button>
+      </div>
+      <div className="space-y-3">
+        {data.map((row, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={row.label}
+              onChange={e => updateRow(index, { label: e.target.value })}
+              placeholder="标签（如 成员数）"
+              className="flex-1 px-3 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24]"
+            />
+            <input
+              type="text"
+              value={row.value}
+              onChange={e => updateRow(index, { value: e.target.value })}
+              placeholder="值（如 42+）"
+              className="w-28 px-3 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24]"
+            />
+            <button
+              onClick={() => onChange(data.filter((_, i) => i !== index))}
+              className="p-2 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50"
+              aria-label="删除指标"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+        {data.length === 0 && (
+          <p className="text-xs text-[#273C46]/50">还没有指标，点击「添加」创建。</p>
+        )}
       </div>
     </div>
   )
