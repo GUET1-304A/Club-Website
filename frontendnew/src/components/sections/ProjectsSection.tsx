@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
@@ -20,11 +20,17 @@ export default function ProjectsSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
   const { config, projects } = useSiteData()
   const [page, setPage] = useState(0)
+  const [launching, setLaunching] = useState(false)
+  const launchTimer = useRef<number | null>(null)
   const pageCount = Math.max(1, Math.ceil(projects.length / PAGE_SIZE))
 
   useEffect(() => {
     if (page > pageCount - 1) setPage(pageCount - 1)
   }, [page, pageCount])
+
+  useEffect(() => () => {
+    if (launchTimer.current) window.clearTimeout(launchTimer.current)
+  }, [])
 
   const pageStart = page * PAGE_SIZE
   const pageProjects = projects.slice(pageStart, pageStart + PAGE_SIZE)
@@ -38,10 +44,14 @@ export default function ProjectsSection() {
   const openProject = (key: Keycap) => {
     const index = Number((key.hotkey || '').replace('project-', ''))
     const target = projects[index]
-    if (!target) return
-    window.history.pushState({}, '', `/project/${target.slug}`)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-    window.scrollTo({ top: 0 })
+    if (!target || launching) return
+    setLaunching(true)
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    launchTimer.current = window.setTimeout(() => {
+      window.history.pushState({}, '', `/project/${target.slug}`)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      window.scrollTo({ top: 0 })
+    }, reduce ? 0 : 600)
   }
 
   return (
@@ -68,28 +78,35 @@ export default function ProjectsSection() {
       {projects.length > 0 ? (
         <>
           <div className="relative mt-6">
-            <KeycapOrb
-              keys={keys}
-              rings={9}
-              scale={0.75}
-              height="clamp(420px, 58vw, 620px)"
-              transparent
-              glow="#3457ff"
-              reflection={false}
-              speed={0.8}
-              palette={{
-                ink: { cap: '#0d2630', legend: '#dce9ee' },
-                ash: { cap: '#cdd6d9', legend: '#0b2632' },
-                glass: { cap: '#9fb4ff', legend: '#3457ff' },
-                cobalt: { cap: '#2e4bdb', legend: '#0b1a8a' },
-                lime: { cap: '#c8d46a', legend: '#24300a' },
-              }}
-              onKeyPress={openProject}
-              aria-label="作品键帽球：拖动旋转，点击键帽进入项目详情"
-            />
+            <div className={`relative transition-all duration-500 ease-out ${launching ? 'opacity-0 scale-105 delay-75' : 'opacity-100 scale-100'}`}>
+              <KeycapOrb
+                keys={keys}
+                rings={9}
+                scale={0.75}
+                height="clamp(420px, 58vw, 620px)"
+                transparent
+                glow="#3457ff"
+                reflection={false}
+                speed={0.8}
+                palette={{
+                  ink: { cap: '#0d2630', legend: '#dce9ee' },
+                  ash: { cap: '#cdd6d9', legend: '#0b2632' },
+                  glass: { cap: '#9fb4ff', legend: '#3457ff' },
+                  cobalt: { cap: '#2e4bdb', legend: '#0b1a8a' },
+                  lime: { cap: '#c8d46a', legend: '#24300a' },
+                }}
+                onKeyPress={openProject}
+                aria-label="作品键帽球：拖动旋转，点击键帽进入项目详情"
+              />
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${launching ? 'opacity-100' : 'opacity-0'}`}
+                style={{ background: 'radial-gradient(circle at 50% 52%, rgba(52,87,255,0.28) 0%, rgba(52,87,255,0) 62%)' }}
+              />
+            </div>
             <p className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-center">
               <span className="rounded-full bg-white/70 px-3 py-1 text-[11px] text-[#051A24]/60 backdrop-blur-sm">
-                拖动旋转 · 点击键帽进入项目详情
+                {launching ? '正在打开…' : '拖动旋转 · 点击键帽进入项目详情'}
               </span>
             </p>
           </div>
