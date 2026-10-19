@@ -612,6 +612,12 @@ export default function LunarBoardingPass({
   const redraw = React.useRef<() => void>(() => {})
   const drag = React.useRef<{ x: number; t: number; dx: number; v: number; moved: boolean } | null>(null)
   const swallowClick = React.useRef(false)
+  // Once the pointer reaches a form/panel, keep the ticket flat until it leaves
+  // the whole stage. Otherwise flattening can slide the field out from under the
+  // pointer and immediately re-trigger the tilt.
+  const flatRef = React.useRef(false)
+  const lastPoint = React.useRef<{ x: number; y: number } | null>(null)
+  const settleTimer = React.useRef<number | null>(null)
   const cbs = React.useRef({ onSideChange, onTear, onStubSubmit })
   cbs.current = { onSideChange, onTear, onStubSubmit }
 
@@ -772,12 +778,14 @@ export default function LunarBoardingPass({
     const t = tiltRef.current
     if (!el || !t) return
     const r = el.getBoundingClientRect()
+    lastPoint.current = { x: e.clientX, y: e.clientY }
     const px = clamp01((e.clientX - r.left) / r.width)
     const py = clamp01((e.clientY - r.top) / r.height)
     t.style.setProperty("--mx", (px * 100).toFixed(1) + "%")
     t.style.setProperty("--my", (py * 100).toFixed(1) + "%")
     const noTilt = !!(e.target as Element).closest?.("[data-no-tilt]")
-    if (tilt && !reduced && e.pointerType === "mouse" && !noTilt) {
+    if (noTilt) flatRef.current = true
+    if (tilt && !reduced && e.pointerType === "mouse" && !flatRef.current) {
       const a = tiltFrom(px, py, tilt)
       t.style.setProperty("--rx", a[0].toFixed(2) + "deg")
       t.style.setProperty("--ry", a[1].toFixed(2) + "deg")
@@ -785,10 +793,31 @@ export default function LunarBoardingPass({
       t.style.setProperty("--rx", "0deg")
       t.style.setProperty("--ry", "0deg")
     }
+    if (settleTimer.current) window.clearTimeout(settleTimer.current)
+    if (tilt && !reduced && e.pointerType === "mouse") {
+      // The tilted layout can move a field under a stationary pointer. Once the
+      // tilt settles, check what is actually under the pointer and flatten if
+      // it is a form/panel.
+      settleTimer.current = window.setTimeout(() => {
+        const p = lastPoint.current
+        if (!p || flatRef.current) return
+        const under = document.elementFromPoint(p.x, p.y)
+        if (under?.closest("[data-no-tilt]")) {
+          flatRef.current = true
+          const el2 = tiltRef.current
+          if (el2) {
+            el2.style.setProperty("--rx", "0deg")
+            el2.style.setProperty("--ry", "0deg")
+          }
+        }
+      }, 700)
+    }
     pointer.current = [px, py]
     redraw.current()
   }
   const onLeave = () => {
+    flatRef.current = false
+    if (settleTimer.current) window.clearTimeout(settleTimer.current)
     const t = tiltRef.current
     if (t) {
       t.style.setProperty("--rx", "0deg")
