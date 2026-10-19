@@ -1,11 +1,38 @@
+import { useEffect, useState } from 'react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Divider from '../ui/Divider'
+import Card from '../ui/Card'
 import { useSiteData } from '../../store/useSiteData'
+import { handleImageError } from '../../lib/imageFallback'
+import { fetchPage } from '../../services/api'
+
+const DEFAULT_PHOTOS = [
+  '1522071820081-009f0129c71c',
+  '1517245386807-bb43f82c33c4',
+  '1552664730-d307ca884978',
+  '1523240795612-9a054b0db460',
+  '1531482611025-2d93d9bc2900',
+  '1543269865-cbf427effbad',
+].map(id => `https://images.unsplash.com/photo-${id}?w=400&q=80`)
 
 export default function AboutPage() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.1 })
   const { config } = useSiteData()
   const stats = config.stats
+  const [pageImages, setPageImages] = useState<string[]>([])
+
+  useEffect(() => {
+    fetchPage('about')
+      .then(page => {
+        const images = (page.content as { images?: unknown }).images
+        if (Array.isArray(images)) {
+          setPageImages(images.filter((item): item is string => typeof item === 'string' && item.trim().length > 0))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const photos = pageImages.length > 0 ? pageImages : DEFAULT_PHOTOS
 
   return (
     <div ref={ref} className="page-enter max-w-[900px] mx-auto px-6 py-24">
@@ -17,6 +44,18 @@ export default function AboutPage() {
         <p>{config.aboutDescription}</p>
         {config.aboutExtra && <p>{config.aboutExtra}</p>}
       </div>
+
+      {config.aboutImage && (
+        <Card hover={false} className="mt-10 overflow-hidden p-2">
+          <img
+            src={config.aboutImage}
+            alt="星雨作坊成员日常"
+            className="aspect-[16/9] w-full rounded-[24px] object-cover md:rounded-[30px]"
+            loading="lazy"
+            onError={handleImageError}
+          />
+        </Card>
+      )}
 
       <Divider />
 
@@ -43,13 +82,14 @@ export default function AboutPage() {
         <span className="font-mondwest">活动</span>剪影
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {['1522071820081-009f0129c71c', '1517245386807-bb43f82c33c4', '1552664730-d307ca884978', '1523240795612-9a054b0db460', '1531482611025-2d93d9bc2900', '1543269865-cbf427effbad'].map((id) => (
+        {photos.map((src, index) => (
           <img
-            key={id}
-            src={`https://images.unsplash.com/photo-${id}?w=400&q=80`}
-            alt="活动照片"
+            key={`${src}-${index}`}
+            src={src}
+            alt={`活动照片 ${index + 1}`}
             className="rounded-2xl object-cover aspect-square hover:scale-[1.02] transition-transform"
             loading="lazy"
+            onError={handleImageError}
           />
         ))}
       </div>

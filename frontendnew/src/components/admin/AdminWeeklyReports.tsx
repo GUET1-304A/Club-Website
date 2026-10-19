@@ -195,7 +195,7 @@ export default function AdminWeeklyReports() {
               onClick={() => { setTab(item.value); load(item.value) }}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all
                 ${tab === item.value
-                  ? 'bg-[#051A24] text-white shadow-sm'
+                  ? 'admin-glass-nav-active text-[#051A24]'
                   : 'bg-white text-[#273C46]/60 border border-[rgba(0,0,0,0.06)] hover:text-[#051A24]'}`}
             >
               {item.label}

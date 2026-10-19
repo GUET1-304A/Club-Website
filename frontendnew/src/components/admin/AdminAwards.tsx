@@ -126,7 +126,7 @@ export default function AdminAwards() {
         </div>
         <div className="flex gap-1.5 flex-wrap mb-6">
           {[{ value: '', label: '全部级别' }, ...LEVELS].map(l => (
-            <TagPill key={l.value} label={l.label} active={level === l.value} onClick={() => setLevel(l.value)} />
+            <TagPill key={l.value} label={l.label} variant="glass" active={level === l.value} onClick={() => setLevel(l.value)} />
           ))}
         </div>
         {renderContent()}

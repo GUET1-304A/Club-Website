@@ -131,7 +131,7 @@ export function useSiteData(): SiteData {
           aboutTitle: apiConfig?.about?.title || localConfig.aboutTitle,
           aboutDescription: apiConfig?.about?.description || localConfig.aboutDescription,
           aboutExtra: apiConfig?.about?.extra || localConfig.aboutExtra,
-          aboutImage: localConfig.aboutImage,
+          aboutImage: String(apiConfig?.about?.image || localConfig.aboutImage),
           stats: apiConfig?.hero?.stats
             ? apiConfig.hero.stats.map(s => ({
                 label: s.label,

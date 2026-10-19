@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ArrowDown, ArrowUp, Plus, Save, Trash2, Upload, Image as ImageIcon, LoaderCircle } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import { useToast } from './Toast'
-import { adminGetConfig, adminUpdateConfig } from '../../services/adminApi'
+import { adminGetConfig, adminUpdateConfig, adminUpload } from '../../services/adminApi'
 
 type WeeklyTemplateField = {
   key: string
@@ -109,7 +109,7 @@ export default function AdminConfig() {
           <div className="w-40 shrink-0 space-y-1">
             {sections.map(s => (
               <button key={s.key} onClick={() => setActiveSection(s.key)}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === s.key ? 'bg-[#051A24] text-white' : 'text-[#273C46] hover:bg-[rgba(0,0,0,0.04)]'}`}>
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === s.key ? 'admin-glass-nav-active text-[#051A24]' : 'text-[#273C46] hover:bg-[rgba(0,0,0,0.04)]'}`}>
                 {s.label}
               </button>
             ))}
@@ -150,6 +150,7 @@ export default function AdminConfig() {
                     { key: 'title', label: '标题（**文字** 为庆科黄油体强调，换行即换行）', type: 'text' },
                     { key: 'description', label: '描述', type: 'textarea' },
                     { key: 'extra', label: '第二段描述（可选）', type: 'textarea' },
+                    { key: 'image', label: '关于区域图片', type: 'image' },
                   ]}
                 />
               )}
@@ -373,7 +374,7 @@ function SectionEditor({ title, data, onChange, fields }: {
   title: string
   data: Record<string, unknown>
   onChange: (val: Record<string, unknown>) => void
-  fields: { key: string; label: string; type: 'text' | 'textarea' | 'toggle' }[]
+  fields: { key: string; label: string; type: 'text' | 'textarea' | 'toggle' | 'image' }[]
 }) {
   return (
     <div>
@@ -388,6 +389,12 @@ function SectionEditor({ title, data, onChange, fields }: {
                   className="rounded border-[rgba(0,0,0,0.2)]" />
                 <span className="text-sm text-[#273C46]">{data[f.key] ? '开启' : '关闭'}</span>
               </label>
+            ) : f.type === 'image' ? (
+              <ImageField
+                label={f.label}
+                value={String(data[f.key] || '')}
+                onChange={value => onChange({ ...data, [f.key]: value })}
+              />
             ) : f.type === 'textarea' ? (
               <textarea value={String(data[f.key] || '')} onChange={e => onChange({ ...data, [f.key]: e.target.value })} rows={3}
                 className="w-full px-4 py-2 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm focus:outline-none focus:border-[#051A24] resize-none" />
@@ -398,6 +405,84 @@ function SectionEditor({ title, data, onChange, fields }: {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function ImageField({ label, value, onChange }: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const { toast } = useToast()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (file?: File) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const result = await adminUpload(file)
+      onChange(result.url)
+      toast('success', '图片已上传')
+    } catch (error: unknown) {
+      toast('error', (error as Error).message || '图片上传失败')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-[#273C46]/60">{label}</label>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex h-24 w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white/45 sm:w-40">
+          {value ? (
+            <img src={value} alt="关于区域预览" className="h-full w-full object-cover" />
+          ) : (
+            <ImageIcon className="h-7 w-7 text-[#273C46]/25" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <input
+            value={value}
+            onChange={event => onChange(event.target.value)}
+            placeholder="图片 URL，或点击下方上传"
+            className="admin-glass-control w-full rounded-xl border border-white/60 px-4 py-2.5 text-sm text-[#051A24] placeholder:text-[#273C46]/35 focus:outline-none"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-xs disabled:opacity-50"
+            >
+              {uploading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploading ? '上传中...' : '上传图片'}
+            </button>
+            {value && (
+              <button
+                type="button"
+                onClick={() => onChange('')}
+                className="rounded-full px-3 py-2 text-xs text-[#273C46]/55 transition-colors hover:bg-red-50 hover:text-red-500"
+              >
+                清除图片
+              </button>
+            )}
+          </div>
+          <p className="text-[10px] leading-relaxed text-[#273C46]/38">
+            支持 JPG、PNG、WebP；上传后会自动填入图片地址，保存配置后生效。
+          </p>
+        </div>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={event => void handleFile(event.target.files?.[0])}
+      />
     </div>
   )
 }

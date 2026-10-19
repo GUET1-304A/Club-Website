@@ -206,7 +206,7 @@ export default function AdminMembers() {
           </div>
           <div className="flex gap-1.5 flex-wrap">
             {[{ value: '', label: '全部' }, ...GROUPS].map(g => (
-              <TagPill key={g.value} label={g.label} active={group === g.value} onClick={() => setGroup(g.value)} />
+              <TagPill key={g.value} label={g.label} variant="glass" active={group === g.value} onClick={() => setGroup(g.value)} />
             ))}
           </div>
         </div>

@@ -158,7 +158,7 @@ export default function JoinPage() {
       {/* Desktop: the ticket itself is the form and the query panel */}
       <div className="hidden md:block mt-10">
         <LunarBoardingPass
-          key={submitted ? 'issued' : 'draft'}
+          key="application-pass"
           title="星雨作坊"
           tier={statusResult?.status === 'approved' ? 'CREW' : submitted ? 'APPLIED' : 'APPLICANT'}
           date="2026"

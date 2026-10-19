@@ -14,20 +14,17 @@ interface StatItem {
   label: string
   value: number
   href: string
-  gradient: string
 }
 
-function StatCard({ icon: Icon, label, value, href, gradient }: StatItem) {
+function StatCard({ icon: Icon, label, value, href }: StatItem) {
   return (
     <a
       href={href}
       className="group card p-5 flex items-center gap-4 hover:translate-y-[-3px] transition-all duration-300"
       style={{ borderRadius: 22 }}
     >
-      <div
-        className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${gradient} shadow-lg shadow-[#051A24]/5 group-hover:shadow-xl group-hover:shadow-[#051A24]/10 transition-shadow`}
-      >
-        <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
+      <div className="admin-glass-chip w-12 h-12 rounded-2xl flex items-center justify-center text-[#273C46] group-hover:text-[#051A24] transition-colors">
+        <Icon className="w-5 h-5" strokeWidth={1.5} />
       </div>
       <div>
         <p className="text-[28px] font-semibold text-[#051A24] leading-none tracking-tight"
@@ -80,12 +77,12 @@ export default function AdminDashboard() {
   }, [])
 
   const statItems: StatItem[] = [
-    { icon: Users, label: '成员', value: stats?.members ?? 0, href: '/admin/members', gradient: 'from-[#051A24] to-[#0D212C]' },
-    { icon: FolderGit2, label: '项目', value: stats?.projects ?? 0, href: '/admin/projects', gradient: 'from-[#0D212C] to-[#1a3a4a]' },
-    { icon: Trophy, label: '奖项', value: stats?.awards ?? 0, href: '/admin/awards', gradient: 'from-[#1a3a4a] to-[#2a4a5a]' },
-    { icon: PenTool, label: '博客', value: stats?.blogs ?? 0, href: '/admin/blogs', gradient: 'from-[#2a4a5a] to-[#3a5a6a]' },
-    { icon: UserPlus, label: '入社申请', value: stats?.applications ?? 0, href: '/admin/applications', gradient: 'from-[#3a5a6a] to-[#4a6a7a]' },
-    { icon: MessageSquare, label: '留言', value: stats?.contacts ?? 0, href: '/admin/contacts', gradient: 'from-[#4a6a7a] to-[#5a7a8a]' },
+    { icon: Users, label: '成员', value: stats?.members ?? 0, href: '/admin/members' },
+    { icon: FolderGit2, label: '项目', value: stats?.projects ?? 0, href: '/admin/projects' },
+    { icon: Trophy, label: '奖项', value: stats?.awards ?? 0, href: '/admin/awards' },
+    { icon: PenTool, label: '博客', value: stats?.blogs ?? 0, href: '/admin/blogs' },
+    { icon: UserPlus, label: '入社申请', value: stats?.applications ?? 0, href: '/admin/applications' },
+    { icon: MessageSquare, label: '留言', value: stats?.contacts ?? 0, href: '/admin/contacts' },
   ]
 
   return (
@@ -100,7 +97,7 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">欢迎回到星雨作坊管理后台</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-[#273C46]/40 bg-white rounded-2xl px-4 py-2 border border-[rgba(0,0,0,0.05)]">
+          <div className="admin-glass-chip hidden sm:flex items-center gap-2 text-xs text-[#273C46]/50 px-4 py-2">
             <Clock className="w-3.5 h-3.5" />
             {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </div>
@@ -143,8 +140,8 @@ export default function AdminDashboard() {
           {/* Quick create */}
           <div className="card p-6" style={{ borderRadius: 24 }}>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-[#051A24] flex items-center justify-center">
-                <Plus className="w-4 h-4 text-white" />
+              <div className="admin-glass-chip w-8 h-8 rounded-xl flex items-center justify-center text-[#273C46]">
+                <Plus className="w-4 h-4" />
               </div>
               <h2 className="text-sm font-semibold text-[#051A24]">快速创建</h2>
             </div>
@@ -166,8 +163,8 @@ export default function AdminDashboard() {
           <div className="card p-6 flex flex-col justify-between" style={{ borderRadius: 24 }}>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#051A24] to-[#0D212C] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="admin-glass-chip w-8 h-8 rounded-xl flex items-center justify-center text-[#273C46]">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <h2 className="text-sm font-semibold text-[#051A24]">网站预览</h2>
               </div>

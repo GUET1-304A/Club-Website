@@ -4,6 +4,7 @@ import MemberLayout from './MemberLayout'
 import TagPill from '../ui/TagPill'
 import { memberListTasks, memberUpdateTaskStatus, type MemberProfile, type TaskData } from '../../services/memberApi'
 import { useToast } from '../admin/Toast'
+import GlassSelect from '../ui/GlassSelect'
 
 const STATUS_TABS = [
   { value: '', label: '全部' },
@@ -184,17 +185,16 @@ export default function MemberTasks({ member }: { member: MemberProfile }) {
                   {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {task.status !== 'done' && (
-                      <select
+                      <GlassSelect
+                        compact
                         value={task.status}
                         onChange={e => handleStatusChange(task, e.target.value)}
-                        className="text-[10px] border border-[rgba(0,0,0,0.08)] rounded-lg px-2 py-1.5 bg-white text-[#273C46]
-                          focus:outline-none focus:border-[#051A24]/30 cursor-pointer"
                       >
                         <option value="todo">待办</option>
                         <option value="in_progress">进行中</option>
                         <option value="review">待审核</option>
                         <option value="done">已完成</option>
-                      </select>
+                      </GlassSelect>
                     )}
                     {task.project_id && (
                       <a href={`/member/projects/${task.project_id}`}

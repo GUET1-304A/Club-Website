@@ -28,12 +28,12 @@ export default function ConfirmDialog({
   if (!open) return null
 
   return createPortal((
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onCancel}>
+    <div className="admin-glass-scope fixed inset-0 z-[9999] flex items-center justify-center bg-[#0b1720]/20 backdrop-blur-[3px] p-4" onClick={onCancel}>
       <div
-        className="bg-white rounded-[28px] shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-scale"
+        className="admin-glass-panel rounded-[28px] w-full max-w-sm overflow-hidden animate-fade-in-scale"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/60">
           <div className="flex items-center gap-2">
             {variant === 'danger' && <AlertTriangle className="w-5 h-5 text-red-500" />}
             <h2 className="text-lg font-medium text-[#051A24]">{title}</h2>
@@ -56,7 +56,7 @@ export default function ConfirmDialog({
               className={`flex-1 text-sm py-2.5 rounded-full font-medium transition-all duration-300
                 ${variant === 'danger'
                   ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
-                  : 'btn-primary'
+                  : 'admin-glass-action btn-primary'
                 }
                 ${loading ? 'opacity-60 cursor-not-allowed' : ''}
               `}

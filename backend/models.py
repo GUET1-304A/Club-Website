@@ -217,6 +217,10 @@ class Member(db.Model):
     student_id = db.Column(db.String(50), nullable=True)                 # 学号（唯一标识，可用于登录）
     notification_prefs = db.Column(db.JSON, nullable=True)               # 通知偏好设置（如 {"task_assigned": true}）
     last_login_at = db.Column(db.DateTime, nullable=True)                # 最后登录时间
+    qq_openid = db.Column(db.String(128), nullable=True)                 # QQ 互联 OpenID（绑定后可直接登录）
+    qq_nickname = db.Column(db.String(100), nullable=True)               # QQ 昵称（仅作展示）
+    qq_avatar = db.Column(db.String(500), nullable=True)                 # QQ 头像 URL
+    qq_bound_at = db.Column(db.DateTime, nullable=True)                  # QQ 首次绑定时间
 
     # ── 时间戳 ──
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -272,6 +276,8 @@ class Member(db.Model):
             'status': self.status,
             'sortOrder': self.sort_order,
             'notificationPrefs': self.notification_prefs or {},
+            'qqBound': bool(self.qq_openid),
+            'qqNickname': self.qq_nickname,
             'lastLoginAt': self.last_login_at.isoformat() if self.last_login_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

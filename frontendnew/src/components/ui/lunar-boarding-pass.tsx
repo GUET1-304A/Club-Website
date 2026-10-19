@@ -341,7 +341,15 @@ const CSS = [
   ".lbp-main label{cursor:default}",
   ".lbp-main input,.lbp-main textarea,.lbp-night input{cursor:text}",
   ".lbp-main select,.lbp-main button,.lbp-night button{cursor:pointer}",
-  ".lbp-stub.is-torn{transform:translate(2.4cqw,1.1cqw) rotate(4deg);cursor:pointer}",
+  ".lbp-stub.is-torn{transform:translate(5.6cqw,2.6cqw) rotate(9deg);cursor:pointer;animation:lbp-tear 2.8s cubic-bezier(.32,.08,.24,1) both}",
+  "@keyframes lbp-tear{0%{transform:translate(0,0) rotate(0) scale(1);filter:none}6%{transform:translate(-.22cqw,0) rotate(-.65deg) scale(1)}16%{transform:translate(.08cqw,-.1cqw) rotate(-.2deg) scale(1.002)}40%{transform:translate(1.55cqw,.62cqw) rotate(2.4deg) scale(.995);filter:drop-shadow(0 .35cqw .45cqw rgba(0,0,0,.1))}68%{transform:translate(3.7cqw,1.58cqw) rotate(5.7deg) scale(.985);filter:drop-shadow(0 .6cqw .7cqw rgba(0,0,0,.16))}88%{transform:translate(6.05cqw,2.82cqw) rotate(9.8deg) scale(.968);filter:drop-shadow(0 .9cqw 1cqw rgba(0,0,0,.24))}100%{transform:translate(5.6cqw,2.6cqw) rotate(9deg) scale(.97);filter:drop-shadow(0 .8cqw .9cqw rgba(0,0,0,.22))}}",
+  ".lbp-main.is-torn{animation:lbp-main-jolt 2.65s cubic-bezier(.2,.8,.2,1) both}",
+  "@keyframes lbp-main-jolt{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-.2cqw,.04cqw) rotate(-.16deg)}24%{transform:translate(.12cqw,-.04cqw) rotate(.1deg)}42%{transform:translate(-.18cqw,.05cqw) rotate(-.12deg)}60%{transform:translate(.16cqw,-.03cqw) rotate(.1deg)}78%{transform:translate(-.1cqw,0) rotate(-.06deg)}}",
+  ".lbp-tear-fx{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible}",
+  ".lbp-rip-line{position:absolute;left:77.4%;top:0;bottom:0;width:.17cqw;opacity:0;transform-origin:top;background:linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--lbp-paper) 60%,#fff) 12%,var(--lbp-ink) 50%,color-mix(in srgb,var(--lbp-paper) 60%,#fff) 88%,transparent 100%);filter:drop-shadow(0 0 .3cqw rgba(0,0,0,.34));animation:lbp-rip-line 2.45s cubic-bezier(.32,.08,.24,1) both}",
+  "@keyframes lbp-rip-line{0%{opacity:0;transform:scaleY(.03)}5%{opacity:.95;transform:scaleY(.03)}82%{opacity:.9;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1)}}",
+  ".lbp-tear-particle{position:absolute;width:.28cqw;height:.48cqw;border-radius:.05cqw;background:linear-gradient(145deg,color-mix(in srgb,var(--lbp-paper) 70%,#fff),var(--lbp-paper));box-shadow:0 .1cqw .22cqw rgba(0,0,0,.18);opacity:0;animation:lbp-tear-particle .85s cubic-bezier(.18,.72,.22,1) both}",
+  "@keyframes lbp-tear-particle{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0)}18%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.72) rotate(var(--rot))}}",
   ".lbp-foil{background:linear-gradient(115deg,transparent calc(var(--mx,50%) - 24%),rgba(255,255,255,.62) var(--mx,50%),transparent calc(var(--mx,50%) + 24%)) no-repeat;mix-blend-mode:soft-light}",
   ".lbp-main .lbp-foil{background-size:129.2% 100%;background-position:0 0}",
   ".lbp-stub .lbp-foil{background-size:442.5% 100%;background-position:100% 0}",
@@ -363,7 +371,7 @@ const CSS = [
   ".lbp-stamp{position:absolute;left:33%;top:52%;padding:.35cqw;border:.2cqw solid var(--lbp-stamp);border-radius:.45cqw;color:var(--lbp-stamp);",
   "opacity:0;transform:rotate(-9deg);pointer-events:none;mix-blend-mode:multiply}",
   ".lbp-stamp>span{display:block;padding:.45cqw 1.1cqw;border:.08cqw solid var(--lbp-stamp);border-radius:.25cqw;text-align:center}",
-  ".lbp-main.is-torn .lbp-stamp{opacity:.86;animation:lbp-stamp .5s cubic-bezier(.3,1.6,.5,1) both}",
+  ".lbp-main.is-torn .lbp-stamp{opacity:.86;animation:lbp-stamp .5s cubic-bezier(.3,1.6,.5,1) 2.05s both}",
   "@keyframes lbp-stamp{0%{opacity:0;transform:rotate(-4deg) scale(1.9)}100%{opacity:.86;transform:rotate(-9deg) scale(1)}}",
   ".lbp-hint{position:absolute;left:77.4%;bottom:1.6cqw;transform:translateX(-50%) rotate(180deg);writing-mode:vertical-rl;font-family:var(--lbp-cond);",
   "font-size:.5cqw;letter-spacing:.3em;text-transform:uppercase;color:var(--lbp-ink);opacity:.45;pointer-events:none;white-space:nowrap;transition:opacity .3s}",
@@ -383,7 +391,7 @@ const CSS = [
   ".lbp-body{transform-box:fill-box;transform-origin:85% 50%;transition:transform .5s}",
   ".lbp-clarinet:hover .lbp-body{transform:rotate(-1.2deg)}",
   "@media (prefers-reduced-motion: reduce){.lbp-tilt,.lbp-flip,.lbp-stub,.lbp-ship,.lbp-body{transition-duration:.01ms}",
-  ".lbp-tw,.lbp-flame,.lbp-v,.lbp-stamp,.lbp-note{animation:none!important}.lbp-rocket:hover .lbp-flame{transform:none}}",
+  ".lbp-tw,.lbp-flame,.lbp-v,.lbp-stamp,.lbp-note,.lbp-stub.is-torn,.lbp-main.is-torn,.lbp-rip-line,.lbp-tear-particle{animation:none!important}.lbp-rocket:hover .lbp-flame{transform:none}}",
 ].join("")
 
 function Star({ size }: { size: string }) {
@@ -647,6 +655,12 @@ export default function LunarBoardingPass({
     }
     cbs.current.onTear?.(torn)
   }, [torn])
+
+  React.useEffect(() => {
+    if (!defaultTorn || torn) return
+    const frame = requestAnimationFrame(() => setTorn(true))
+    return () => cancelAnimationFrame(frame)
+  }, [defaultTorn, torn])
 
   // The Moon: a halftone redrawn from a cached lattice whenever the light moves.
   React.useEffect(() => {
@@ -1085,6 +1099,28 @@ export default function LunarBoardingPass({
                   </>
                 )}
               </button>
+              {torn && (
+                <div className="lbp-tear-fx" aria-hidden="true">
+                  <span className="lbp-rip-line" />
+                  {Array.from({ length: 18 }, (_, index) => {
+                    const direction = index % 2 ? 1 : -1
+                    return (
+                      <span
+                        key={index}
+                        className="lbp-tear-particle"
+                        style={{
+                          left: `${76.2 + (index % 3) * 1.05}%`,
+                          top: `${4 + (index / 17) * 90}%`,
+                          "--tx": `${direction * (1.4 + (index % 5) * 0.55)}cqw`,
+                          "--ty": `${((index % 7) - 3) * 0.58}cqw`,
+                          "--rot": `${direction * (95 + index * 16)}deg`,
+                          animationDelay: `${(index / 17) * 2.25}s`,
+                        } as React.CSSProperties}
+                      />
+                    )
+                  })}
+                </div>
+              )}
               <span className="lbp-hint" aria-hidden="true">{submitMode ? (torn ? "已提交" : "提交申请") : "撕下存根"}</span>
             </div>
           </div>

@@ -117,6 +117,17 @@ class Config:
     AI_MODEL = os.environ.get('AI_MODEL', '')
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
 
+    # ─── QQ 互联登录 ───
+    # QQ_APP_KEY 建议通过 *_FILE 注入；未配置时登录页会显示为不可用。
+    QQ_LOGIN_ENABLED = _get_bool('QQ_LOGIN_ENABLED', False)
+    QQ_APP_ID = os.environ.get('QQ_APP_ID', '').strip()
+    QQ_APP_KEY = _read_secret('QQ_APP_KEY')
+    QQ_REDIRECT_URI = os.environ.get('QQ_REDIRECT_URI', '').strip() or (
+        f'{PUBLIC_BASE_URL.rstrip("/")}/api/auth/qq/callback' if PUBLIC_BASE_URL else ''
+    )
+    QQ_OAUTH_STATE_MAX_AGE = int(os.environ.get('QQ_OAUTH_STATE_MAX_AGE', 600))
+    QQ_BIND_TOKEN_MINUTES = int(os.environ.get('QQ_BIND_TOKEN_MINUTES', 15))
+
     # ─── 外部通知通道 ───
     # 站内通知始终写入数据库；飞书/邮件仅在显式启用且配置完整时旁路发送。
     NOTIFICATION_EXTERNAL_TIMEOUT = int(os.environ.get('NOTIFICATION_EXTERNAL_TIMEOUT', 10))

@@ -43,6 +43,10 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      QQ_LOGIN_ENABLED: ${QQ_LOGIN_ENABLED:-false}
+      QQ_APP_ID: ${QQ_APP_ID:-}
+      QQ_APP_KEY_FILE: /run/secrets/qq_app_key
+      QQ_REDIRECT_URI: ${QQ_REDIRECT_URI:-}
       NOTIFICATION_EXTERNAL_TIMEOUT: ${NOTIFICATION_EXTERNAL_TIMEOUT:-10}
       NOTIFICATION_FEISHU_ENABLED: ${NOTIFICATION_FEISHU_ENABLED:-false}
       FEISHU_WEBHOOK_URL_FILE: /run/secrets/feishu_webhook_url
@@ -80,6 +84,8 @@ services:
         target: smtp_username
       - source: smtp_password
         target: smtp_password
+      - source: qq_app_key
+        target: qq_app_key
     volumes:
       - db_data_prod:/app/data
       - upload_data_prod:/app/uploads
@@ -131,3 +137,5 @@ secrets:
     file: ${SMTP_USERNAME_FILE:-./secrets/smtp_username.txt.example}
   smtp_password:
     file: ${SMTP_PASSWORD_FILE:-./secrets/smtp_password.txt.example}
+  qq_app_key:
+    file: ${QQ_APP_KEY_FILE:-./secrets/qq_app_key.txt.example}

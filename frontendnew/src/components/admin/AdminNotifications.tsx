@@ -74,7 +74,7 @@ export default function AdminNotifications() {
 
         <div className="flex gap-1.5 mb-6">
           {FILTERS.map(f => (
-            <TagPill key={f.value} label={f.label} active={filter === f.value} onClick={() => setFilter(f.value)} />
+            <TagPill key={f.value} label={f.label} variant="glass" active={filter === f.value} onClick={() => setFilter(f.value)} />
           ))}
         </div>
 

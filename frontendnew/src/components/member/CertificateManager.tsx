@@ -13,6 +13,7 @@ import {
   type MemberProfile, type CertificateData,
 } from '../../services/memberApi'
 import { useToast } from '../admin/Toast'
+import GlassSelect from '../ui/GlassSelect'
 
 const LEVELS = [
   { value: 'national', label: '国家级' },
@@ -397,10 +398,9 @@ export default function CertificateManager({ member }: { member: MemberProfile }
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="级别">
-                    <select value={level} onChange={e => setLevel(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[#fcfbfa] text-sm text-[#051A24] focus:outline-none focus:border-[#051A24]/30">
+                    <GlassSelect value={level} onChange={e => setLevel(e.target.value)}>
                       {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-                    </select>
+                    </GlassSelect>
                   </Field>
                   <Field label="分类">
                     <input value={category} onChange={e => setCategory(e.target.value)} placeholder="程序设计"

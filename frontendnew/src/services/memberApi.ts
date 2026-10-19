@@ -64,6 +64,8 @@ export interface MemberProfile {
   grade?: string
   isAlumni?: boolean
   notificationPrefs?: Record<string, boolean>
+  qqBound?: boolean
+  qqNickname?: string
   lastLoginAt?: string
   created_at?: string
   updated_at?: string

@@ -24,7 +24,7 @@ export interface SiteConfigData {
     secondary_label?: string
     secondary_href?: string
   }
-  about?: { title?: string; description?: string; extra?: string; items?: { title: string; description: string }[] }
+  about?: { title?: string; description?: string; extra?: string; image?: string; items?: { title: string; description: string }[] }
   members?: {
     description?: string
     eyebrow?: string

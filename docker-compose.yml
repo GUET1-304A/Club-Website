@@ -40,6 +40,10 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      QQ_LOGIN_ENABLED: ${QQ_LOGIN_ENABLED:-false}
+      QQ_APP_ID: ${QQ_APP_ID:-}
+      QQ_APP_KEY: ${QQ_APP_KEY:-}
+      QQ_REDIRECT_URI: ${QQ_REDIRECT_URI:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 10s

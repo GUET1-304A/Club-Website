@@ -305,6 +305,10 @@ def _migrate_columns(app):
         ('members', 'student_id', 'VARCHAR(50)'),
         ('members', 'notification_prefs', 'JSON'),
         ('members', 'last_login_at', 'DATETIME'),
+        ('members', 'qq_openid', 'VARCHAR(128)'),
+        ('members', 'qq_nickname', 'VARCHAR(100)'),
+        ('members', 'qq_avatar', 'VARCHAR(500)'),
+        ('members', 'qq_bound_at', 'DATETIME'),
 
         # ── 资源中心 ──
         ('resource_folders', 'parent_id', 'INTEGER'),

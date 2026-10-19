@@ -77,7 +77,7 @@ export default function AdminContacts() {
           <div><h1 className="text-[28px] font-medium text-[#051A24] tracking-tight" style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>留言管理</h1><p className="text-sm text-[#273C46]/50 mt-1">{msgs.length} 条留言 · {msgs.filter(m => m.status === 'unread').length} 条未读</p></div>
         </div>
         <div className="flex gap-1.5 flex-wrap mb-6">
-          {[{ value: '', label: '全部' }, { value: 'unread', label: '未读' }, { value: 'read', label: '已读' }, { value: 'replied', label: '已回复' }].map(s => (<TagPill key={s.value} label={s.label} active={status === s.value} onClick={() => setStatus(s.value)} />))}
+          {[{ value: '', label: '全部' }, { value: 'unread', label: '未读' }, { value: 'read', label: '已读' }, { value: 'replied', label: '已回复' }].map(s => (<TagPill key={s.value} label={s.label} variant="glass" active={status === s.value} onClick={() => setStatus(s.value)} />))}
         </div>
         {renderContent()}
 

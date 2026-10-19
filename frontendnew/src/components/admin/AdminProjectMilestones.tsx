@@ -88,7 +88,7 @@ export default function AdminProjectMilestones({ projectId }: { projectId: numbe
               <div key={milestone.id} className="card p-5" style={{ borderRadius: 20 }}>
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-[#051A24] text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                    <div className="admin-glass-chip w-8 h-8 rounded-xl text-[#051A24] flex items-center justify-center text-xs font-semibold shrink-0">
                       {index + 1}
                     </div>
                     <div className="min-w-0">

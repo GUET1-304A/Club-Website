@@ -117,7 +117,7 @@ export default function AdminBlogs() {
           <button onClick={openCreate} className="btn-primary text-sm px-5 py-2.5 flex items-center gap-2 shadow-lg shadow-[#051A24]/10"><Plus className="w-4 h-4" /> 写文章</button>
         </div>
         <div className="flex gap-1.5 flex-wrap mb-6">
-          {[{ value: '', label: '全部分类' }, ...CATS].map(c => (<TagPill key={c.value} label={c.label} active={category === c.value} onClick={() => setCategory(c.value)} />))}
+          {[{ value: '', label: '全部分类' }, ...CATS].map(c => (<TagPill key={c.value} label={c.label} variant="glass" active={category === c.value} onClick={() => setCategory(c.value)} />))}
         </div>
         {renderContent()}
 

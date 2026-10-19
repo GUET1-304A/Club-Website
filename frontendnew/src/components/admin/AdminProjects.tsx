@@ -116,7 +116,7 @@ export default function AdminProjects() {
         </div>
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="relative flex-1 min-w-[180px] max-w-xs"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#273C46]/25" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜索项目..." className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[rgba(0,0,0,0.06)] bg-white text-sm focus:outline-none focus:border-[#051A24]/30 focus:ring-2 focus:ring-[#051A24]/5 transition-all" /></div>
-          <div className="flex gap-1.5 flex-wrap">{[{ value: '', label: '全部' }, ...CATS].map(c => <TagPill key={c.value} label={c.label} active={category === c.value} onClick={() => setCategory(c.value)} />)}</div>
+          <div className="flex gap-1.5 flex-wrap">{[{ value: '', label: '全部' }, ...CATS].map(c => <TagPill key={c.value} label={c.label} variant="glass" active={category === c.value} onClick={() => setCategory(c.value)} />)}</div>
         </div>
         {renderContent()}
 

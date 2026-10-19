@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import GlassSelect from '../ui/GlassSelect'
 
 interface AdminModalProps {
   open: boolean
@@ -21,12 +22,12 @@ export default function AdminModal({ open, title, children, onClose, maxWidth = 
   if (!open) return null
 
   return createPortal((
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="admin-glass-scope fixed inset-0 z-[9999] flex items-center justify-center bg-[#0b1720]/20 backdrop-blur-[3px] p-4" onClick={onClose}>
       <div
-        className={`bg-white rounded-[28px] shadow-2xl w-full ${maxWidth} animate-fade-in-up`}
+        className={`admin-glass-panel rounded-[28px] w-full ${maxWidth} animate-fade-in-up`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/60">
           <h2 className="text-lg font-medium text-[#051A24]">{title}</h2>
           <button
             onClick={onClose}
@@ -56,7 +57,7 @@ export function Field({ label, children, className = '' }: { label: string; chil
 export function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full px-4 py-2.5 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm text-[#051A24] placeholder:text-[#273C46]/40
+        className={`admin-glass-control w-full px-4 py-2.5 rounded-xl border border-white/60 text-sm text-[#051A24] placeholder:text-[#273C46]/40
         focus:outline-none focus:border-[#051A24] focus:ring-1 focus:ring-[#051A24]/10 transition-all
         disabled:bg-[#f8f7f5] disabled:text-[#273C46]/50 ${className}`}
       {...props}
@@ -66,21 +67,16 @@ export function Input({ className = '', ...props }: React.InputHTMLAttributes<HT
 
 export function Select({ className = '', children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      className={`w-full px-4 py-2.5 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm text-[#051A24]
-        focus:outline-none focus:border-[#051A24] focus:ring-1 focus:ring-[#051A24]/10 transition-all
-        bg-white ${className}`}
-      {...props}
-    >
+    <GlassSelect className={`admin-glass-control ${className}`} {...props}>
       {children}
-    </select>
+    </GlassSelect>
   )
 }
 
 export function Textarea({ className = '', ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className={`w-full px-4 py-2.5 rounded-xl border border-[rgba(0,0,0,0.08)] text-sm text-[#051A24] placeholder:text-[#273C46]/40
+      className={`admin-glass-control w-full px-4 py-2.5 rounded-xl border border-white/60 text-sm text-[#051A24] placeholder:text-[#273C46]/40
         focus:outline-none focus:border-[#051A24] focus:ring-1 focus:ring-[#051A24]/10 transition-all resize-none
         ${className}`}
       {...props}

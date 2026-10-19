@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (authed === null) return <LoadingScreen />
 
   return (
-    <div className="min-h-screen flex bg-[#f8f7f5]">
+    <div className="admin-shell min-h-screen flex">
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
@@ -103,8 +103,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* ─── Sidebar ─── */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen z-50
-          bg-white/90 backdrop-blur-xl border-r border-[rgba(0,0,0,0.05)]
+        className={`admin-glass-sidebar fixed lg:sticky top-0 left-0 h-screen z-50
+          border-r border-white/60
           transition-all duration-300 overflow-hidden flex flex-col
           ${sidebarOpen ? 'w-[250px]' : 'w-0 lg:w-[68px]'}
           ${mobileOpen ? 'translate-x-0 w-[250px]' : '-translate-x-full lg:translate-x-0'}
@@ -115,10 +115,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <a href="/" className="flex items-center gap-2.5 group" title="返回网站首页">
             <Logo size="md" className="group-hover:scale-105 transition-transform" />
             <span
-              className="text-sm font-medium text-[#051A24] whitespace-nowrap tracking-tight transition-opacity duration-200"
+              className="font-display text-sm text-[#051A24] whitespace-nowrap tracking-[0.04em] transition-opacity duration-200"
               style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 500,
                 opacity: sidebarOpen ? 1 : 0,
                 width: sidebarOpen ? 'auto' : 0,
                 overflow: 'hidden',
@@ -194,7 +192,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* ─── Main ─── */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-[rgba(0,0,0,0.05)] px-4 h-14 flex items-center justify-between">
+        <div className="admin-glass-topbar lg:hidden sticky top-0 z-30 border-b border-white/60 px-4 h-14 flex items-center justify-between">
           <button onClick={() => setMobileOpen(true)} className="p-1.5 -ml-1 rounded-lg text-[#051A24]">
             <Menu className="w-5 h-5" />
           </button>
@@ -239,7 +237,7 @@ function SidebarLink({ href, icon: Icon, label, collapsed }: {
       href={href}
       className={`relative flex items-center rounded-xl text-sm font-medium transition-all duration-200 group
         ${isActive
-          ? 'bg-[#051A24] text-white shadow-sm shadow-[#051A24]/10'
+          ? 'admin-glass-nav-active text-[#051A24]'
           : 'text-[#273C46] hover:bg-[rgba(0,0,0,0.03)] hover:text-[#051A24]'
         }
         ${collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'}
@@ -257,7 +255,7 @@ function SidebarLink({ href, icon: Icon, label, collapsed }: {
       )}
       {/* Active indicator dot */}
       {isActive && collapsed && (
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white" />
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#3457ff]" />
       )}
     </a>
   )

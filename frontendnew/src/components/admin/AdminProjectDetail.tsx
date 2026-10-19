@@ -154,7 +154,7 @@ export default function AdminProjectDetail({ projectId }: { projectId: number })
                     onClick={() => setTab(item.value)}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all
                       ${tab === item.value
-                        ? 'bg-[#051A24] text-white shadow-sm'
+                        ? 'admin-glass-nav-active text-[#051A24]'
                         : 'bg-white text-[#273C46]/60 border border-[rgba(0,0,0,0.06)] hover:text-[#051A24]'}`}
                   >
                     <Icon className="w-3.5 h-3.5" /> {item.label}

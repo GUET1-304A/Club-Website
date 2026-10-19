@@ -121,7 +121,7 @@ export default function AdminCertificates() {
                 onClick={() => { setStatus(tab.value); load(tab.value, search) }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all
                   ${status === tab.value
-                    ? 'bg-[#051A24] text-white shadow-sm'
+                    ? 'admin-glass-nav-active text-[#051A24]'
                     : 'bg-white text-[#273C46]/60 border border-[rgba(0,0,0,0.06)] hover:text-[#051A24]'}`}
               >
                 {tab.label}

@@ -21,9 +21,14 @@
                 POST /api/auth/register        — 成员注册
 """
 
+import json
+import secrets as py_secrets
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone, timedelta
-from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token
+from flask import Blueprint, jsonify, request, current_app, redirect
+from flask_jwt_extended import create_access_token, decode_token
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from models import (
     db, SiteConfig, Page, Application, ContactMessage,
     Member, Project, Milestone, Award, BlogPost, AdminUser,
@@ -34,6 +39,114 @@ from services.security_service import (
 )
 
 public_bp = Blueprint('public', __name__)
+
+
+QQ_AUTHORIZE_URL = 'https://graph.qq.com/oauth2.0/authorize'
+QQ_TOKEN_URL = 'https://graph.qq.com/oauth2.0/token'
+QQ_ME_URL = 'https://graph.qq.com/oauth2.0/me'
+QQ_USERINFO_URL = 'https://graph.qq.com/user/get_user_info'
+
+
+class QQOAuthError(Exception):
+    """QQ 互联返回的可展示错误。"""
+
+
+def _qq_configured():
+    return bool(
+        current_app.config.get('QQ_LOGIN_ENABLED')
+        and current_app.config.get('QQ_APP_ID')
+        and current_app.config.get('QQ_APP_KEY')
+        and current_app.config.get('QQ_REDIRECT_URI')
+    )
+
+
+def _qq_state_serializer():
+    return URLSafeTimedSerializer(
+        str(current_app.config['SECRET_KEY']),
+        salt='xingyu-qq-oauth-state',
+    )
+
+
+def _qq_request_json(url, params):
+    """请求 QQ Graph API，并兼容 JSON / 表单文本 / callback(...) 三种响应。"""
+    query = urllib.parse.urlencode(params)
+    req = urllib.request.Request(
+        f'{url}?{query}',
+        headers={
+            'Accept': 'application/json',
+            'User-Agent': 'XingyuStudio-QQOAuth/1.0',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as response:
+            body = response.read().decode('utf-8', 'replace').strip()
+    except Exception as exc:
+        raise QQOAuthError('QQ 服务暂时不可用，请稍后重试') from exc
+
+    if body.startswith('callback('):
+        body = body[len('callback('):].rstrip('); \r\n')
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        payload = {
+            key: values[0]
+            for key, values in urllib.parse.parse_qs(body).items()
+            if values
+        }
+
+    if not isinstance(payload, dict):
+        raise QQOAuthError('QQ 返回了无法识别的数据')
+    if payload.get('ret') not in (None, 0, '0'):
+        raise QQOAuthError(payload.get('msg') or 'QQ 授权失败')
+    return payload
+
+
+def _qq_exchange_access_token(code):
+    payload = _qq_request_json(QQ_TOKEN_URL, {
+        'grant_type': 'authorization_code',
+        'client_id': current_app.config['QQ_APP_ID'],
+        'client_secret': current_app.config['QQ_APP_KEY'],
+        'code': code,
+        'redirect_uri': current_app.config['QQ_REDIRECT_URI'],
+        'fmt': 'json',
+    })
+    access_token = payload.get('access_token')
+    if not access_token:
+        raise QQOAuthError(payload.get('error_description') or 'QQ access token 获取失败')
+    return str(access_token)
+
+
+def _qq_fetch_openid(access_token):
+    payload = _qq_request_json(QQ_ME_URL, {
+        'access_token': access_token,
+        'fmt': 'json',
+    })
+    openid = payload.get('openid')
+    if not openid:
+        raise QQOAuthError('QQ OpenID 获取失败')
+    return str(openid)
+
+
+def _qq_fetch_user_info(access_token, openid):
+    payload = _qq_request_json(QQ_USERINFO_URL, {
+        'access_token': access_token,
+        'oauth_consumer_key': current_app.config['QQ_APP_ID'],
+        'openid': openid,
+    })
+    return {
+        'nickname': str(payload.get('nickname') or 'QQ 用户')[:100],
+        'avatar': str(payload.get('figureurl_qq_2') or payload.get('figureurl_qq_1') or '')[:500],
+    }
+
+
+def _qq_error_redirect(message):
+    return redirect('/login#' + urllib.parse.urlencode({'qq_error': message}))
+
+
+def _qq_login_token(member):
+    member.last_login_at = datetime.now(timezone.utc)
+    return create_access_token(identity=f'member:{member.id}')
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -779,3 +892,210 @@ def member_register():
         'role': 'member',
         'user': member.to_member_dict(),
     }), 201
+
+
+# ═══════════════════════════════════════════════════════════════
+# QQ 互联登录
+# ═══════════════════════════════════════════════════════════════
+
+@public_bp.route('/auth/qq/status', methods=['GET'])
+def qq_login_status():
+    """返回 QQ 登录是否已由服务器完整配置。"""
+    configured = _qq_configured()
+    return jsonify({
+        'provider': 'qq',
+        'enabled': configured,
+        'message': 'QQ 登录已启用' if configured else 'QQ 登录尚未配置',
+    })
+
+
+@public_bp.route('/auth/qq/start', methods=['GET'])
+def qq_login_start():
+    """生成签名 state 并跳转到 QQ 互联授权页。"""
+    if not _qq_configured():
+        return jsonify({
+            'error': 'not_configured',
+            'message': 'QQ 登录尚未配置，请联系站点管理员',
+        }), 503
+
+    state = _qq_state_serializer().dumps({
+        'nonce': py_secrets.token_urlsafe(24),
+    })
+    query = urllib.parse.urlencode({
+        'response_type': 'code',
+        'client_id': current_app.config['QQ_APP_ID'],
+        'redirect_uri': current_app.config['QQ_REDIRECT_URI'],
+        'state': state,
+        'scope': 'get_user_info',
+    })
+    return redirect(f'{QQ_AUTHORIZE_URL}?{query}')
+
+
+@public_bp.route('/auth/qq/callback', methods=['GET'])
+def qq_login_callback():
+    """QQ 授权回调：已绑定成员直接登录，未绑定成员进入身份绑定页。"""
+    if not _qq_configured():
+        return _qq_error_redirect('QQ 登录尚未配置，请联系站点管理员')
+
+    if request.args.get('error'):
+        return _qq_error_redirect(request.args.get('error_description') or 'QQ 授权已取消')
+
+    code = (request.args.get('code') or '').strip()
+    state = (request.args.get('state') or '').strip()
+    if not code or not state:
+        return _qq_error_redirect('QQ 授权参数不完整，请重新登录')
+
+    try:
+        _qq_state_serializer().loads(
+            state,
+            max_age=current_app.config.get('QQ_OAUTH_STATE_MAX_AGE', 600),
+        )
+    except SignatureExpired:
+        return _qq_error_redirect('QQ 授权已过期，请重新登录')
+    except BadSignature:
+        return _qq_error_redirect('QQ 授权校验失败，请重新登录')
+
+    try:
+        access_token = _qq_exchange_access_token(code)
+        openid = _qq_fetch_openid(access_token)
+        try:
+            profile = _qq_fetch_user_info(access_token, openid)
+        except QQOAuthError:
+            profile = {'nickname': 'QQ 用户', 'avatar': ''}
+    except QQOAuthError as exc:
+        return _qq_error_redirect(str(exc))
+    except Exception:
+        current_app.logger.exception('Unexpected QQ OAuth callback failure')
+        return _qq_error_redirect('QQ 登录失败，请稍后重试')
+
+    member = Member.query.filter_by(qq_openid=openid).first()
+    if member:
+        if member.status != 'active':
+            return _qq_error_redirect('该成员账号已停用，请联系管理员')
+        member.qq_nickname = profile['nickname']
+        member.qq_avatar = profile['avatar']
+        token = _qq_login_token(member)
+        db.session.commit()
+        return redirect('/login#' + urllib.parse.urlencode({'qq_token': token}))
+
+    bind_token = create_access_token(
+        identity=f'qq-bind:{openid}',
+        additional_claims={
+            'kind': 'qq_bind',
+            'nickname': profile['nickname'],
+            'avatar': profile['avatar'],
+        },
+        expires_delta=timedelta(
+            minutes=current_app.config.get('QQ_BIND_TOKEN_MINUTES', 15)
+        ),
+    )
+    return redirect('/login#' + urllib.parse.urlencode({
+        'qq_bind': bind_token,
+        'qq_nickname': profile['nickname'],
+    }))
+
+
+@public_bp.route('/auth/qq/bind', methods=['POST'])
+def qq_bind_member():
+    """首次 QQ 登录时，用已有成员的学号/邮箱、姓名和密码完成绑定。"""
+    data = request.get_json() or {}
+    ticket = (data.get('ticket') or '').strip()
+    account = (data.get('account') or '').strip()
+    name = (data.get('name') or '').strip()
+    password = data.get('password') or ''
+
+    if not ticket or not account or not name or not password:
+        return jsonify({
+            'error': 'validation_error',
+            'message': '请填写学号/邮箱、真实姓名和账号密码',
+        }), 400
+
+    try:
+        claims = decode_token(ticket)
+        identity = str(claims.get('sub') or '')
+        if claims.get('kind') != 'qq_bind' or not identity.startswith('qq-bind:'):
+            raise ValueError('invalid ticket')
+        openid = identity[len('qq-bind:'):]
+    except Exception:
+        return jsonify({
+            'error': 'invalid_ticket',
+            'message': 'QQ 绑定凭证已失效，请重新授权',
+        }), 400
+
+    rate_key = f"{request.remote_addr or 'unknown'}:{account}"
+    limit = current_app.config.get('LOGIN_RATE_LIMIT_PER_MINUTE', 10)
+    if is_rate_limited('qq-bind', rate_key, limit):
+        return jsonify({
+            'error': 'rate_limited',
+            'message': '验证失败次数过多，请稍后再试',
+        }), 429
+
+    member = Member.query.filter(
+        db.or_(Member.student_id == account, Member.email == account)
+    ).first()
+    if not member:
+        return jsonify({
+            'error': 'not_found',
+            'message': '未找到匹配的成员信息，请联系管理员先将你录入成员列表',
+        }), 404
+
+    if member.status != 'active':
+        return jsonify({
+            'error': 'account_disabled',
+            'message': '该成员账号已停用，请联系管理员',
+        }), 403
+
+    if member.name.strip().lower() != name.lower():
+        record_rate_limit_failure('qq-bind', rate_key)
+        return jsonify({
+            'error': 'validation_error',
+            'message': '姓名与成员记录不匹配，请核对后重试',
+        }), 400
+
+    if member.qq_openid and member.qq_openid != openid:
+        return jsonify({
+            'error': 'already_bound',
+            'message': '该成员已绑定其他 QQ，如需更换请联系管理员',
+        }), 409
+
+    bound_elsewhere = Member.query.filter(
+        Member.qq_openid == openid,
+        Member.id != member.id,
+    ).first()
+    if bound_elsewhere:
+        return jsonify({
+            'error': 'qq_already_bound',
+            'message': '该 QQ 已绑定其他成员，请联系管理员处理',
+        }), 409
+
+    if member.password_hash:
+        if not member.check_password(password):
+            record_rate_limit_failure('qq-bind', rate_key)
+            return jsonify({
+                'error': 'auth_failed',
+                'message': '账号密码错误。已注册成员需输入现有密码完成绑定',
+            }), 401
+    elif len(password) < 6:
+        return jsonify({
+            'error': 'validation_error',
+            'message': '首次激活账号请设置至少 6 个字符的密码',
+        }), 400
+    else:
+        member.set_password(password)
+
+    now = datetime.now(timezone.utc)
+    member.qq_openid = openid
+    member.qq_nickname = str(claims.get('nickname') or 'QQ 用户')[:100]
+    member.qq_avatar = str(claims.get('avatar') or '')[:500]
+    member.qq_bound_at = now
+    member.last_login_at = now
+    db.session.commit()
+
+    token = create_access_token(identity=f'member:{member.id}')
+    return jsonify({
+        'success': True,
+        'message': 'QQ 绑定成功',
+        'token': token,
+        'role': 'member',
+        'user': member.to_member_dict(),
+    })

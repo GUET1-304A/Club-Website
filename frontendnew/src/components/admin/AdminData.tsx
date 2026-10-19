@@ -103,7 +103,7 @@ export default function AdminData() {
         {/* ─── Export ─── */}
         <div className="card p-6 mt-6" style={{ borderRadius: 24 }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#051A24] to-[#0D212C] flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6b7cff] to-[#35bfd6] flex items-center justify-center shadow-lg shadow-[#6b7cff]/20">
               <Download className="w-5 h-5 text-white" />
             </div>
             <div>
