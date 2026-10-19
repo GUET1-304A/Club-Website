@@ -36,6 +36,7 @@ import AdminCertificates from './components/admin/AdminCertificates'
 import AdminWeeklyReports from './components/admin/AdminWeeklyReports'
 import AdminNotifications from './components/admin/AdminNotifications'
 import AdminPermissions from './components/admin/AdminPermissions'
+import TeacherDashboard from './components/admin/TeacherDashboard'
 import AdminData from './components/admin/AdminData'
 import { ToastProvider } from './components/admin/Toast'
 import MemberDashboard from './components/member/MemberDashboard'
@@ -116,7 +117,7 @@ function NotFound() {
 function AdminRouter({ parts }: { parts: string[] }) {
   if (parts[1] === 'login') { window.location.href = '/login'; return null }
   if (getRole() === 'teacher' && (parts[1] === undefined || parts[1] === '')) {
-    window.location.href = '/admin/weekly-reports'
+    window.location.href = '/admin/teacher'
     return null
   }
   switch (parts[1]) {
@@ -135,6 +136,7 @@ function AdminRouter({ parts }: { parts: string[] }) {
     case 'weekly-reports':          return <AdminWeeklyReports />
     case 'notifications':           return <AdminNotifications />
     case 'permissions':             return <AdminPermissions />
+    case 'teacher':                 return <TeacherDashboard />
     case 'data':                    return <AdminData />
     default:                        return <AdminDashboard />
   }
@@ -211,7 +213,7 @@ function MemberLoginRedirect() {
           </svg>
         </div>
         <h1 className="text-2xl font-medium text-[#051A24] mt-6 tracking-tight"
-          style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+          style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
           成员门户
         </h1>
         <p className="text-sm text-[#273C46]/60 mt-2">请先登录以访问成员功能</p>
@@ -258,8 +260,13 @@ export default function App() {
 
       e.preventDefault()
       let newPath = '/'
-      try { newPath = new URL(anchor.href).pathname } catch { return }
-      window.history.pushState({}, '', newPath)
+      let search = ''
+      try {
+        const url = new URL(anchor.href)
+        newPath = url.pathname
+        search = url.search
+      } catch { return }
+      window.history.pushState({}, '', newPath + search)
       setPath(newPath)
       window.scrollTo(0, 0)
     }

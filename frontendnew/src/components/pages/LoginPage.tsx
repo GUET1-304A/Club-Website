@@ -76,7 +76,7 @@ export default function UnifiedLogin() {
     try {
       const result = await unifiedLogin(account.trim(), password)
       window.location.href =
-        result.role === 'teacher' ? '/admin/weekly-reports'
+        result.role === 'teacher' ? '/admin/teacher'
           : result.role === 'admin' ? '/admin'
             : '/member/dashboard'
     } catch (err: unknown) {
@@ -122,7 +122,7 @@ export default function UnifiedLogin() {
           <div className="flex flex-col items-center mb-6">
             <Logo size="lg" className="mb-4" />
             <h1 className="text-xl text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               星雨作坊
             </h1>
           </div>

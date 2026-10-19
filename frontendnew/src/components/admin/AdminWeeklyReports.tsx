@@ -87,6 +87,12 @@ export default function AdminWeeklyReports() {
   const [analyzing, setAnalyzing] = useState(false)
   const [reviewing, setReviewing] = useState(false)
 
+  const showDetail = (report: AdminWeeklyReport) => {
+    setDetail(report)
+    setReviewNote(report.reviewNote || '')
+    setCompletionRate(report.completionRate != null ? String(report.completionRate) : '')
+  }
+
   const load = useCallback(async (status = tab) => {
     setLoading(true)
     const params: Record<string, string> = {}
@@ -94,6 +100,17 @@ export default function AdminWeeklyReports() {
     const data = await adminListWeeklyReports(params).catch(() => [])
     setReports(data)
     setLoading(false)
+
+    const reportIdParam = new URLSearchParams(window.location.search).get('report')
+    if (reportIdParam && Number.isInteger(Number(reportIdParam))) {
+      try {
+        const fresh = await adminGetWeeklyReport(Number(reportIdParam))
+        showDetail(fresh)
+        window.history.replaceState({}, '', '/admin/weekly-reports')
+      } catch (error: unknown) {
+        toast('error', (error as Error).message)
+      }
+    }
   }, [tab])
 
   useEffect(() => { load() }, [load])
@@ -105,15 +122,11 @@ export default function AdminWeeklyReports() {
   }, [])
 
   const openDetail = async (report: AdminWeeklyReport) => {
-    setDetail(report)
-    setReviewNote(report.reviewNote || '')
-    setCompletionRate(report.completionRate != null ? String(report.completionRate) : '')
+    showDetail(report)
     if (!report.content || report.content.done === undefined) {
       try {
         const fresh = await adminGetWeeklyReport(report.id)
-        setDetail(fresh)
-        setReviewNote(fresh.reviewNote || '')
-        setCompletionRate(fresh.completionRate != null ? String(fresh.completionRate) : '')
+        showDetail(fresh)
       } catch (error: unknown) {
         toast('error', (error as Error).message)
       }
@@ -165,7 +178,7 @@ export default function AdminWeeklyReports() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-[28px] font-medium text-[#051A24] tracking-tight"
-              style={{ fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif", fontWeight: 500 }}>
+              style={{ fontFamily: "var(--font-sans)", fontWeight: 500 }}>
               周报审阅
             </h1>
             <p className="text-sm text-[#273C46]/50 mt-1">

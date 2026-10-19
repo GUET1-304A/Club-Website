@@ -222,6 +222,10 @@ def test_weekly_report_submit_notifies_admins(client):
             and '新周报待审阅' in n['title']
             for n in items
         )
+        assert any(
+            n.get('link') == f'/admin/weekly-reports?report={report_id}'
+            for n in items
+        )
 
         unread = client.get('/api/admin/notifications/unread-count', headers=admin_headers)
         assert unread.status_code == 200
@@ -240,7 +244,7 @@ def test_weekly_report_submit_notifies_admins(client):
                 report = db.session.get(WeeklyReport, report_id)
                 if report is not None:
                     db.session.delete(report)
-                    AdminNotification.query.filter_by(link='/admin/weekly-reports').delete()
+                    AdminNotification.query.filter(AdminNotification.link.like('/admin/weekly-reports%')).delete(synchronize_session=False)
                     db.session.commit()
 
 
@@ -280,7 +284,7 @@ def test_weekly_report_submit_dispatches_external_admin_notification(client, mon
         assert len(dispatched) == 1
         payload, recipients = dispatched[0]
         assert payload.title.startswith('新周报待审阅')
-        assert payload.link == '/admin/weekly-reports'
+        assert payload.link == f'/admin/weekly-reports?report={report_id}'
         assert payload.notification_type == 'weekly_report_submitted'
         assert recipients == ['teacher@example.com']
     finally:
@@ -289,7 +293,7 @@ def test_weekly_report_submit_dispatches_external_admin_notification(client, mon
                 report = db.session.get(WeeklyReport, report_id)
                 if report is not None:
                     db.session.delete(report)
-                    AdminNotification.query.filter_by(link='/admin/weekly-reports').delete()
+                    AdminNotification.query.filter(AdminNotification.link.like('/admin/weekly-reports%')).delete(synchronize_session=False)
                     db.session.commit()
 
 

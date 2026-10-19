@@ -46,6 +46,7 @@ const teacherNavGroups = [
   {
     label: '概览',
     items: [
+      { label: '教师工作台', href: '/admin/teacher', icon: LayoutDashboard },
       { label: '教师通知', href: '/admin/notifications', icon: Bell },
     ],
   },
@@ -116,7 +117,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <span
               className="text-sm font-medium text-[#051A24] whitespace-nowrap tracking-tight transition-opacity duration-200"
               style={{
-                fontFamily: "'PP Neue Montreal', 'Noto Sans SC', sans-serif",
+                fontFamily: "var(--font-sans)",
                 fontWeight: 500,
                 opacity: sidebarOpen ? 1 : 0,
                 width: sidebarOpen ? 'auto' : 0,

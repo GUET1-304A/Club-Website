@@ -1700,6 +1700,34 @@ def admin_list_weekly_reports():
     return jsonify([r.to_dict() for r in reports])
 
 
+@admin_bp.route('/admin/teacher/overview', methods=['GET'])
+@jwt_required()
+def admin_teacher_overview():
+    """获取教师工作台概览数据。
+
+    汇总待审周报、待审证书、未读通知数量，并返回最近提交的
+    周报与证书，便于教师登录后直接处理。
+    """
+    admin = _teacher_or_403()
+
+    recent_reports = WeeklyReport.query.filter_by(status='submitted')\
+        .order_by(WeeklyReport.submitted_at.desc(), WeeklyReport.id.desc())\
+        .limit(5).all()
+    recent_certificates = Certificate.query.filter_by(status='pending')\
+        .order_by(Certificate.created_at.desc(), Certificate.id.desc())\
+        .limit(5).all()
+
+    return jsonify({
+        'pendingWeeklyReports': WeeklyReport.query.filter_by(status='submitted').count(),
+        'pendingCertificates': Certificate.query.filter_by(status='pending').count(),
+        'unreadNotifications': AdminNotification.query.filter_by(
+            admin_id=admin.id, is_read=False
+        ).count(),
+        'recentWeeklyReports': [report.to_dict() for report in recent_reports],
+        'recentCertificates': [certificate.to_dict() for certificate in recent_certificates],
+    })
+
+
 @admin_bp.route('/admin/weekly-reports/<int:report_id>', methods=['GET'])
 @jwt_required()
 def admin_get_weekly_report(report_id):
@@ -1778,7 +1806,7 @@ def admin_analyze_weekly_report(report_id):
     notify_all_admins(
         title=f'周报 AI 分析完成：{report.member.name if report.member else "成员"}',
         body=f'周报 #{report.id} 已生成审核报告，完成度 {analysis.get("score", "-")}，请及时查看。',
-        link='/admin/weekly-reports',
+        link=f'/admin/weekly-reports?report={report.id}',
         notification_type='weekly_report_analyzed',
     )
     db.session.commit()

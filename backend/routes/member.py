@@ -1465,7 +1465,7 @@ def member_submit_weekly_report(report_id):
     notify_all_admins(
         title=f'新周报待审阅：{member.name}',
         body=f'成员 {member.name} 提交了第 {report.week_start or "?"} 周周报，请及时审阅。',
-        link='/admin/weekly-reports',
+        link=f'/admin/weekly-reports?report={report.id}',
         notification_type='weekly_report_submitted',
     )
     db.session.commit()
@@ -1518,7 +1518,7 @@ def member_analyze_weekly_report(report_id):
     notify_all_admins(
         title=f'周报 AI 分析完成：{member.name}',
         body=f'你的周报 #{report.id} 已生成审核报告，完成度 {analysis.get("score", "-")}。',
-        link='/admin/weekly-reports',
+        link=f'/admin/weekly-reports?report={report.id}',
         notification_type='weekly_report_analyzed',
     )
     db.session.commit()

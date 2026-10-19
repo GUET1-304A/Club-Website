@@ -355,6 +355,20 @@ export async function adminAnalyzeWeeklyReport(id: number): Promise<{ success: b
   return authRequest(`/admin/weekly-reports/${id}/analyze`, { method: 'POST' })
 }
 
+// ─── Teacher Overview ───
+
+export interface TeacherOverview {
+  pendingWeeklyReports: number
+  pendingCertificates: number
+  unreadNotifications: number
+  recentWeeklyReports: AdminWeeklyReport[]
+  recentCertificates: AdminCertificate[]
+}
+
+export async function adminTeacherOverview(): Promise<TeacherOverview> {
+  return authRequest('/admin/teacher/overview')
+}
+
 // ─── Project Detail: Milestones / Tasks / Health / Reminders ───
 
 export interface AdminMilestone {
