@@ -9,21 +9,21 @@
 }
 
 .dark body {
-  color: #E0EBF0 !important;
-  background: #0a0f14 !important;
+  color: var(--theme-text) !important;
+  background: var(--theme-bg) !important;
 }
 
 .dark [class*="text-[#051A24]"],
 .dark [class*="text-[#0D212C]"] {
-  color: #F6FCFF !important;
+  color: var(--theme-text-strong) !important;
 }
 
 .dark [class*="text-[#273C46]"] {
-  color: #E0EBF0 !important;
+  color: var(--theme-text) !important;
 }
 
 .dark .bg-white {
-  background: #111820 !important;
+  background: var(--theme-surface) !important;
 }
 
 .dark .bg-\[\#f0ece6\] {
@@ -51,7 +51,7 @@
 }
 
 .dark .card {
-  background: #111820 !important;
+  background: var(--theme-surface) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -102,13 +102,17 @@
   color: rgba(246, 252, 255, 0.2) !important;
 }
 
-/* Navbar dark mode */
-.dark nav {
-  --tw-bg-opacity: 0.15;
-}
-
 /* ===== CSS 变量 — 设计 Token ===== */
 :root {
+  --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-surface-soft: rgba(255, 255, 255, 0.8);
+  --theme-chip: #ffffff;
+  --theme-text: #273c46;
+  --theme-text-strong: #051a24;
+  --theme-nav: #ffffff;
+  --theme-border: rgba(5, 26, 36, 0.1);
+  --join-paper: #f0ece6;
   /* 深色 */
   --dark-primary: #051A24;
   --dark-secondary: #0D212C;
@@ -138,6 +142,17 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.14);
+}
+
+.dark {
+  --theme-bg: #0a0f14;
+  --theme-surface: #111820;
+  --theme-surface-soft: rgba(17, 24, 32, 0.92);
+  --theme-chip: #1a2230;
+  --theme-text: #e0ebf0;
+  --theme-text-strong: #f6fcff;
+  --theme-nav: #111820;
+  --theme-border: rgba(246, 252, 255, 0.18);
 }
 
 /* ===== Inter — 正文西文（自托管可变字体 latin 子集，48KB，SIL OFL 授权）===== */

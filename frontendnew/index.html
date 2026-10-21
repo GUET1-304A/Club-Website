@@ -13,6 +13,13 @@
     <meta property="og:description" content="星雨作坊是一个由学生自主运营的开发社团。我们围绕真实项目进行学习、共创和开源。" />
     <meta property="og:image" content="https://shetuanweb.oss-cn-wulanchabu.aliyuncs.com/images/5ab0547bffef4a0986baac8e245c4401.png" />
     <meta name="theme-color" content="#f5f2ed" />
+    <script>
+      let theme = null
+      try { theme = localStorage.getItem('xingyu-theme') } catch { /* Storage may be unavailable. */ }
+      const dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+      document.documentElement.classList.toggle('dark', dark)
+      if (dark) document.querySelector('meta[name="theme-color"]').content = '#0a0f14'
+    </script>
     <!--
       字体全部本地化，无任何外部字体依赖：
       - 正文西文 Inter（self-hosted, OFL）

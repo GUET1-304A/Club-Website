@@ -1,57 +1,57 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import SideDecor from './components/effects/SideDecor'
 import ThemeSwitcher from './components/effects/ThemeSwitcher'
 import { fetchSiteConfig } from './services/api'
-import HomePage from './components/pages/HomePage'
-import AboutPage from './components/pages/AboutPage'
-import MembersPage from './components/pages/MembersPage'
-import ProjectsPage from './components/pages/ProjectsPage'
-import ProjectDetailPage from './components/pages/ProjectDetailPage'
-import AwardsPage from './components/pages/AwardsPage'
-import AwardDetailPage from './components/pages/AwardDetailPage'
-import BlogPage from './components/pages/BlogPage'
-import BlogDetailPage from './components/pages/BlogDetailPage'
-import ResearchPage from './components/pages/ResearchPage'
-import CooperationPage from './components/pages/CooperationPage'
-import ContactPage from './components/pages/ContactPage'
-import OpenSourcePage from './components/pages/OpenSourcePage'
-import JoinPage from './components/pages/JoinPage'
-import RecruitmentPage from './components/pages/RecruitmentPage'
-import TimelinePage from './components/pages/TimelinePage'
-import OnboardingPage from './components/pages/OnboardingPage'
-import YujiPage from './components/pages/YujiPage'
-import AdminDashboard from './components/admin/AdminDashboard'
-import AdminMembers from './components/admin/AdminMembers'
-import AdminProjects from './components/admin/AdminProjects'
-import AdminProjectDetail from './components/admin/AdminProjectDetail'
-import AdminAwards from './components/admin/AdminAwards'
-import AdminBlogs from './components/admin/AdminBlogs'
-import AdminPages from './components/admin/AdminPages'
-import AdminConfig from './components/admin/AdminConfig'
-import AdminApplications from './components/admin/AdminApplications'
-import AdminContacts from './components/admin/AdminContacts'
-import AdminCertificates from './components/admin/AdminCertificates'
-import AdminWeeklyReports from './components/admin/AdminWeeklyReports'
-import AdminNotifications from './components/admin/AdminNotifications'
-import AdminPermissions from './components/admin/AdminPermissions'
-import TeacherDashboard from './components/admin/TeacherDashboard'
-import AdminData from './components/admin/AdminData'
 import { ToastProvider } from './components/admin/Toast'
-import MemberDashboard from './components/member/MemberDashboard'
-import MemberDirectory from './components/member/MemberDirectory'
-import MemberProfilePage from './components/member/MemberProfile'
-import MemberProjects from './components/member/MemberProjects'
-import ProjectKanban from './components/member/ProjectKanban'
-import MemberTasks from './components/member/MemberTasks'
-import ResourceCenter from './components/member/ResourceCenter'
-import CertificateManager from './components/member/CertificateManager'
-import NotificationCenter from './components/member/NotificationCenter'
-import AssistantChat from './components/member/AssistantChat'
 import { useMemberAuth } from './hooks/useMemberAuth'
-import LoginPage from './components/pages/LoginPage'
 import { getRole } from './services/api'
+const HomePage = lazy(() => import('./components/pages/HomePage'))
+const AboutPage = lazy(() => import('./components/pages/AboutPage'))
+const MembersPage = lazy(() => import('./components/pages/MembersPage'))
+const ProjectsPage = lazy(() => import('./components/pages/ProjectsPage'))
+const ProjectDetailPage = lazy(() => import('./components/pages/ProjectDetailPage'))
+const AwardsPage = lazy(() => import('./components/pages/AwardsPage'))
+const AwardDetailPage = lazy(() => import('./components/pages/AwardDetailPage'))
+const BlogPage = lazy(() => import('./components/pages/BlogPage'))
+const BlogDetailPage = lazy(() => import('./components/pages/BlogDetailPage'))
+const ResearchPage = lazy(() => import('./components/pages/ResearchPage'))
+const CooperationPage = lazy(() => import('./components/pages/CooperationPage'))
+const ContactPage = lazy(() => import('./components/pages/ContactPage'))
+const OpenSourcePage = lazy(() => import('./components/pages/OpenSourcePage'))
+const JoinPage = lazy(() => import('./components/pages/JoinPage'))
+const RecruitmentPage = lazy(() => import('./components/pages/RecruitmentPage'))
+const TimelinePage = lazy(() => import('./components/pages/TimelinePage'))
+const OnboardingPage = lazy(() => import('./components/pages/OnboardingPage'))
+const YujiPage = lazy(() => import('./components/pages/YujiPage'))
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'))
+const AdminMembers = lazy(() => import('./components/admin/AdminMembers'))
+const AdminProjects = lazy(() => import('./components/admin/AdminProjects'))
+const AdminProjectDetail = lazy(() => import('./components/admin/AdminProjectDetail'))
+const AdminAwards = lazy(() => import('./components/admin/AdminAwards'))
+const AdminBlogs = lazy(() => import('./components/admin/AdminBlogs'))
+const AdminPages = lazy(() => import('./components/admin/AdminPages'))
+const AdminConfig = lazy(() => import('./components/admin/AdminConfig'))
+const AdminApplications = lazy(() => import('./components/admin/AdminApplications'))
+const AdminContacts = lazy(() => import('./components/admin/AdminContacts'))
+const AdminCertificates = lazy(() => import('./components/admin/AdminCertificates'))
+const AdminWeeklyReports = lazy(() => import('./components/admin/AdminWeeklyReports'))
+const AdminNotifications = lazy(() => import('./components/admin/AdminNotifications'))
+const AdminPermissions = lazy(() => import('./components/admin/AdminPermissions'))
+const TeacherDashboard = lazy(() => import('./components/admin/TeacherDashboard'))
+const AdminData = lazy(() => import('./components/admin/AdminData'))
+const MemberDashboard = lazy(() => import('./components/member/MemberDashboard'))
+const MemberDirectory = lazy(() => import('./components/member/MemberDirectory'))
+const MemberProfilePage = lazy(() => import('./components/member/MemberProfile'))
+const MemberProjects = lazy(() => import('./components/member/MemberProjects'))
+const ProjectKanban = lazy(() => import('./components/member/ProjectKanban'))
+const MemberTasks = lazy(() => import('./components/member/MemberTasks'))
+const ResourceCenter = lazy(() => import('./components/member/ResourceCenter'))
+const CertificateManager = lazy(() => import('./components/member/CertificateManager'))
+const NotificationCenter = lazy(() => import('./components/member/NotificationCenter'))
+const AssistantChat = lazy(() => import('./components/member/AssistantChat'))
+const LoginPage = lazy(() => import('./components/pages/LoginPage'))
 
 /* ═══════════════════════════════════════════════════════════════
    Helpers
@@ -98,6 +98,10 @@ function AppContent({ path }: { path: string }) {
     default:
       return <NotFound />
   }
+}
+
+function PageLoading() {
+  return <div className="min-h-[60vh] flex items-center justify-center text-sm text-[var(--theme-text)]" role="status">正在加载页面…</div>
 }
 
 function NotFound() {
@@ -295,7 +299,7 @@ export default function App() {
   if (isAdmin) {
     return (
       <div className="min-h-screen relative">
-        <AppContent path={path} />
+        <Suspense fallback={<PageLoading />}><AppContent path={path} /></Suspense>
       </div>
     )
   }
@@ -319,7 +323,7 @@ export default function App() {
         <SideDecor />
         <ThemeSwitcher />
         <Navbar />
-        <AppContent path={path} />
+        <Suspense fallback={<PageLoading />}><AppContent path={path} /></Suspense>
         <Footer />
       </div>
     </div>

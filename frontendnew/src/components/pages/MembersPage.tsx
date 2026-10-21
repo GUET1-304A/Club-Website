@@ -42,7 +42,7 @@ export default function MembersPage() {
         我们的<span className="font-mondwest">成员</span>
       </h1>
 
-      <div className="sticky top-20 z-40 mx-auto max-w-fit rounded-full bg-white/80 backdrop-blur-md py-2.5 px-6 shadow-sm border border-[rgba(0,0,0,0.04)] mt-8">
+      <div className="sticky top-20 z-40 mx-auto max-w-fit rounded-full bg-[var(--theme-surface-soft)] backdrop-blur-md py-2.5 px-6 shadow-sm border border-[var(--theme-border)] mt-8">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="flex gap-3 flex-wrap justify-center">
             {groups.map((g) => (

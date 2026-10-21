@@ -11,6 +11,7 @@ import {
 import { Menu, X, Home, Users, FolderGit2, Trophy, PenTool, UserPlus, Clock, BookOpen, Cloud, LogIn, FlaskConical, Handshake, Mail, Moon, Sun } from 'lucide-react'
 import GithubIcon from '../ui/GithubIcon'
 import Logo from '../ui/Logo'
+import { setDarkMode, useDarkMode } from '../../lib/theme'
 
 // ===== Nav links =====
 const navItems = [
@@ -66,7 +67,7 @@ function DockLabel({ children, isHovered }: { children: React.ReactNode; isHover
 // ===== Main Navbar =====
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'))
+  const darkMode = useDarkMode()
   const [navOpacity, setNavOpacity] = useState(0)
   const [isAtTop, setIsAtTop] = useState(true)
 
@@ -99,9 +100,7 @@ export default function Navbar() {
   }, [mobileOpen])
 
   const toggleDarkMode = () => {
-    const next = !document.documentElement.classList.contains('dark')
-    document.documentElement.classList.toggle('dark', next)
-    setDarkMode(next)
+    setDarkMode(!darkMode)
   }
 
   // Dock state
@@ -116,7 +115,7 @@ export default function Navbar() {
     <nav
       className="sticky top-0 z-50 transition-shadow duration-300"
       style={{
-        background: `rgba(255, 255, 255, ${bgOpacity})`,
+        background: `color-mix(in srgb, var(--theme-nav) ${Math.round(bgOpacity * 100)}%, transparent)`,
         backdropFilter: 'blur(24px) saturate(1.8)',
         WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
         boxShadow: hasShadow
@@ -163,7 +162,6 @@ export default function Navbar() {
             type="button"
             className="flex h-11 w-11 items-center justify-center rounded-xl text-[#051A24]"
             onClick={() => {
-              if (!mobileOpen) setDarkMode(document.documentElement.classList.contains('dark'))
               setMobileOpen(!mobileOpen)
             }}
             aria-label={mobileOpen ? '关闭菜单' : '打开菜单'}
@@ -226,9 +224,11 @@ function DockItem({ href, Icon, label }: { href: string; Icon: React.ComponentTy
       style={{ width }}
       onHoverStart={() => isHoveredMv.set(1)}
       onHoverEnd={() => isHoveredMv.set(0)}
+      onFocusCapture={() => isHoveredMv.set(1)}
+      onBlurCapture={() => isHoveredMv.set(0)}
       className="relative inline-flex items-center justify-center cursor-pointer"
     >
-      <a href={href} className="flex items-center justify-center w-full h-full">
+      <a href={href} aria-label={label} className="flex items-center justify-center w-full h-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3457ff]">
         <DockLabel isHovered={isHoveredMv}>{label}</DockLabel>
         <motion.div style={{ width: iconSize, height: iconSize }} className="flex items-center justify-center">
           <Icon className="w-full h-full text-[#051A24]/70" strokeWidth={1.5} />

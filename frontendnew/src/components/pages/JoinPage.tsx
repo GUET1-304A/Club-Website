@@ -862,7 +862,7 @@ function MobileForm({ form, errors, errorSummary, submitting, onChange, onSubmit
   onSubmit: () => void
 }) {
   return (
-    <div className="rounded-[28px] border border-[#0d212c]/10 bg-[#f0ece6] p-6 shadow-xl">
+    <div className="rounded-[28px] border border-[#0d212c]/10 bg-[var(--join-paper)] p-6 shadow-xl">
       <div className="flex items-center justify-between border-b border-dashed border-[#0d212c]/25 pb-3">
         <span className="font-mono text-[10px] tracking-[0.24em] uppercase text-[#0d212c]/45">Boarding information</span>
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0d212c]/35">2026</span>

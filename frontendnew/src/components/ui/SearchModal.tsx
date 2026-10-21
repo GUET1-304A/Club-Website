@@ -62,10 +62,10 @@ export default function SearchModal({ children, items, placeholder = '搜索...'
       {/* Trigger — click to open inline panel */}
       <div onClick={() => setOpen(!open)} className="cursor-pointer">
         {children || (
-          <button className="flex items-center gap-2 rounded-full border border-[rgba(0,0,0,0.1)] bg-white px-4 py-2 text-sm text-[#273C46]/60 hover:border-[rgba(0,0,0,0.2)] transition-colors">
+          <button type="button" className="flex items-center gap-2 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-2 text-sm text-[var(--theme-text-strong)] hover:border-[#3457ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3457ff] transition-colors">
             <Search className="w-4 h-4" />
             <span>{placeholder}</span>
-            <kbd className="ml-2 text-[10px] font-mono text-[#273C46]/25">⌘K</kbd>
+            <kbd className="ml-2 hidden sm:inline text-[10px] font-mono text-[#273C46]/60">Ctrl K</kbd>
           </button>
         )}
       </div>

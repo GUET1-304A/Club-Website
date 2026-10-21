@@ -107,7 +107,7 @@ export default function ProjectsSection() {
               />
             </div>
             <p className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-center">
-              <span className="rounded-full bg-white/70 px-3 py-1 text-[11px] text-[#051A24]/60 backdrop-blur-sm">
+              <span className="rounded-full bg-[var(--theme-surface-soft)] px-3 py-1 text-[11px] text-[var(--theme-text-strong)] backdrop-blur-sm">
                 {launching ? '正在打开…' : '拖动旋转 · 点击键帽进入项目详情'}
               </span>
             </p>
@@ -118,7 +118,7 @@ export default function ProjectsSection() {
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="order-2 md:order-none p-3 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
+                className="order-2 md:order-none p-3 rounded-full bg-[var(--theme-surface-soft)] text-[var(--theme-text-strong)] backdrop-blur-sm hover:bg-[var(--theme-surface)] disabled:opacity-25 transition-colors shrink-0"
                 aria-label="上一页作品"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -129,9 +129,9 @@ export default function ProjectsSection() {
                 <a
                   key={project.id}
                   href={`/project/${project.slug}`}
-                  className="group inline-flex min-h-12 items-center gap-2 rounded-xl border border-[#051A24]/10 bg-white/80 px-4 py-2 text-sm text-[#273C46] shadow-sm backdrop-blur-sm hover:border-[#051A24]/30 hover:bg-white transition-colors md:min-h-0 md:rounded-full md:px-3 md:py-1.5 md:text-xs"
+                  className="group inline-flex min-h-12 items-center gap-2 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-soft)] px-4 py-2 text-sm text-[var(--theme-text-strong)] shadow-sm backdrop-blur-sm hover:bg-[var(--theme-surface)] transition-colors md:min-h-0 md:rounded-full md:px-3 md:py-1.5 md:text-xs"
                 >
-                  <span className="font-mono text-[10px] tracking-wider text-[#051A24]/45 group-hover:text-[#051A24]">
+                  <span className="font-mono text-[10px] tracking-wider text-[var(--theme-text)] group-hover:text-[var(--theme-text-strong)]">
                     {keys[pageStart + index]?.label}
                   </span>
                   {project.name}
@@ -142,7 +142,7 @@ export default function ProjectsSection() {
               <button
                 onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))}
                 disabled={page === pageCount - 1}
-                className="order-2 md:order-none p-3 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
+                className="order-2 md:order-none p-3 rounded-full bg-[var(--theme-surface-soft)] text-[var(--theme-text-strong)] backdrop-blur-sm hover:bg-[var(--theme-surface)] disabled:opacity-25 transition-colors shrink-0"
                 aria-label="下一页作品"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -151,7 +151,7 @@ export default function ProjectsSection() {
           </div>
           {pageCount > 1 && (
             <p className="flex justify-center mt-2">
-              <span className="rounded-full bg-white/60 px-2 py-0.5 text-[10px] text-[#273C46]/60 backdrop-blur-sm">
+              <span className="rounded-full bg-[var(--theme-surface-soft)] px-2 py-0.5 text-[10px] text-[var(--theme-text)] backdrop-blur-sm">
                 {page + 1} / {pageCount}
               </span>
             </p>
