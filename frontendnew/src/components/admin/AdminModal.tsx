@@ -24,10 +24,10 @@ export default function AdminModal({ open, title, children, onClose, maxWidth = 
   return createPortal((
     <div className="admin-glass-scope fixed inset-0 z-[9999] flex items-center justify-center bg-[#0b1720]/20 backdrop-blur-[3px] p-4" onClick={onClose}>
       <div
-        className={`admin-glass-panel rounded-[28px] w-full ${maxWidth} animate-fade-in-up`}
+        className={`admin-glass-panel max-h-[calc(100dvh-2rem)] rounded-[28px] w-full ${maxWidth} animate-fade-in-up`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/60">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/60">
           <h2 className="text-lg font-medium text-[#051A24]">{title}</h2>
           <button
             onClick={onClose}
@@ -36,7 +36,7 @@ export default function AdminModal({ open, title, children, onClose, maxWidth = 
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+        <div className="p-4 sm:p-6" style={{ maxHeight: 'calc(100dvh - 7rem)', overflowY: 'auto' }}>
           {children}
         </div>
       </div>

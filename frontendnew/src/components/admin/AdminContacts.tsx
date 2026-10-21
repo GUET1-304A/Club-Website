@@ -48,17 +48,17 @@ export default function AdminContacts() {
     return (
       <div className="card overflow-hidden" style={{ borderRadius: 24 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-responsive-table w-full text-sm">
             <thead><tr className="bg-[#fcfbfa] border-b border-[rgba(0,0,0,0.06)]">{['主题', '发送者', '联系方式', '状态', '时间', ''].map(h => (<th key={h} className={`text-left px-5 py-3 text-[11px] font-semibold text-[#273C46]/40 uppercase tracking-wider ${h === '' ? 'text-right' : ''}`}>{h || '操作'}</th>))}</tr></thead>
             <tbody>
               {msgs.map((m) => (
                 <tr key={m.id} className={`border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors ${m.status === 'unread' ? 'bg-blue-50/10' : ''}`}>
-                  <td className="px-5 py-3 font-semibold text-[#051A24] max-w-[200px] truncate">{m.subject}</td>
-                  <td className="px-5 py-3 text-[#273C46]/80 text-xs">{m.is_anonymous ? <span className="text-[#273C46]/40 italic">匿名用户</span> : m.name}</td>
-                  <td className="px-5 py-3 text-[#273C46]/50 text-xs">{m.email}{m.phone ? ` · ${m.phone}` : ''}</td>
-                  <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${STATUS_STYLES[m.status] || ''}`}><span className={`w-1.5 h-1.5 rounded-full ${m.status === 'unread' ? 'bg-blue-500' : m.status === 'replied' ? 'bg-emerald-500' : 'bg-gray-300'}`} />{STATUS_MAP[m.status] || m.status}</span></td>
-                  <td className="px-5 py-3 text-[#273C46]/30 text-xs whitespace-nowrap font-mono">{m.created_at ? new Date(m.created_at).toLocaleDateString('zh-CN') : ''}</td>
-                  <td className="px-5 py-3 text-right">
+                  <td data-label="主题" className="px-5 py-3 font-semibold text-[#051A24] max-w-[200px] truncate">{m.subject}</td>
+                  <td data-label="发送者" className="px-5 py-3 text-[#273C46]/80 text-xs">{m.is_anonymous ? <span className="text-[#273C46]/40 italic">匿名用户</span> : m.name}</td>
+                  <td data-label="联系方式" className="px-5 py-3 text-[#273C46]/50 text-xs">{m.email}{m.phone ? ` · ${m.phone}` : ''}</td>
+                  <td data-label="状态" className="px-5 py-3"><span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${STATUS_STYLES[m.status] || ''}`}><span className={`w-1.5 h-1.5 rounded-full ${m.status === 'unread' ? 'bg-blue-500' : m.status === 'replied' ? 'bg-emerald-500' : 'bg-gray-300'}`} />{STATUS_MAP[m.status] || m.status}</span></td>
+                  <td data-label="时间" className="px-5 py-3 text-[#273C46]/30 text-xs whitespace-nowrap font-mono">{m.created_at ? new Date(m.created_at).toLocaleDateString('zh-CN') : ''}</td>
+                  <td data-label="操作" className="px-5 py-3 text-right">
                     <button onClick={() => { setDetail(m); setReply(''); if (m.status === 'unread') handleMarkRead(m.id) }} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Eye className="w-4 h-4" /></button>
                   </td>
                 </tr>

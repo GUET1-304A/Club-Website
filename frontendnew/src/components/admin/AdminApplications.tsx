@@ -47,18 +47,18 @@ export default function AdminApplications() {
     return (
       <div className="card overflow-hidden" style={{ borderRadius: 24 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-responsive-table w-full text-sm">
             <thead><tr className="bg-[#fcfbfa] border-b border-[rgba(0,0,0,0.06)]">{['姓名', '学号', '意向组别', '联系方式', '状态', '时间', ''].map(h => (<th key={h} className={`text-left px-5 py-3 text-[11px] font-semibold text-[#273C46]/40 uppercase tracking-wider ${h === '' ? 'text-right' : ''}`}>{h || '操作'}</th>))}</tr></thead>
             <tbody>
               {apps.map((a) => (
                 <tr key={a.id} className={`border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors ${a.status === 'pending' ? 'bg-amber-50/10' : ''}`}>
-                  <td className="px-5 py-3 font-semibold text-[#051A24]">{a.name}</td>
-                  <td className="px-5 py-3 text-[#273C46]/60 text-xs font-mono">{a.student_id}</td>
-                  <td className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{a.group_name}</span></td>
-                  <td className="px-5 py-3 text-[#273C46]/60 text-xs">{a.phone}<br/>{a.email}</td>
-                  <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${STATUS_COLORS[a.status] || ''}`}><span className={`w-1.5 h-1.5 rounded-full ${a.status === 'pending' ? 'bg-amber-500' : a.status === 'approved' ? 'bg-emerald-500' : 'bg-red-400'}`} />{STATUS_LABELS[a.status] || a.status}</span></td>
-                  <td className="px-5 py-3 text-[#273C46]/30 text-xs whitespace-nowrap font-mono">{a.created_at ? new Date(a.created_at).toLocaleDateString('zh-CN') : ''}</td>
-                  <td className="px-5 py-3 text-right">
+                  <td data-label="姓名" className="px-5 py-3 font-semibold text-[#051A24]">{a.name}</td>
+                  <td data-label="学号" className="px-5 py-3 text-[#273C46]/60 text-xs font-mono">{a.student_id}</td>
+                  <td data-label="意向组别" className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{a.group_name}</span></td>
+                  <td data-label="联系方式" className="px-5 py-3 text-[#273C46]/60 text-xs"><span>{a.phone}<br/>{a.email}</span></td>
+                  <td data-label="状态" className="px-5 py-3"><span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${STATUS_COLORS[a.status] || ''}`}><span className={`w-1.5 h-1.5 rounded-full ${a.status === 'pending' ? 'bg-amber-500' : a.status === 'approved' ? 'bg-emerald-500' : 'bg-red-400'}`} />{STATUS_LABELS[a.status] || a.status}</span></td>
+                  <td data-label="时间" className="px-5 py-3 text-[#273C46]/30 text-xs whitespace-nowrap font-mono">{a.created_at ? new Date(a.created_at).toLocaleDateString('zh-CN') : ''}</td>
+                  <td data-label="操作" className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <button onClick={() => { setDetail(a); setNote('') }} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Eye className="w-4 h-4" /></button>
                       {a.status === 'pending' && (<>

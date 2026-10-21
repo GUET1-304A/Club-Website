@@ -68,14 +68,14 @@ export default function AdminBlogs() {
     return (
       <div className="card overflow-hidden" style={{ borderRadius: 24 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-responsive-table w-full text-sm">
             <thead><tr className="bg-[#fcfbfa] border-b border-[rgba(0,0,0,0.06)]">
               {['标题', '分类', '作者', '日期', '状态', ''].map(h => (<th key={h} className={`text-left px-5 py-3 text-[11px] font-semibold text-[#273C46]/40 uppercase tracking-wider ${h === '' ? 'text-right' : ''}`}>{h || '操作'}</th>))}
             </tr></thead>
             <tbody>
               {blogs.map((b) => (
                 <tr key={b.id} className="border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors">
-                  <td className="px-5 py-3 max-w-[250px]">
+                  <td data-label="标题" className="px-5 py-3 max-w-[250px]">
                     <div className="flex items-center gap-2">
                       {b.pinned && (
                         <span title="已置顶" className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full bg-[#051A24] text-white px-2 py-0.5 shrink-0">
@@ -85,16 +85,16 @@ export default function AdminBlogs() {
                       <span className="font-semibold text-[#051A24] truncate">{b.title}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{CATS.find(c => c.value === b.category)?.label || b.category}</span></td>
-                  <td className="px-5 py-3 text-[#273C46]/70 text-xs">{b.author?.name || b.authorName || '—'}</td>
-                  <td className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{b.date || '—'}</td>
-                  <td className="px-5 py-3">
+                  <td data-label="分类" className="px-5 py-3"><span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">{CATS.find(c => c.value === b.category)?.label || b.category}</span></td>
+                  <td data-label="作者" className="px-5 py-3 text-[#273C46]/70 text-xs">{b.author?.name || b.authorName || '—'}</td>
+                  <td data-label="日期" className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{b.date || '—'}</td>
+                  <td data-label="状态" className="px-5 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${b.isPublished !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${b.isPublished !== false ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                       {b.isPublished !== false ? '已发布' : '草稿'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td data-label="操作" className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <button onClick={() => openEdit(b)} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Edit3 className="w-4 h-4" /></button>
                       <button onClick={() => setConfirmDelete(b)} className="p-2 rounded-xl hover:bg-red-50 text-[#273C46]/30 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>

@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
 import { useSiteData } from '../../store/useSiteData'
 import { renderRichText } from '../../lib/richText'
-import KeycapOrb, { type Keycap, type KeycapFinish } from '../ui/keycap-orb'
+import type { Keycap, KeycapFinish } from '../ui/keycap-orb'
+
+const KeycapOrb = lazy(() => import('../ui/keycap-orb'))
 
 const FINISHES: KeycapFinish[] = ['cobalt', 'ink', 'glass', 'ash', 'lime', 'ash']
 const PAGE_SIZE = 6
@@ -79,7 +81,7 @@ export default function ProjectsSection() {
         <>
           <div className="relative mt-6">
             <div className={`relative transition-all duration-500 ease-out ${launching ? 'opacity-0 scale-105 delay-75' : 'opacity-100 scale-100'}`}>
-              <KeycapOrb
+              <Suspense fallback={<div className="h-[420px] md:h-[580px]" />}><KeycapOrb
                 keys={keys}
                 rings={9}
                 scale={0.75}
@@ -97,7 +99,7 @@ export default function ProjectsSection() {
                 }}
                 onKeyPress={openProject}
                 aria-label="作品键帽球：拖动旋转，点击键帽进入项目详情"
-              />
+              /></Suspense>
               <div
                 aria-hidden="true"
                 className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${launching ? 'opacity-100' : 'opacity-0'}`}
@@ -110,23 +112,24 @@ export default function ProjectsSection() {
               </span>
             </p>
           </div>
-          <div className="mt-5 flex items-center justify-center gap-2 sm:gap-3">
+          <p className="mt-6 text-center text-sm text-[#273C46] md:hidden">选择作品查看详情</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             {pageCount > 1 && (
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="p-2 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
+                className="order-2 md:order-none p-3 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
                 aria-label="上一页作品"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
             )}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="order-1 grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:order-none md:flex md:w-auto md:flex-wrap md:justify-center">
               {pageProjects.map((project, index) => (
                 <a
                   key={project.id}
                   href={`/project/${project.slug}`}
-                  className="group inline-flex items-center gap-2 rounded-full border border-[#051A24]/10 bg-white/80 px-3 py-1.5 text-xs text-[#273C46] shadow-sm backdrop-blur-sm hover:border-[#051A24]/30 hover:bg-white transition-colors"
+                  className="group inline-flex min-h-12 items-center gap-2 rounded-xl border border-[#051A24]/10 bg-white/80 px-4 py-2 text-sm text-[#273C46] shadow-sm backdrop-blur-sm hover:border-[#051A24]/30 hover:bg-white transition-colors md:min-h-0 md:rounded-full md:px-3 md:py-1.5 md:text-xs"
                 >
                   <span className="font-mono text-[10px] tracking-wider text-[#051A24]/45 group-hover:text-[#051A24]">
                     {keys[pageStart + index]?.label}
@@ -139,7 +142,7 @@ export default function ProjectsSection() {
               <button
                 onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))}
                 disabled={page === pageCount - 1}
-                className="p-2 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
+                className="order-2 md:order-none p-3 rounded-full bg-white/70 text-[#051A24]/60 backdrop-blur-sm hover:bg-white disabled:opacity-25 transition-colors shrink-0"
                 aria-label="下一页作品"
               >
                 <ChevronRight className="w-4 h-4" />

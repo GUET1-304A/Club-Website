@@ -94,22 +94,22 @@ export default function AdminConfig() {
   return (
     <AdminLayout>
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <h1 className="text-2xl font-medium text-[#051A24]">站点配置</h1>
             <p className="text-sm text-[#273C46]/60 mt-1">全局站点设置</p>
           </div>
-          <button onClick={handleSave} disabled={saving} className="btn-primary text-sm px-4 py-2 flex items-center gap-2">
+          <button onClick={handleSave} disabled={saving} className="btn-primary text-sm px-4 py-2 flex items-center gap-2 shrink-0">
             <Save className="w-4 h-4" /> {saving ? '保存中...' : '保存配置'}
           </button>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex min-w-0 flex-col gap-4 md:flex-row md:gap-6">
           {/* Section tabs */}
-          <div className="w-40 shrink-0 space-y-1">
+          <div className="flex w-full shrink-0 gap-1 overflow-x-auto pb-1 md:block md:w-40 md:space-y-1 md:overflow-visible md:pb-0" aria-label="配置分区">
             {sections.map(s => (
               <button key={s.key} onClick={() => setActiveSection(s.key)}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeSection === s.key ? 'admin-glass-nav-active text-[#051A24]' : 'text-[#273C46] hover:bg-[rgba(0,0,0,0.04)]'}`}>
+                className={`shrink-0 whitespace-nowrap rounded-xl px-4 py-2.5 text-left text-sm font-medium transition-colors md:w-full ${activeSection === s.key ? 'admin-glass-nav-active text-[#051A24]' : 'text-[#273C46] hover:bg-[rgba(0,0,0,0.04)]'}`}>
                 {s.label}
               </button>
             ))}
@@ -117,7 +117,7 @@ export default function AdminConfig() {
 
           {/* Editor area */}
           <div className="flex-1 min-w-0">
-            <div className="card p-6" style={{ borderRadius: 24 }}>
+            <div className="card p-4 sm:p-6" style={{ borderRadius: 24 }}>
               {activeSection === 'hero' && (
                 <div className="space-y-8">
                   <SectionEditor

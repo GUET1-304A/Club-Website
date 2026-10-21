@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import SideDecor from './components/effects/SideDecor'
@@ -228,19 +228,31 @@ function MemberLoginRedirect() {
    ═══════════════════════════════════════════════════════════════ */
 
 const DEFAULT_VIDEO = '/hero-bg.mp4'
+const VIDEO_MEDIA_QUERY = '(min-width: 768px) and (prefers-reduced-motion: no-preference)'
+
+function canPlayBackgroundVideo() {
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+  return window.matchMedia(VIDEO_MEDIA_QUERY).matches && !connection?.saveData
+}
 
 export default function App() {
   const [path, setPath] = useState(window.location.pathname)
   const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO)
-  const [, setVideoError] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const [playVideo, setPlayVideo] = useState(canPlayBackgroundVideo)
+
+  useEffect(() => {
+    const media = window.matchMedia(VIDEO_MEDIA_QUERY)
+    const update = () => setPlayVideo(canPlayBackgroundVideo())
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   // Load custom video background URL
   useEffect(() => {
     fetchSiteConfig()
       .then(cfg => {
         const url = (cfg.hero as Record<string, unknown>)?.video_url as string
-        if (url && url !== videoUrl) setVideoUrl(url)
+        if (url) setVideoUrl(current => current === url ? current : url)
       })
       .catch(() => {})
   }, [])
@@ -292,17 +304,12 @@ export default function App() {
     <div className="min-h-screen relative">
       {/* Video background (z-0) */}
       <div className="fixed inset-0 bg-gradient-to-br from-[#e8e4dc] to-[#f5f2ed] z-0" />
-      <video
-        key={videoUrl}
-        ref={videoRef}
-        autoPlay loop muted playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0"
-        onError={() => setVideoError(true)}
-        onCanPlay={() => setVideoError(false)}
-        onLoadedData={(e) => { e.currentTarget.play().catch(() => setVideoError(true)) }}
-      >
-        <source src={videoUrl} type="video/mp4" />
-      </video>
+      <div className="fixed inset-0 bg-cover bg-center z-0" style={{ backgroundImage: "url('/hero-poster.webp')" }} />
+      {playVideo && (
+        <video key={videoUrl} autoPlay loop muted playsInline preload="metadata" className="fixed inset-0 w-full h-full object-cover z-0">
+          <source src={videoUrl} type="video/mp4" />
+        </video>
+      )}
 
       {/* Overlay (z-10) */}
       <div className="fixed inset-0 bg-white/35 dark:bg-black/55 z-10 pointer-events-none" />

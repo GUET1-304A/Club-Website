@@ -115,7 +115,7 @@ export default function AdminMembers() {
     return (
       <div className="card overflow-hidden" style={{ borderRadius: 24 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-responsive-table w-full text-sm">
             <thead>
               <tr className="bg-[#fcfbfa] border-b border-[rgba(0,0,0,0.06)]">
                 {['成员', '组别', '角色', '年级', '状态', ''].map(h => (
@@ -126,7 +126,7 @@ export default function AdminMembers() {
             <tbody>
               {members.map((m) => (
                 <tr key={m.id} className="border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors">
-                  <td className="px-5 py-3">
+                  <td data-label="成员" className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0ece6] to-[#e8e4dc] overflow-hidden shrink-0 ring-2 ring-white shadow-sm">
                         {m.avatar
@@ -137,21 +137,21 @@ export default function AdminMembers() {
                       <span className="font-semibold text-[#051A24]">{m.name}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3">
+                  <td data-label="组别" className="px-5 py-3">
                     <span className="text-xs bg-[#f0ece6] text-[#273C46] rounded-full px-2.5 py-1 font-medium">
                       {GROUPS.find(g => g.value === m.group)?.label || m.group}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#273C46]/70 text-xs">{m.role || '—'}</td>
-                  <td className="px-5 py-3 text-[#273C46]/60 text-xs font-mono">{m.grade || '—'}</td>
-                  <td className="px-5 py-3">
+                  <td data-label="角色" className="px-5 py-3 text-[#273C46]/70 text-xs">{m.role || '—'}</td>
+                  <td data-label="年级" className="px-5 py-3 text-[#273C46]/60 text-xs font-mono">{m.grade || '—'}</td>
+                  <td data-label="状态" className="px-5 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1
                       ${m.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${m.status === 'active' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                       {m.status === 'active' ? '活跃' : '停用'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td data-label="操作" className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <button onClick={() => openEdit(m)}
                         className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"

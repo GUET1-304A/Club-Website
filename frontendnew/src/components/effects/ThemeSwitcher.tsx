@@ -6,7 +6,7 @@ export default function ThemeSwitcher() {
   }
 
   return (
-    <div className="fixed right-8 top-6 z-[150] pointer-events-none">
+    <div className="hidden lg:block fixed right-8 top-6 z-[150] pointer-events-none">
       <motion.div
         drag="y"
         dragDirectionLock

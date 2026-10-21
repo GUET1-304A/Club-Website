@@ -56,6 +56,7 @@ export default function ProjectKanban({ member, projectId }: Props) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   const [showNewTask, setShowNewTask] = useState<string | null>(null) // column key
   const [newTitle, setNewTitle] = useState('')
+  const [movingTaskId, setMovingTaskId] = useState<number | null>(null)
   const dragTask = useRef<TaskData | null>(null)
 
   const load = useCallback(async () => {
@@ -81,17 +82,25 @@ export default function ProjectKanban({ member, projectId }: Props) {
 
   const handleDragLeave = () => setDragOverCol(null)
 
-  const handleDrop = async (col: string) => {
-    setDragOverCol(null)
-    const task = dragTask.current
+  const moveTask = async (task: TaskData | null, col: string) => {
     if (!task || task.status === col) return
+    setMovingTaskId(task.id)
     try {
       await memberUpdateTaskStatus(task.id, col)
       toast('success', `任务已移至「${COLUMNS.find(c => c.key === col)?.label}」`)
-      load()
+      await load()
     } catch (e: unknown) {
       toast('error', (e as Error).message)
+    } finally {
+      setMovingTaskId(null)
     }
+  }
+
+  const handleDrop = (col: string) => {
+    setDragOverCol(null)
+    const task = dragTask.current
+    dragTask.current = null
+    void moveTask(task, col)
   }
 
   /* ── Quick-create task ── */
@@ -270,13 +279,25 @@ export default function ProjectKanban({ member, projectId }: Props) {
                             )}
                           </div>
                         </div>
+                        <label className="mt-3 flex items-center justify-between gap-2 border-t border-[rgba(0,0,0,0.03)] pt-3 text-xs text-[#273C46]/70 md:hidden">
+                          <span>任务状态</span>
+                          <select
+                            value={task.status}
+                            onChange={e => void moveTask(task, e.target.value)}
+                            disabled={movingTaskId === task.id}
+                            className="min-h-10 rounded-lg border border-[rgba(0,0,0,0.1)] bg-white px-3 text-xs text-[#051A24] disabled:opacity-50"
+                          >
+                            {COLUMNS.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}
+                          </select>
+                        </label>
                       </div>
                     ))}
 
                     {/* Empty state */}
                     {tasks.length === 0 && (
                       <div className="text-center py-8 text-[10px] text-[#273C46]/25">
-                        拖拽任务到此处
+                        <span className="md:hidden">暂无任务</span>
+                        <span className="hidden md:inline">拖拽任务到此处</span>
                       </div>
                     )}
                   </div>

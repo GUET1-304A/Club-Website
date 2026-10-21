@@ -78,7 +78,7 @@ export default function AdminAwards() {
     return (
       <div className="card overflow-hidden" style={{ borderRadius: 24 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-responsive-table w-full text-sm">
             <thead><tr className="bg-[#fcfbfa] border-b border-[rgba(0,0,0,0.06)]">
               {['奖项名称', '级别', '获奖者', '日期', ''].map(h => (
                 <th key={h} className={`text-left px-5 py-3 text-[11px] font-semibold text-[#273C46]/40 uppercase tracking-wider ${h === '' ? 'text-right' : ''}`}>{h || '操作'}</th>
@@ -87,19 +87,19 @@ export default function AdminAwards() {
             <tbody>
               {awards.map((a) => (
                 <tr key={a.id} className="border-b border-[rgba(0,0,0,0.03)] hover:bg-[#fcfbfa] transition-colors">
-                  <td className="px-5 py-3 font-semibold text-[#051A24] max-w-[300px] truncate">{a.name}</td>
-                  <td className="px-5 py-3">
+                  <td data-label="奖项名称" className="px-5 py-3 font-semibold text-[#051A24] max-w-[300px] truncate">{a.name}</td>
+                  <td data-label="级别" className="px-5 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 border ${LEVEL_STYLES[a.level] || ''}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${a.level === 'national' ? 'bg-amber-500' : a.level === 'provincial' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                       {LEVELS.find(l => l.value === a.level)?.label || a.level}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#273C46]/80 text-xs">
+                  <td data-label="获奖者" className="px-5 py-3 text-[#273C46]/80 text-xs"><div>
                     {a.winner}
                     {a.advisor && <p className="text-[10px] text-[#273C46]/40 mt-0.5">指导教师：{a.advisor}</p>}
-                  </td>
-                  <td className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{a.date || '—'}</td>
-                  <td className="px-5 py-3 text-right">
+                  </div></td>
+                  <td data-label="日期" className="px-5 py-3 text-[#273C46]/40 text-xs font-mono">{a.date || '—'}</td>
+                  <td data-label="操作" className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <button onClick={() => openEdit(a)} className="p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] text-[#273C46]/40 hover:text-[#051A24] transition-all"><Edit3 className="w-4 h-4" /></button>
                       <button onClick={() => setConfirmDelete(a)} className="p-2 rounded-xl hover:bg-red-50 text-[#273C46]/30 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>

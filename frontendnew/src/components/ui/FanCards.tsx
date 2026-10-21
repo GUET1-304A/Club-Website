@@ -30,11 +30,9 @@ const FAN_POSITIONS = [
 ]
 
 function getResponsiveMultiplier(width: number) {
-  if (width < 480) return 0.28
-  if (width < 640) return 0.38
-  if (width < 768) return 0.5
-  if (width < 1024) return 0.75
-  return 1.0
+  const contentWidth = Math.min(width, 1400) - 48
+  const cardWidth = getCardSize(width).w
+  return Math.min(1, Math.max(0.25, (contentWidth / 2 - cardWidth - 16) / (30 * 16)))
 }
 
 function getHeightMultiplier(width: number) {

@@ -8,7 +8,7 @@ import {
   type SpringOptions,
   type MotionValue,
 } from 'framer-motion'
-import { Menu, X, Home, Users, FolderGit2, Trophy, PenTool, UserPlus, Clock, BookOpen, Cloud, LogIn, FlaskConical, Handshake, Mail } from 'lucide-react'
+import { Menu, X, Home, Users, FolderGit2, Trophy, PenTool, UserPlus, Clock, BookOpen, Cloud, LogIn, FlaskConical, Handshake, Mail, Moon, Sun } from 'lucide-react'
 import GithubIcon from '../ui/GithubIcon'
 import Logo from '../ui/Logo'
 
@@ -66,6 +66,7 @@ function DockLabel({ children, isHovered }: { children: React.ReactNode; isHover
 // ===== Main Navbar =====
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'))
   const [navOpacity, setNavOpacity] = useState(0)
   const [isAtTop, setIsAtTop] = useState(true)
 
@@ -80,6 +81,28 @@ export default function Navbar() {
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setMobileOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    window.addEventListener('resize', onResize)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [mobileOpen])
+
+  const toggleDarkMode = () => {
+    const next = !document.documentElement.classList.contains('dark')
+    document.documentElement.classList.toggle('dark', next)
+    setDarkMode(next)
+  }
 
   // Dock state
   const mouseX = useMotionValue(Infinity)
@@ -101,9 +124,9 @@ export default function Navbar() {
           : 'none',
       }}
     >
-      <div className="flex items-center justify-center px-6 max-w-[1400px] mx-auto relative overflow-visible" style={{ height: maxH }}>
+      <div className="flex h-16 lg:h-[100px] items-center justify-center px-4 lg:px-6 max-w-[1400px] mx-auto relative overflow-visible">
         {/* Desktop dock — logo integrated as first item */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-4">
           {/* Brand — clickable home */}
           <a href="/" data-logo className="flex items-center gap-2 shrink-0 mr-2" style={{ height: PANEL_H }}>
             <Logo size="md" className="hover:scale-105 transition-transform" />
@@ -131,31 +154,53 @@ export default function Navbar() {
         </div>
 
         {/* Mobile: logo + burger */}
-        <div className="md:hidden flex items-center justify-between w-full">
+        <div className="lg:hidden flex items-center justify-between w-full">
           <a href="/" className="flex items-center gap-2">
             <Logo size="sm" />
             <span className="font-display text-sm text-[#051A24] tracking-[0.04em]">星雨作坊</span>
           </a>
-          <button className="p-2 text-[#051A24]" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-[#051A24]"
+            onClick={() => {
+              if (!mobileOpen) setDarkMode(document.documentElement.classList.contains('dark'))
+              setMobileOpen(!mobileOpen)
+            }}
+            aria-label={mobileOpen ? '关闭菜单' : '打开菜单'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-site-menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden bg-white/10 backdrop-blur-xl border-t border-[rgba(255,255,255,0.1)]">
-          <div className="flex flex-col px-6 py-3 gap-0">
+        <div
+          id="mobile-site-menu"
+          className="lg:hidden absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-black/5 bg-white/95 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-[#111820]/95"
+        >
+          <div className="flex flex-col max-w-[1400px] mx-auto px-4 py-3">
             {navItems.map(({ label, href, Icon }) => (
-              <a key={href} href={href} className="flex items-center gap-3 py-2.5 text-sm font-medium text-[#273C46] hover:text-[#051A24] transition-colors"
+              <a key={href} href={href} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#273C46] hover:bg-black/5 hover:text-[#051A24] transition-colors"
                 onClick={() => setMobileOpen(false)}>
                 <Icon className="w-4 h-4" strokeWidth={1.5} />
                 {label}
               </a>
             ))}
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              aria-pressed={darkMode}
+              className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-[#273C46] hover:bg-black/5 hover:text-[#051A24] transition-colors"
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {darkMode ? '切换浅色模式' : '切换深色模式'}
+            </button>
           </div>
         </div>
       )}
-      </div>
     </nav>
   )
 }
