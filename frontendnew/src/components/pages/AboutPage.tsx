@@ -1,44 +1,24 @@
-import { useEffect, useState } from 'react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Divider from '../ui/Divider'
 import Card from '../ui/Card'
 import { useSiteData } from '../../store/useSiteData'
 import { handleImageError } from '../../lib/imageFallback'
-import { fetchPage } from '../../services/api'
-
-const DEFAULT_PHOTOS = [
-  '1522071820081-009f0129c71c',
-  '1517245386807-bb43f82c33c4',
-  '1552664730-d307ca884978',
-  '1523240795612-9a054b0db460',
-  '1531482611025-2d93d9bc2900',
-  '1543269865-cbf427effbad',
-].map(id => `https://images.unsplash.com/photo-${id}?w=400&q=80`)
+import { usePageData } from '../../store/usePageData'
+import PageDataNotice from '../ui/PageDataNotice'
 
 export default function AboutPage() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.1 })
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
   const stats = config.stats
-  const [pageImages, setPageImages] = useState<string[]>([])
-
-  useEffect(() => {
-    fetchPage('about')
-      .then(page => {
-        const images = (page.content as { images?: unknown }).images
-        if (Array.isArray(images)) {
-          setPageImages(images.filter((item): item is string => typeof item === 'string' && item.trim().length > 0))
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  const photos = pageImages.length > 0 ? pageImages : DEFAULT_PHOTOS
+  const { page } = usePageData('about')
+  const photos = ((page?.content as { images?: string[] } | undefined)?.images ?? []).filter(src => src.trim().length > 0)
 
   return (
     <div ref={ref} className="page-enter max-w-[900px] mx-auto px-6 py-24">
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24]">
         关于<span className="font-mondwest">{config.siteName}</span>
       </h1>
+      <PageDataNotice slug="about" />
 
       <div className="mt-8 space-y-6 text-sm md:text-base text-[#0D212C] leading-relaxed">
         <p>{config.aboutDescription}</p>
@@ -81,6 +61,7 @@ export default function AboutPage() {
       <h2 className="text-2xl font-medium text-[#051A24] mb-6">
         <span className="font-mondwest">活动</span>剪影
       </h2>
+      {!photos.length && <p className="text-sm text-[var(--theme-text)]">活动照片整理中，敬请期待。</p>}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {photos.map((src, index) => (
           <img

@@ -1,12 +1,15 @@
+import DataState from '../ui/DataState'
 import { useState } from 'react'
 import { Users } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
+import ContentFilters from '../ui/ContentFilters'
 import SearchModal from '../ui/SearchModal'
 import EmptyState from '../ui/EmptyState'
 import { useSiteData } from '../../store/useSiteData'
 import type { Member } from '../../types'
 import type { SearchItem } from '../ui/SearchModal'
+import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
 
 const groupLabels: Record<string, string> = {
   product: '流光组', design: '星绘组', dev: '逐云组', content: '拾焰组',
@@ -23,14 +26,15 @@ const groups = [
 const PAGE_SIZE = 12
 
 export default function MembersPage() {
-  const { members } = useSiteData()
+  const { members } = useSiteData(['members'])
   const [activeGroup, setActiveGroup] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const filtered = members.filter((m) => {
     if (activeGroup !== 'all' && m.group !== activeGroup) return false
-    if (search && !m.name.includes(search) && !m.role.includes(search)) return false
+    const query = search.trim().toLocaleLowerCase()
+    if (query && !`${m.name} ${m.role}`.toLocaleLowerCase().includes(query)) return false
     return true
   })
 
@@ -42,26 +46,23 @@ export default function MembersPage() {
         我们的<span className="font-mondwest">成员</span>
       </h1>
 
-      <div className="sticky top-20 z-40 mx-auto max-w-fit rounded-full bg-[var(--theme-surface-soft)] backdrop-blur-md py-2.5 px-6 shadow-sm border border-[var(--theme-border)] mt-8">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-3 flex-wrap justify-center">
-            {groups.map((g) => (
-              <TagPill
-                key={g.key}
-                label={g.label}
-                active={activeGroup === g.key}
-                onClick={() => { setActiveGroup(g.key); setVisibleCount(PAGE_SIZE) }}
-              />
-            ))}
-          </div>
-          <SearchModal
-            items={members.map((m): SearchItem => ({ id: m.id, title: m.name, description: m.role, category: m.group }))}
-            placeholder="搜索成员..."
-            onSelect={(item) => { setSearch(item.title); setVisibleCount(PAGE_SIZE) }}
-          />
-        </div>
-      </div>
+      <ContentFilters label="成员分组" options={groups} active={activeGroup}
+        onChange={key => { setActiveGroup(key); setVisibleCount(PAGE_SIZE) }}>
+        <SearchModal
+          items={members.map((m): SearchItem => ({ id: m.id, title: m.name, description: m.role, keywords: m.skills, category: groupLabels[m.group] || m.group }))}
+          placeholder="搜索成员..."
+          onSelect={(item) => { setSearch(item.title); setActiveGroup('all'); setVisibleCount(PAGE_SIZE) }}
+        />
+      </ContentFilters>
 
+      {search && (
+        <div className="mt-5 flex items-center gap-3 text-sm text-[var(--theme-text-strong)]">
+          <span>搜索：{search}</span>
+          <button type="button" className="underline underline-offset-4" onClick={() => { setSearch(''); setVisibleCount(PAGE_SIZE) }}>清除搜索</button>
+        </div>
+      )}
+
+      <DataState resource="members">
       {visible.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
           {visible.map((member) => (
@@ -71,6 +72,7 @@ export default function MembersPage() {
       ) : (
         <EmptyState icon={Users} message="暂无匹配的成员" />
       )}
+      </DataState>
 
       {visible.length < filtered.length && (
         <div className="text-center mt-12">
@@ -86,7 +88,7 @@ export default function MembersPage() {
 function MemberCard({ member }: { member: Member }) {
   return (
     <Card className="text-center px-4">
-      <img src={member.avatar} alt={member.name} className="w-20 h-20 rounded-full object-cover mx-auto mt-8" loading="lazy" />
+      <img src={member.avatar || COVER_PLACEHOLDER} alt={member.name} className="w-20 h-20 rounded-full object-cover mx-auto mt-8" loading="lazy" onError={handleImageError} />
       <h3 className="text-lg font-medium text-[#051A24] mt-4">{member.name}</h3>
       <p className="text-sm text-[#273C46]">{member.role}</p>
       <div className="flex flex-wrap gap-2 justify-center mt-3 px-4">

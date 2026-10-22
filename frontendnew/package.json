@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "postbuild": "node scripts/build-metadata.mjs",
     "typecheck": "tsc -b --pretty false",
+    "test": "node --test tests/*.test.mjs",
     "check": "npm run typecheck && npm run lint",
     "lint": "oxlint",
     "preview": "vite preview"

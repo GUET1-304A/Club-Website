@@ -1,3 +1,4 @@
+import DataState from '../ui/DataState'
 import { lazy, Suspense } from 'react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
@@ -15,7 +16,7 @@ const levelLabels: Record<string, string> = {
 
 export default function AwardsSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { awards, config } = useSiteData()
+  const { awards, config } = useSiteData(['config', 'awards'])
 
   const slides: Slide[] = awards.map((a, i) => ({
     image: thumbUrl(a.certificateImages[0]) || undefined,
@@ -28,9 +29,9 @@ export default function AwardsSection() {
   }))
 
   return (
-    <section ref={ref} className="w-full py-20 md:py-28">
+    <section ref={ref} className="w-full home-section">
       {/* Header — left aligned */}
-      <div className="mx-auto mb-6 max-w-[1400px] px-10 md:px-[72px]">
+      <div className="site-container home-section-heading">
         <p
           className={`font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4 ${
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
@@ -47,6 +48,7 @@ export default function AwardsSection() {
         </h2>
       </div>
 
+      <DataState resource="awards">
       {slides.length > 0 ? (
         <Suspense fallback={<div className="h-[540px]" />}>
           <PolaroidLineCarousel
@@ -64,6 +66,7 @@ export default function AwardsSection() {
       ) : (
         <p className="py-16 text-center text-sm text-[#273C46]/60">奖项整理中，敬请期待。</p>
       )}
+      </DataState>
 
       {/* CTA */}
       <div className="text-center mt-6">

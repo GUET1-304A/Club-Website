@@ -1,46 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { MapPin, Mail, Phone, Clock, Send, CheckCircle2, LoaderCircle } from 'lucide-react'
 import Card from '../ui/Card'
-import { fetchSiteConfig, submitContact } from '../../services/api'
+import { submitContact } from '../../services/api'
 
-interface ContactConfig {
-  address?: string
-  email?: string
-  phone?: string
-  hours?: string
-  socials?: { label: string; url: string }[]
-}
-
-const FALLBACK: ContactConfig = {
-  address: '示例大学 计算机学院 实验楼 3 层 星雨作坊工作室',
-  email: 'hello@xingyu.studio',
-  phone: '138-0000-0000',
-  hours: '工作日 18:00-22:00（线上随时可联系）',
-  socials: [
-    { label: 'GitHub', url: 'https://github.com/xingyu-studio' },
-    { label: 'Bilibili', url: 'https://space.bilibili.com/00000000' },
-    { label: 'Email', url: 'mailto:hello@xingyu.studio' },
-  ],
-}
+import { useSiteData } from '../../store/useSiteData'
 
 const EMPTY_FORM = { name: '', email: '', phone: '', subject: '', message: '', isAnonymous: false }
 
 export default function ContactPage() {
-  const [contact, setContact] = useState<ContactConfig>(FALLBACK)
+  const { config } = useSiteData(['config'])
+  const contact = config.contact ?? {}
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
-
-  useEffect(() => {
-    fetchSiteConfig()
-      .then(cfg => {
-        const contactConfig = (cfg as unknown as { contact?: ContactConfig }).contact
-        if (contactConfig) setContact({ ...FALLBACK, ...contactConfig })
-      })
-      .catch(() => {})
-  }, [])
 
   const validate = () => {
     const next: Record<string, string> = {}
@@ -89,10 +63,10 @@ export default function ContactPage() {
           <Card className="p-6 !rounded-[28px]">
             <h2 className="text-lg font-medium text-[#051A24] mb-5">联系方式</h2>
             <div className="space-y-4">
-              <InfoRow icon={<MapPin className="w-4 h-4" />} label="地址" value={contact.address || '-'} />
-              <InfoRow icon={<Mail className="w-4 h-4" />} label="邮箱" value={contact.email || '-'} href={`mailto:${contact.email}`} />
-              <InfoRow icon={<Phone className="w-4 h-4" />} label="电话" value={contact.phone || '-'} href={`tel:${contact.phone}`} />
-              <InfoRow icon={<Clock className="w-4 h-4" />} label="时间" value={contact.hours || '-'} />
+              <InfoRow icon={<MapPin className="w-4 h-4" />} label="地址" value={contact.address || '暂未设置'} />
+              <InfoRow icon={<Mail className="w-4 h-4" />} label="邮箱" value={contact.email || '暂未设置'} href={contact.email ? `mailto:${contact.email}` : undefined} />
+              <InfoRow icon={<Phone className="w-4 h-4" />} label="电话" value={contact.phone || '暂未设置'} href={contact.phone ? `tel:${contact.phone}` : undefined} />
+              <InfoRow icon={<Clock className="w-4 h-4" />} label="时间" value={contact.hours || '暂未设置'} />
             </div>
           </Card>
           {contact.socials && contact.socials.length > 0 && (

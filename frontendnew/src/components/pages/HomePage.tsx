@@ -1,3 +1,4 @@
+import { SiteDataNotice } from '../ui/DataState'
 import { useSiteData } from '../../store/useSiteData'
 import HeroSection from '../sections/HeroSection'
 import AboutSection from '../sections/AboutSection'
@@ -8,7 +9,7 @@ import AwardsSection from '../sections/AwardsSection'
 import JoinSection from '../sections/JoinSection'
 
 export default function HomePage() {
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
   const sections = config.sections || {}
   const enabled = (key: string) => sections[key] !== false
 
@@ -16,7 +17,7 @@ export default function HomePage() {
     <main className="site-home">
       {enabled('hero_enabled') && <HeroSection />}
       {enabled('about_enabled') && <AboutSection />}
-      {enabled('announcement_enabled') && <AnnouncementSection />}
+      {enabled('announcement_enabled') && <><SiteDataNotice resources={['blogPosts']} /><AnnouncementSection /></>}
       {enabled('members_enabled') && <MembersSection />}
       {enabled('projects_enabled') && <ProjectsSection />}
       {enabled('awards_enabled') && <AwardsSection />}

@@ -15,7 +15,7 @@ const quickLinks = [
 ]
 
 export default function Footer() {
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
   const brand = config.siteName || '星雨作坊'
   const description = config.footerDescription
   const githubUrl = config.footerGithub || 'https://github.com/xingyu-studio'

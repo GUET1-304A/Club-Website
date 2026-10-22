@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import Card from '../ui/Card'
-import { fetchPage } from '../../services/api'
+import { usePageData } from '../../store/usePageData'
+import PageDataNotice from '../ui/PageDataNotice'
 
 interface OnboardingStep {
   title: string
@@ -18,38 +19,32 @@ const FALLBACK_STEPS: OnboardingStep[] = [
 
 export default function OnboardingPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
-  const [steps, setSteps] = useState<OnboardingStep[]>(FALLBACK_STEPS)
-
-  useEffect(() => {
-    fetchPage('onboarding')
-      .then(page => {
-        const remote = (page.content as { steps?: OnboardingStep[] }).steps
-        if (Array.isArray(remote) && remote.length > 0) setSteps(remote)
-      })
-      .catch(() => {})
-  }, [])
+  const { page } = usePageData('onboarding')
+  const steps = (page?.content as { steps?: OnboardingStep[] } | undefined)?.steps ?? FALLBACK_STEPS
 
   return (
     <div className="page-enter max-w-[800px] mx-auto px-6 py-24">
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24] text-center">
         新手<span className="font-mondwest">指南</span>
       </h1>
+      <PageDataNotice slug="onboarding" />
       <p className="text-center text-sm text-[#273C46] mt-4">从这里开始，一步步加入星雨作坊</p>
 
+      {!steps.length && <p className="mt-12 text-center text-sm text-[var(--theme-text)]">入门指南整理中，敬请期待。</p>}
       <div className="space-y-4 mt-12">
         {steps.map((step, i) => (
-          <Card key={i} className={`p-6 !rounded-[32px] relative overflow-hidden cursor-pointer ${openIndex === i ? '' : ''}`}
-            onClick={() => setOpenIndex(openIndex === i ? null : i)}>
-            <div className="absolute top-0 right-0 text-6xl font-mondwest text-[#051A24]/5 leading-none pt-2 pr-4 select-none">
+          <Card key={i} className="p-6 !rounded-[32px] relative overflow-hidden">
+            <div aria-hidden="true" className="absolute top-0 right-0 text-6xl font-mondwest text-[#051A24]/5 leading-none pt-2 pr-4 select-none pointer-events-none">
               {i + 1}
             </div>
-            <div className="flex justify-between items-center relative z-10">
-              <h3 className="text-lg font-medium text-[#051A24]">{step.title}</h3>
-              <ChevronDown className={`w-5 h-5 text-[#273C46] transition-transform ${openIndex === i ? 'rotate-180' : ''}`} />
-            </div>
-            {openIndex === i && (
-              <p className="text-sm text-[#0D212C] leading-relaxed mt-4 relative z-10">{step.content}</p>
-            )}
+            <h3 className="relative z-10">
+              <button type="button" className="flex min-h-11 w-full items-center justify-between gap-4 text-left text-lg font-medium text-[var(--theme-text-strong)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#3457ff]"
+                aria-expanded={openIndex === i} aria-controls={`onboarding-step-${i}`}
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}>
+                {step.title}<ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${openIndex === i ? 'rotate-180' : ''}`} />
+              </button>
+            </h3>
+            <p id={`onboarding-step-${i}`} hidden={openIndex !== i} className="text-sm text-[#0D212C] leading-relaxed mt-4 relative z-10">{step.content}</p>
           </Card>
         ))}
       </div>

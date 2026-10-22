@@ -13,5 +13,10 @@ prompt*.md
 backend/uploads/
 backend/xingyu_cms.db
 **/.env
+**/.env.*
+!**/.env.example
 secrets/*.txt
 deploy/certs/*.pem
+backups/
+releases/
+compose.release.json

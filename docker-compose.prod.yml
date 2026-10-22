@@ -11,6 +11,7 @@ services:
       dockerfile: Dockerfile.backend
       args:
         PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+        RELEASE_REVISION: ${RELEASE_REVISION:-development}
     command: >-
       gunicorn --workers 1 --threads 4 --bind 0.0.0.0:5000
       --access-logfile - --error-logfile - 'app:create_app()'
@@ -43,6 +44,7 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      FRONTEND_METADATA_FILE: /app/frontend-dist/metadata.json
       QQ_LOGIN_ENABLED: ${QQ_LOGIN_ENABLED:-false}
       QQ_APP_ID: ${QQ_APP_ID:-}
       QQ_APP_KEY_FILE: /run/secrets/qq_app_key
@@ -89,6 +91,7 @@ services:
     volumes:
       - db_data_prod:/app/data
       - upload_data_prod:/app/uploads
+      - frontend_bundle_prod:/app/frontend-dist:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 10s
@@ -104,17 +107,28 @@ services:
       dockerfile: Dockerfile.frontend.prod
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
+        VITE_PUBLIC_SITE_URL: ${PUBLIC_BASE_URL:-}
+        RELEASE_REVISION: ${RELEASE_REVISION:-development}
     ports:
       - "80:80"
+    volumes:
+      - frontend_bundle_prod:/usr/share/nginx/html
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
     restart: unless-stopped
     logging: *default-logging
 
 volumes:
   db_data_prod:
   upload_data_prod:
+  frontend_bundle_prod:
 
 secrets:
   secret_key:

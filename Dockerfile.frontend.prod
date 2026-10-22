@@ -13,11 +13,17 @@ COPY frontendnew/ ./
 # Empty keeps the browser on the same origin, where nginx proxies /api and /uploads.
 ARG VITE_BACKEND_URL=""
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
+ARG VITE_PUBLIC_SITE_URL=""
+ENV VITE_PUBLIC_SITE_URL=${VITE_PUBLIC_SITE_URL}
+ARG RELEASE_REVISION=development
+ENV RELEASE_REVISION=${RELEASE_REVISION}
 RUN npm run build
 
 FROM nginx:alpine
 
 COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY deploy/nginx/frontend-proxy.inc /etc/nginx/frontend-proxy.inc
+COPY --from=build /app/dist /opt/xingyu-dist
+COPY --chmod=755 deploy/frontend/20-publish-bundle.sh /docker-entrypoint.d/20-publish-bundle.sh
 
 EXPOSE 80

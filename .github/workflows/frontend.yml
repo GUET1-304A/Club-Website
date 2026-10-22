@@ -1,0 +1,65 @@
+name: Public site checks
+
+on:
+  push:
+    paths:
+      - 'frontendnew/**'
+      - 'backend/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - 'Dockerfile.backend'
+      - 'Dockerfile.frontend.prod'
+      - 'docker-compose.prod*.yml'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    paths:
+      - 'frontendnew/**'
+      - 'backend/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - 'Dockerfile.backend'
+      - 'Dockerfile.frontend.prod'
+      - 'docker-compose.prod*.yml'
+      - '.github/workflows/frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontendnew
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontendnew/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    container: python:3.12-slim
+    timeout-minutes: 15
+    env:
+      REMINDER_SCAN_ENABLED: 'false'
+      UPLOAD_FOLDER: /tmp/xingyu-ci-uploads
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # The full suite also exercises Git gates and real Compose config parsing.
+      - run: apt-get update && apt-get install -y --no-install-recommends git docker-cli docker-compose
+      - run: pip install -r backend/requirements-dev.txt
+      - run: python -m pytest backend/tests -q

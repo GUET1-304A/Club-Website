@@ -1,7 +1,9 @@
+import DataState from '../ui/DataState'
 import { useState, useEffect } from 'react'
 import { FileText, Pin, CheckCircle2 } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
+import ContentFilters from '../ui/ContentFilters'
 import SearchModal from '../ui/SearchModal'
 import type { SearchItem } from '../ui/SearchModal'
 import EmptyState from '../ui/EmptyState'
@@ -21,9 +23,8 @@ const PAGE_SIZE = 6
 const monthNames = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二']
 
 export default function BlogPage() {
-  const { blogPosts } = useSiteData()
+  const { blogPosts } = useSiteData(['blogPosts'])
   const [activeCat, setActiveCat] = useState('all')
-  const [search, setSearch] = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [readIds, setReadIds] = useState<Set<number>>(() => new Set())
 
@@ -36,7 +37,6 @@ export default function BlogPage() {
 
   const filtered = [...blogPosts].filter((p) => {
     if (activeCat !== 'all' && p.category !== activeCat) return false
-    if (search && !p.title.includes(search)) return false
     return true
   }).sort((a, b) => Number(b.pinned || false) - Number(a.pinned || false))
   const visible = filtered.slice(0, visibleCount)
@@ -47,22 +47,15 @@ export default function BlogPage() {
         博客<span className="font-mondwest">动态</span>
       </h1>
 
-      <div className="sticky top-20 z-40 mx-auto max-w-fit rounded-full bg-[var(--theme-surface-soft)] backdrop-blur-md py-2.5 px-6 shadow-sm border border-[var(--theme-border)] mt-8">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-3 flex-wrap justify-center">
-            {categories.map((c) => (
-              <TagPill key={c.key} label={c.label} active={activeCat === c.key}
-                onClick={() => { setActiveCat(c.key); setVisibleCount(PAGE_SIZE) }} />
-            ))}
-          </div>
-          <SearchModal
-            items={blogPosts.map((p): SearchItem => ({ id: p.id, title: p.title, description: p.excerpt, category: p.category, href: `/blog/${p.slug}` }))}
-            placeholder="搜索文章..."
-            onSelect={(item) => { setSearch(item.title); setVisibleCount(PAGE_SIZE) }}
-          />
-        </div>
-      </div>
+      <ContentFilters label="文章分类" options={categories} active={activeCat}
+        onChange={key => { setActiveCat(key); setVisibleCount(PAGE_SIZE) }}>
+        <SearchModal
+          items={blogPosts.map((p): SearchItem => ({ id: p.id, title: p.title, description: p.excerpt, keywords: p.tags, category: categories.find(c => c.key === p.category)?.label || p.category, href: `/blog/${p.slug}` }))}
+          placeholder="搜索文章..."
+        />
+      </ContentFilters>
 
+      <DataState resource="blogPosts">
       {visible.length > 0 ? (
         <div className="space-y-8 mt-8">
           {visible.map((post) => {
@@ -91,7 +84,7 @@ export default function BlogPage() {
                   </div>
                   <p className="text-sm text-[#273C46] mt-2 line-clamp-2">{post.excerpt}</p>
                   <div className="flex gap-3 mt-3 text-xs text-[#273C46]/60 items-center flex-wrap">
-                    <img src={post.author.avatar} alt={post.author.name} className="w-5 h-5 rounded-full" />
+                    {post.author.avatar && <img src={post.author.avatar} alt={post.author.name} className="w-5 h-5 rounded-full" />}
                     <span>{post.author.name}</span>
                     <span>·</span>
                     <span>{post.date}</span>
@@ -105,6 +98,7 @@ export default function BlogPage() {
       ) : (
         <EmptyState icon={FileText} message="暂无匹配的文章" />
       )}
+      </DataState>
 
       {visible.length < filtered.length && (
         <div className="text-center mt-12">

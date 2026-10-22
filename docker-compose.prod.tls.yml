@@ -1,5 +1,9 @@
 services:
   frontend:
+    # Probe a loopback-only listener; public HTTPS is independently verified by
+    # release.py with normal certificate/hostname validation.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
     ports:
       - "443:443"
     volumes:

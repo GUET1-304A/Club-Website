@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 const leftSnippets = [
   `# Dockerfile
 FROM node:20-alpine
@@ -86,10 +88,63 @@ fn main() {
 ]
 
 export default function SideDecor() {
+  const decorRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const content = document.querySelector<HTMLElement>('[data-public-content]')
+    const decor = decorRef.current
+    if (!content || !decor) return
+
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const page = content.firstElementChild
+      if (!page) return
+      // Respect the widest visible block, including full-width carousels.
+      const regions = page.classList.contains('site-home')
+        ? Array.from(page.children)
+        : [page]
+      const footer = content.lastElementChild
+      const footerTop = footer && footer !== page ? footer.getBoundingClientRect().top : window.innerHeight
+      decor.style.clipPath = `inset(0 0 ${Math.max(0, window.innerHeight - footerTop)}px 0)`
+      let left = document.documentElement.clientWidth
+      let right = 0
+      let visible = false
+      for (const region of regions) {
+        const rect = region.getBoundingClientRect()
+        if (rect.bottom <= 100 || rect.top >= window.innerHeight) continue
+        const safeContent = region.querySelector<HTMLElement>('[data-decor-safe-content]') || region
+        const bounds = safeContent.getBoundingClientRect()
+        visible = true
+        left = Math.min(left, bounds.left)
+        right = Math.max(right, bounds.right)
+      }
+      const leftSpace = visible ? Math.max(0, left - 32) : 0
+      const rightSpace = visible ? Math.max(0, document.documentElement.clientWidth - right - 32) : 0
+      decor.style.setProperty('--decor-left-space', `${leftSpace >= 48 ? leftSpace : 0}px`)
+      decor.style.setProperty('--decor-right-space', `${rightSpace >= 48 ? rightSpace : 0}px`)
+    }
+    const schedule = () => { if (!frame) frame = window.requestAnimationFrame(update) }
+    const resize = new ResizeObserver(schedule)
+    const mutations = new MutationObserver(schedule)
+    resize.observe(content)
+    mutations.observe(content, { childList: true, subtree: true })
+    window.addEventListener('resize', schedule)
+    window.addEventListener('scroll', schedule, { passive: true })
+    schedule()
+    return () => {
+      window.cancelAnimationFrame(frame)
+      resize.disconnect()
+      mutations.disconnect()
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('scroll', schedule)
+    }
+  }, [])
+
   return (
-    <div className="hidden lg:block fixed inset-0 pointer-events-none z-[5]" aria-hidden="true">
+    <div ref={decorRef} className="side-decor fixed inset-0 pointer-events-none z-0" aria-hidden="true">
       {/* ===== LEFT — Docker / Git / Linux ===== */}
-      <div className="absolute left-6 top-24 select-none space-y-16">
+      <div className="side-decor-column side-decor-left absolute top-28 select-none space-y-16">
         {leftSnippets.map((code, i) => (
           <pre
             key={i}
@@ -101,7 +156,7 @@ export default function SideDecor() {
       </div>
 
       {/* ===== RIGHT — TS / Python / SQL / Rust ===== */}
-      <div className="absolute right-6 top-24 select-none space-y-16">
+      <div className="side-decor-column side-decor-right absolute top-28 select-none space-y-16">
         {rightSnippets.map((code, i) => (
           <pre
             key={i}

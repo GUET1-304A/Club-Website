@@ -1,7 +1,9 @@
+import DataState from '../ui/DataState'
 import { useState } from 'react'
 import { Trophy } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
+import ContentFilters from '../ui/ContentFilters'
 import EmptyState from '../ui/EmptyState'
 import { useSiteData } from '../../store/useSiteData'
 import type { Award } from '../../types'
@@ -29,7 +31,7 @@ function groupByYear(items: Award[]) {
 }
 
 export default function AwardsPage() {
-  const { awards } = useSiteData()
+  const { awards } = useSiteData(['awards'])
   const [activeLevel, setActiveLevel] = useState('all')
 
   const filtered = awards.filter((a) => activeLevel === 'all' || a.level === activeLevel)
@@ -41,14 +43,11 @@ export default function AwardsPage() {
         比赛<span className="font-mondwest">奖项</span>
       </h1>
 
-      <div className="flex gap-3 flex-wrap justify-center mt-8 mb-12">
-        {levelFilters.map((f) => (
-          <TagPill key={f.key} label={f.label} active={activeLevel === f.key} onClick={() => setActiveLevel(f.key)} />
-        ))}
-      </div>
+      <ContentFilters label="奖项级别" options={levelFilters} active={activeLevel} onChange={setActiveLevel} />
 
+      <DataState resource="awards">
       {yearGroups.length > 0 ? (
-        <div className="space-y-16">
+        <div className="space-y-16 mt-12">
           {yearGroups.map(([year, items]) => (
             <div key={year}>
               <h3 className="text-2xl font-medium text-[#051A24] mb-6">
@@ -80,6 +79,7 @@ export default function AwardsPage() {
       ) : (
         <EmptyState icon={Trophy} message="暂无匹配的奖项" />
       )}
+      </DataState>
     </div>
   )
 }

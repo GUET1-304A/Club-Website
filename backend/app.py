@@ -61,6 +61,9 @@ def create_app(config_name=None):
     for bp in all_blueprints:
         app.register_blueprint(bp, url_prefix='/api')
 
+    from routes.frontend import frontend_bp
+    app.register_blueprint(frontend_bp)
+
     # ── 5. 应用上下文中的初始化操作 ──
     # 这些操作需要在数据库连接可用的上下文中执行
     with app.app_context():
@@ -93,6 +96,15 @@ def create_app(config_name=None):
             JSON: {"status": "ok", "message": "Xingyu CMS API is running"}
         """
         return jsonify({'status': 'ok', 'message': 'Xingyu CMS API is running'})
+
+    @app.route('/health/ready')
+    def readiness():
+        from services.readiness import readiness_status
+        body, status = readiness_status(app)
+        response = jsonify(body)
+        response.status_code = status
+        response.headers['Cache-Control'] = 'no-store'
+        return response
 
     @app.route('/uploads/<path:filename>')
     def serve_upload(filename):

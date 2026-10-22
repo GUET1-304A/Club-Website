@@ -1,4 +1,5 @@
 import { getToken } from './api'
+import { notifySiteDataChange } from '../lib/siteDataEvents'
 
 const API_BASE = '/api'
 
@@ -17,7 +18,9 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new Error(err.message || `HTTP ${res.status}`)
   }
-  return res.json()
+  const data = await res.json()
+  notifySiteDataChange(url, options?.method)
+  return data
 }
 
 // ─── Types ───

@@ -1,3 +1,6 @@
+import { useDetailMetadata } from '../../hooks/useMetadata'
+import { usePublicDetail } from '../../hooks/usePublicDetail'
+import DetailError from '../ui/DetailError'
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ExternalLink, Users, Calendar, Star, GitFork, ArrowLeft, X, ChevronLeft, ChevronRight, Maximize2, Download } from 'lucide-react'
@@ -8,34 +11,22 @@ import Markdown from '../ui/Markdown'
 import { useSiteData } from '../../store/useSiteData'
 import { fetchProject } from '../../services/api'
 import { mapApiProject } from '../../store/useSiteData'
-import type { Project } from '../../types'
 import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
 
 const CAT_LABELS: Record<string, string> = {
   web: 'Web应用', miniapp: '小程序', ai: 'AI/算法', tools: '工具库', game: '游戏',
 }
 
-export default function ProjectDetailPage({ slug }: { slug: string }) {
-  const { projects: storeProjects } = useSiteData()
-  const [project, setProject] = useState<Project | null>(
-    () => storeProjects.find(p => p.slug === slug) || null
-  )
-  const [loading, setLoading] = useState(!project)
-  const [lightbox, setLightbox] = useState<number | null>(null)
+const loadDetail = (slug: string) => fetchProject(slug).then(mapApiProject)
 
-  useEffect(() => {
-    if (project) return
-    let cancelled = false
-    fetchProject(slug)
-      .then(data => {
-        if (!cancelled) {
-          setProject(mapApiProject(data))
-          setLoading(false)
-        }
-      })
-      .catch(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [slug])
+export default function ProjectDetailPage({ slug }: { slug: string }) {
+  const { projects: storeProjects } = useSiteData(['projects'])
+  const { data: project, loading, error, retry } = usePublicDetail(slug, storeProjects.find(item => item.slug === slug), loadDetail)
+  useDetailMetadata(`/project/${slug}`, {
+    title: project?.name || (loading ? '项目详情' : error ? '项目加载失败' : '项目未找到'),
+    description: project?.description, image: project?.coverImage, noIndex: !loading && !project,
+  })
+  const [lightbox, setLightbox] = useState<number | null>(null)
 
   if (loading) {
     return (
@@ -46,6 +37,8 @@ export default function ProjectDetailPage({ slug }: { slug: string }) {
       </div>
     )
   }
+
+  if (error) return <DetailError message={error} onRetry={retry} backHref="/projects" />
 
   if (!project) {
     return (

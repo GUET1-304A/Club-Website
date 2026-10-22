@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir --index-url "$PIP_INDEX_URL" -r requirements.txt
 
 # Copy backend source
 COPY backend/ .
+ARG RELEASE_REVISION=development
+RUN printf '%s\n' "$RELEASE_REVISION" > release_revision.txt
 
 # Create uploads directory
 RUN mkdir -p uploads

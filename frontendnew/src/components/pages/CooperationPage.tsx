@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
 import { Handshake, GraduationCap, BookOpen, Award, ArrowUpRight } from 'lucide-react'
 import Card from '../ui/Card'
-import { fetchPage } from '../../services/api'
+import { usePageData } from '../../store/usePageData'
+import PageDataNotice from '../ui/PageDataNotice'
 
 interface CooperationItem {
   type: string
@@ -55,29 +55,19 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default function CooperationPage() {
-  const [data, setData] = useState(FALLBACK)
-
-  useEffect(() => {
-    fetchPage('cooperation')
-      .then(page => {
-        const content = page.content as unknown as { intro?: string; items?: CooperationItem[] }
-        if (content?.items?.length) {
-          setData({
-            intro: content.intro || FALLBACK.intro,
-            items: content.items,
-          })
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const { page } = usePageData('cooperation')
+  const content = page?.content as { intro?: string; items?: CooperationItem[] } | undefined
+  const data = { intro: content?.intro ?? FALLBACK.intro, items: content?.items ?? FALLBACK.items }
 
   return (
     <div className="page-enter max-w-[1000px] mx-auto px-6 py-24">
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24] text-center">
         合作<span className="font-mondwest">交流</span>
       </h1>
+      <PageDataNotice slug="cooperation" />
       <p className="text-center text-sm text-[#273C46] mt-4 max-w-xl mx-auto leading-relaxed">{data.intro}</p>
 
+      {!data.items.length && <p className="mt-12 text-center text-sm text-[var(--theme-text)]">合作内容整理中，欢迎联系我们。</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
         {data.items.map(item => {
           const Icon = TYPE_ICONS[item.type] || Handshake

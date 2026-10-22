@@ -6,17 +6,17 @@ import { renderRichText } from '../../lib/richText'
 
 export default function AboutSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.15 })
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
 
   return (
-    <section ref={ref} className="max-w-[1300px] mx-auto px-6 py-20 md:py-28">
+    <section ref={ref} className="site-container home-section">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Left - Text slides in from left */}
         <div className={isInView ? 'animate-slide-in-left' : 'opacity-0'}>
           <p className="font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4">
             ABOUT US
           </p>
-          <h2 className="text-[28px] md:text-[36px] leading-[1.15] text-[#051A24] tracking-tight">
+          <h2 className="text-[28px] md:text-[36px] leading-[1.2] text-[#051A24] tracking-tight">
             {renderRichText(config.aboutTitle)}
           </h2>
           <p className="text-sm md:text-base text-[#0D212C] leading-relaxed mt-5">

@@ -1,0 +1,3 @@
+# Docker entrypoint scripts must remain executable on Linux after checkout.
+deploy/frontend/*.sh text eol=lf
+scripts/*.sh text eol=lf

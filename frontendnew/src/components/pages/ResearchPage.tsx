@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
 import { Cpu, Server, Brain, PenTool, ArrowUpRight } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
-import { fetchPage } from '../../services/api'
+import { usePageData } from '../../store/usePageData'
+import PageDataNotice from '../ui/PageDataNotice'
 
 interface Direction {
   name: string
@@ -49,29 +49,19 @@ const FALLBACK: { intro: string; directions: Direction[] } = {
 const ICONS = [Cpu, Server, Brain, PenTool]
 
 export default function ResearchPage() {
-  const [data, setData] = useState(FALLBACK)
-
-  useEffect(() => {
-    fetchPage('research')
-      .then(page => {
-        const content = page.content as unknown as { intro?: string; directions?: Direction[] }
-        if (content?.directions?.length) {
-          setData({
-            intro: content.intro || FALLBACK.intro,
-            directions: content.directions,
-          })
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const { page } = usePageData('research')
+  const content = page?.content as { intro?: string; directions?: Direction[] } | undefined
+  const data = { intro: content?.intro ?? FALLBACK.intro, directions: content?.directions ?? FALLBACK.directions }
 
   return (
     <div className="page-enter max-w-[1100px] mx-auto px-6 py-24">
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24] text-center">
         研究<span className="font-mondwest">方向</span>
       </h1>
+      <PageDataNotice slug="research" />
       <p className="text-center text-sm text-[#273C46] mt-4 max-w-xl mx-auto leading-relaxed">{data.intro}</p>
 
+      {!data.directions.length && <p className="mt-12 text-center text-sm text-[var(--theme-text)]">研究方向整理中，敬请期待。</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
         {data.directions.map((direction, index) => {
           const Icon = ICONS[index % ICONS.length]

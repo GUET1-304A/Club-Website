@@ -1,6 +1,14 @@
 # Use this file to replace default.conf when enabling TLS. Mount it at
 # /etc/nginx/conf.d/default.conf and mount deploy/certs/fullchain.pem plus
 # deploy/certs/privkey.pem at /etc/nginx/certs/ from your TLS issuer.
+# Container readiness must not follow the public HTTP-to-HTTPS redirect.
+# This listener is accessible only inside the frontend container.
+server {
+    listen 127.0.0.1:8080;
+    location = /health/ready { include /etc/nginx/frontend-proxy.inc; }
+    location / { return 404; }
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -32,7 +40,7 @@ server {
     add_header X-Frame-Options SAMEORIGIN always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    location /api/ {
+    location ^~ /api/ {
         proxy_pass http://backend:5000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -41,7 +49,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location /uploads/ {
+    location ^~ /uploads/ {
         proxy_pass http://backend:5000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -50,7 +58,25 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location / {
-        try_files $uri $uri/ /index.html;
+    # Delivery manifest contains the app template; it is for Flask only.
+    location = /metadata.json { return 404; }
+    location ~ /\. { return 404; }
+
+    location ^~ /assets/ {
+        try_files $uri =404;
+        expires 1y;
     }
+
+    location = /sitemap.xml { include /etc/nginx/frontend-proxy.inc; }
+    location = /robots.txt { include /etc/nginx/frontend-proxy.inc; }
+
+    # Slugs may contain dots; detail routes still need the publication check.
+    location ~ ^/(project|award|blog)/ { include /etc/nginx/frontend-proxy.inc; }
+
+    # Missing assets must never receive the SPA shell with status 200.
+    location ~* \.(?:js|mjs|css|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|mp4|webm|pdf|txt|xml)$ {
+        try_files $uri =404;
+    }
+
+    location / { include /etc/nginx/frontend-proxy.inc; }
 }

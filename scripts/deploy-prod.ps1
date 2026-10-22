@@ -1,63 +1,55 @@
 #Requires -Version 5.1
-<#
-Deploy the current committed HEAD to the production ECS instance.
-
-The server cannot reach GitHub, so the source is shipped as a git archive
-uploaded through Alibaba Cloud Workbench CLI.
-
-Usage:
-  powershell -ExecutionPolicy Bypass -File scripts\deploy-prod.ps1
-  powershell -ExecutionPolicy Bypass -File scripts\deploy-prod.ps1 -SkipPush
-#>
+<# Deploy committed main using Workbench. -CheckOnly never uploads or deploys.
+   -FirstDeploy explicitly allows an installation with no previous backend. #>
 param(
     [string]$Region = 'cn-wulanchabu',
     [string]$InstanceId = 'i-0jlhp604zk2b4ddh7683',
     [string]$RemoteDir = '/srv/304aistudio',
     [string]$Domain = 'https://304aistudio.cn',
-    [switch]$SkipPush
+    [string]$Project = '304aistudio',
+    [switch]$SkipPush,
+    [switch]$CheckOnly,
+    [switch]$FirstDeploy
 )
-
 $ErrorActionPreference = 'Stop'
-
-$workbench = 'C:\Users\wy339\AppData\Local\Programs\workbench\workbench.exe'
-if (-not (Test-Path -LiteralPath $workbench)) {
-    throw "Workbench CLI not found: $workbench"
-}
-
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repo
-
-$dirty = git status --porcelain --untracked-files=no
-if ($dirty) {
-    throw "Working tree has uncommitted tracked changes. Commit them before deploying."
+# These values enter a POSIX command; only accept the intended syntax.
+if ($RemoteDir -notmatch '^/[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)+$' -or
+    $Project -notmatch '^[a-z0-9][a-z0-9_-]*$' -or
+    $Domain -notmatch '^https://[A-Za-z0-9.-]+(:[0-9]+)?/?$') {
+    throw 'Use an absolute remote directory, a valid Compose project, and an HTTPS origin.'
 }
-
+$token = [Guid]::NewGuid().ToString('N')
+$report = Join-Path $env:TEMP "xingyu-$token.release-report.json"
+& python scripts/release.py preflight --repo $repo --report $report
+if ($LASTEXITCODE -ne 0) { throw 'Release preflight failed; nothing was uploaded or deployed.' }
+$revision = (Get-Content -Raw -LiteralPath $report | ConvertFrom-Json).revision
+if ($revision -notmatch '^[0-9a-f]{40}$') { throw 'Invalid committed revision.' }
+if ($CheckOnly) { Write-Host "Preflight passed: $revision"; return }
+$workbench = 'C:\Users\wy339\AppData\Local\Programs\workbench\workbench.exe'
+if (-not (Test-Path -LiteralPath $workbench)) { throw "Workbench CLI not found: $workbench" }
 if (-not $SkipPush) {
-    git push origin main
-    if ($LASTEXITCODE -ne 0) { throw "git push failed." }
+    & git push origin main
+    if ($LASTEXITCODE -ne 0) { throw 'git push failed.' }
 }
-
-$archive = Join-Path $env:TEMP 'shetuanweb-src.tar.gz'
-git archive --format=tar.gz -o $archive HEAD
-if ($LASTEXITCODE -ne 0) { throw "git archive failed." }
-
-Write-Host "Uploading archive..."
+$dirty = & git status --porcelain --untracked-files=all
+if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Checkout changed after preflight.' }
+$archive = Join-Path $env:TEMP "xingyu-$token.tar.gz"
+& git archive --format=tar.gz -o $archive $revision
+if ($LASTEXITCODE -ne 0) { throw 'git archive failed.' }
+$checksum = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
 & $workbench upload $archive /tmp/ -i $InstanceId -r $Region -f
-if ($LASTEXITCODE -ne 0) { throw "workbench upload failed." }
-
-$remote = "cd $RemoteDir && tar xzf /tmp/shetuanweb-src.tar.gz -C $RemoteDir && " +
-    "docker compose -p 304aistudio -f docker-compose.prod.yml -f docker-compose.prod.tls.yml up -d --build 2>&1 | tail -n 20"
-
-Write-Host "Rebuilding containers..."
-& $workbench exec -r $Region -i $InstanceId --timeout 900 --command $remote
-if ($LASTEXITCODE -ne 0) { throw "remote rebuild failed." }
-
-Write-Host "Verifying..."
-$homeCode = & curl.exe -sS -o NUL -w "%{http_code}" "$Domain/"
-$apiCode = & curl.exe -sS -o NUL -w "%{http_code}" "$Domain/api/config"
-Write-Host "home=$homeCode api=$apiCode"
-if ($homeCode -ne '200' -or $apiCode -ne '200') {
-    throw "Verification failed. Check container logs on the server."
-}
-
-Write-Host "Deploy finished: $Domain"
+if ($LASTEXITCODE -ne 0) { throw 'Archive upload failed.' }
+$releaseDir = "$RemoteDir/releases/$revision-$token"
+$remoteArchive = "/tmp/xingyu-$token.tar.gz"
+$first = if ($FirstDeploy) { 'first' } else { 'existing' }
+# Generated/constrained arguments; each operation must succeed before the next.
+$remote = "set -eu; umask 077; printf '%s  %s\n' '$checksum' '$remoteArchive' | sha256sum -c -; " +
+    "mkdir -p '$RemoteDir/releases'; mkdir '$releaseDir'; tar xzf '$remoteArchive' -C '$releaseDir'; " +
+    "bash '$releaseDir/scripts/deploy-remote.sh' '$RemoteDir' '$Project' '$revision' '$Domain' '$first'"
+& $workbench exec -r $Region -i $InstanceId --timeout 1800 --command $remote
+if ($LASTEXITCODE -ne 0) { throw 'Remote release failed. Inspect its release directory and verified backup before recovery.' }
+& python scripts/release.py smoke --base-url $Domain --revision $revision --attempts 3
+if ($LASTEXITCODE -ne 0) { throw 'External smoke check failed; release is not accepted.' }
+Write-Host "Release verified: $revision ($Domain)"

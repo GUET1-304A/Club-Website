@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useDetailMetadata } from '../../hooks/useMetadata'
+import { usePublicDetail } from '../../hooks/usePublicDetail'
+import DetailError from '../ui/DetailError'
+import { useState } from 'react'
 import { Trophy, Users, Building, Calendar, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import Card from '../ui/Card'
 import TagPill from '../ui/TagPill'
@@ -12,27 +15,16 @@ const LEVEL_LABELS: Record<Award['level'], string> = {
   national: '国家级', provincial: '省级', school: '校级', other: '其他',
 }
 
-export default function AwardDetailPage({ slug }: { slug: string }) {
-  const { awards: storeAwards } = useSiteData()
-  const [award, setAward] = useState<Award | null>(
-    () => storeAwards.find(a => a.slug === slug) || null
-  )
-  const [loading, setLoading] = useState(!award)
-  const [certIndex, setCertIndex] = useState(0)
+const loadDetail = (slug: string) => fetchAward(slug).then(mapApiAward)
 
-  useEffect(() => {
-    if (award) return
-    let cancelled = false
-    fetchAward(slug)
-      .then(data => {
-        if (!cancelled) {
-          setAward(mapApiAward(data))
-          setLoading(false)
-        }
-      })
-      .catch(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [slug])
+export default function AwardDetailPage({ slug }: { slug: string }) {
+  const { awards: storeAwards } = useSiteData(['awards'])
+  const { data: award, loading, error, retry } = usePublicDetail(slug, storeAwards.find(item => item.slug === slug), loadDetail)
+  useDetailMetadata(`/award/${slug}`, {
+    title: award?.name || (loading ? '奖项详情' : error ? '奖项加载失败' : '奖项未找到'),
+    description: award?.description, image: award?.certificateImages[0], noIndex: !loading && !award,
+  })
+  const [certIndex, setCertIndex] = useState(0)
 
   if (loading) {
     return (
@@ -43,6 +35,8 @@ export default function AwardDetailPage({ slug }: { slug: string }) {
       </div>
     )
   }
+
+  if (error) return <DetailError message={error} onRetry={retry} backHref="/awards" />
 
   if (!award) {
     return (

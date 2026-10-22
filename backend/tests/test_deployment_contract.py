@@ -68,14 +68,18 @@ def test_frontend_image_and_nginx_support_same_origin_spa_delivery():
     assert "npm ci" in dockerfile
     assert "npm run build" in dockerfile
     assert "FROM nginx:alpine" in dockerfile
-    assert "COPY --from=build /app/dist /usr/share/nginx/html" in dockerfile
+    assert "COPY --from=build /app/dist /opt/xingyu-dist" in dockerfile
+    assert "20-publish-bundle.sh" in dockerfile
     assert "VITE_BACKEND_URL=\"\"" in dockerfile
 
     assert "client_max_body_size 10m" in nginx
-    assert "location /api/" in nginx
+    assert "location ^~ /api/" in nginx
     assert "proxy_pass http://backend:5000" in nginx
-    assert "location /uploads/" in nginx
-    assert "try_files $uri $uri/ /index.html" in nginx
+    assert "location ^~ /uploads/" in nginx
+    assert "include /etc/nginx/frontend-proxy.inc" in nginx
+    assert "try_files $uri =404" in nginx
+    assert "frontend_bundle_prod:/app/frontend-dist:ro" in _read("docker-compose.prod.yml")
+    assert "frontend_bundle_prod:/usr/share/nginx/html" in _read("docker-compose.prod.yml")
     for header in ("Host", "X-Real-IP", "X-Forwarded-For", "X-Forwarded-Proto"):
         assert f"proxy_set_header {header}" in nginx
 
@@ -148,6 +152,10 @@ def test_tls_override_protects_transport_and_mounts_only_operator_assets():
     assert "443:443" in override
     assert "./deploy/nginx/tls.conf:/etc/nginx/conf.d/default.conf:ro" in override
     assert "./deploy/certs:/etc/nginx/certs:ro" in override
+    assert '"http://127.0.0.1:8080/health/ready"' in override
+    assert 'listen 127.0.0.1:8080;' in tls_nginx
+    assert 'listen 127.0.0.1:8080;' in tls_example
+    assert '--no-check-certificate' not in override
 
 
 def test_deployment_guide_documents_safe_production_operations():

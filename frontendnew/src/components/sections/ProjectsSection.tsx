@@ -1,3 +1,5 @@
+import { navigate } from '../../lib/navigation'
+import DataState from '../ui/DataState'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
@@ -20,7 +22,7 @@ function shortLabel(name: string): string {
 
 export default function ProjectsSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { config, projects } = useSiteData()
+  const { config, projects } = useSiteData(['config', 'projects'])
   const [page, setPage] = useState(0)
   const [launching, setLaunching] = useState(false)
   const launchTimer = useRef<number | null>(null)
@@ -50,16 +52,14 @@ export default function ProjectsSection() {
     setLaunching(true)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     launchTimer.current = window.setTimeout(() => {
-      window.history.pushState({}, '', `/project/${target.slug}`)
-      window.dispatchEvent(new PopStateEvent('popstate'))
-      window.scrollTo({ top: 0 })
+      navigate(`/project/${target.slug}`)
     }, reduce ? 0 : 600)
   }
 
   return (
-    <section ref={ref} className="max-w-[1100px] mx-auto px-6 py-20 md:py-28">
+    <section ref={ref} className="site-container home-section">
       {/* Header — left aligned */}
-      <div className="mb-2 pl-4 md:pl-12">
+      <div className="home-section-heading">
         <p
           className={`font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4 ${
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
@@ -77,6 +77,7 @@ export default function ProjectsSection() {
       </div>
 
       {/* Keycap orb — each cap is a project */}
+      <DataState resource="projects">
       {projects.length > 0 ? (
         <>
           <div className="relative mt-6">
@@ -160,6 +161,7 @@ export default function ProjectsSection() {
       ) : (
         <p className="text-center text-sm text-[#273C46]/50 py-16">作品整理中，敬请期待。</p>
       )}
+      </DataState>
 
       {/* CTA */}
       <div className="text-center mt-2">

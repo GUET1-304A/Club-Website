@@ -2,7 +2,7 @@ import { Megaphone, ArrowUpRight, Clock } from 'lucide-react'
 import { useSiteData } from '../../store/useSiteData'
 
 export default function AnnouncementSection() {
-  const { blogPosts } = useSiteData()
+  const { blogPosts } = useSiteData(['blogPosts'])
   const announcements = blogPosts
     .filter(post => post.category === 'announcement')
     .slice(0, 3)
@@ -10,7 +10,7 @@ export default function AnnouncementSection() {
   if (announcements.length === 0) return null
 
   return (
-    <section className="max-w-[1100px] mx-auto px-6 py-10">
+    <section className="site-container py-10">
       <div className="rounded-[28px] bg-[#051A24] text-white p-6 md:p-8">
         <div className="flex items-center gap-2 mb-5">
           <Megaphone className="w-4 h-4 text-white/70" />

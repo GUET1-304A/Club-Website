@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import Card from '../ui/Card'
 import Button from '../ui/Button'
-import { fetchPage } from '../../services/api'
+import { usePageData } from '../../store/usePageData'
+import PageDataNotice from '../ui/PageDataNotice'
 
 interface RecruitmentContent {
   intro?: string
@@ -32,24 +32,20 @@ const FALLBACK: RecruitmentContent = {
     { question: '没有项目经验怎么办？', answer: '我们会提供入门指导和培训，只要你有学习的热情即可。' },
   ],
   cta_title: '准备好加入我们了吗？',
-  cta_note: '2026 春季招新进行中',
+  cta_note: '招新安排以社团最新通知为准',
   cta_button: '立即报名',
 }
 
 export default function RecruitmentPage() {
-  const [content, setContent] = useState<RecruitmentContent>(FALLBACK)
-
-  useEffect(() => {
-    fetchPage('recruitment')
-      .then(page => setContent({ ...FALLBACK, ...(page.content as RecruitmentContent) }))
-      .catch(() => {})
-  }, [])
+  const { page } = usePageData('recruitment')
+  const content: RecruitmentContent = { ...FALLBACK, ...page?.content }
 
   return (
     <div className="page-enter max-w-[800px] mx-auto px-6 py-24">
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24] text-center">
         招新<span className="font-mondwest">信息</span>
       </h1>
+      <PageDataNotice slug="recruitment" />
 
       <div className="mt-8 space-y-6 text-sm md:text-base text-[#0D212C] leading-relaxed">
         {content.intro && <p>{content.intro}</p>}

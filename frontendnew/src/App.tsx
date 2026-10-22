@@ -2,11 +2,15 @@ import { lazy, Suspense, useState, useEffect } from 'react'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import SideDecor from './components/effects/SideDecor'
+import BackgroundVideo from './components/effects/BackgroundVideo'
 import ThemeSwitcher from './components/effects/ThemeSwitcher'
-import { fetchSiteConfig } from './services/api'
+import { useSiteData } from './store/useSiteData'
+import { SiteDataNotice } from './components/ui/DataState'
+import { useClientNavigation } from './hooks/useClientNavigation'
 import { ToastProvider } from './components/admin/Toast'
 import { useMemberAuth } from './hooks/useMemberAuth'
 import { getRole } from './services/api'
+import { useRouteMetadata } from './hooks/useMetadata'
 const HomePage = lazy(() => import('./components/pages/HomePage'))
 const AboutPage = lazy(() => import('./components/pages/AboutPage'))
 const MembersPage = lazy(() => import('./components/pages/MembersPage'))
@@ -69,6 +73,9 @@ function parsePath(path: string) {
 function AppContent({ path }: { path: string }) {
   const parts = parsePath(path)
 
+  if ((parts.length > 1 && !['project', 'award', 'blog', 'admin', 'member'].includes(parts[0])) ||
+    (parts.length > 2 && ['project', 'award', 'blog'].includes(parts[0]))) return <NotFound />
+
   if (parts[0] === '') {
     return <HomePage />
   }
@@ -77,10 +84,10 @@ function AppContent({ path }: { path: string }) {
     case 'about':       return <AboutPage />
     case 'members':     return <MembersPage />
     case 'projects':    return <ProjectsPage />
-    case 'project':     return <ProjectDetailPage slug={parts[1] || ''} />
+    case 'project':     return <ProjectDetailPage key={parts[1]} slug={parts[1] || ''} />
     case 'awards':      return <AwardsPage />
-    case 'award':       return <AwardDetailPage slug={parts[1] || ''} />
-    case 'blog':        return parts[1] ? <BlogDetailPage slug={parts[1]} /> : <BlogPage />
+    case 'award':       return <AwardDetailPage key={parts[1]} slug={parts[1] || ''} />
+    case 'blog':        return parts[1] ? <BlogDetailPage key={parts[1]} slug={parts[1]} /> : <BlogPage />
     case 'research':    return <ResearchPage />
     case 'cooperation': return <CooperationPage />
     case 'contact':     return <ContactPage />
@@ -240,8 +247,11 @@ function canPlayBackgroundVideo() {
 }
 
 export default function App() {
-  const [path, setPath] = useState(window.location.pathname)
-  const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO)
+  const location = useClientNavigation()
+  const path = location.pathname
+  const { config, loaded, status } = useSiteData(['config'])
+  useRouteMetadata(path, config)
+  const videoUrl = config.heroVideoUrl || DEFAULT_VIDEO
   const [playVideo, setPlayVideo] = useState(canPlayBackgroundVideo)
 
   useEffect(() => {
@@ -251,50 +261,9 @@ export default function App() {
     return () => media.removeEventListener('change', update)
   }, [])
 
-  // Load custom video background URL
-  useEffect(() => {
-    fetchSiteConfig()
-      .then(cfg => {
-        const url = (cfg.hero as Record<string, unknown>)?.video_url as string
-        if (url) setVideoUrl(current => current === url ? current : url)
-      })
-      .catch(() => {})
-  }, [])
-
-  // SPA routing: intercept <a> clicks + popstate
-  useEffect(() => {
-    const onPopState = () => setPath(window.location.pathname)
-    window.addEventListener('popstate', onPopState)
-
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const anchor = target.closest('a')
-      if (!anchor || !anchor.href) return
-      if (anchor.target) return
-      if (anchor.hasAttribute('download')) return
-      if (!anchor.href.startsWith(window.location.origin)) return
-
-      e.preventDefault()
-      let newPath = '/'
-      let search = ''
-      try {
-        const url = new URL(anchor.href)
-        newPath = url.pathname
-        search = url.search
-      } catch { return }
-      window.history.pushState({}, '', newPath + search)
-      setPath(newPath)
-      window.scrollTo(0, 0)
-    }
-    document.addEventListener('click', onClick)
-
-    return () => {
-      window.removeEventListener('popstate', onPopState)
-      document.removeEventListener('click', onClick)
-    }
-  }, [])
-
-  const isAdmin = path.startsWith('/admin') || path.startsWith('/member') || path === '/login'
+  const isAdmin = path === '/admin' || path.startsWith('/admin/') ||
+    path === '/member' || path.startsWith('/member/') || path === '/login'
+  const isHome = path === '/'
 
   if (isAdmin) {
     return (
@@ -305,15 +274,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className={`public-site min-h-screen relative isolate ${isHome ? 'public-home' : 'public-content'}`}>
       {/* Video background (z-0) */}
       <div className="fixed inset-0 bg-gradient-to-br from-[#e8e4dc] to-[#f5f2ed] z-0" />
       <div className="fixed inset-0 bg-cover bg-center z-0" style={{ backgroundImage: "url('/hero-poster.webp')" }} />
-      {playVideo && (
-        <video key={videoUrl} autoPlay loop muted playsInline preload="metadata" className="fixed inset-0 w-full h-full object-cover z-0">
-          <source src={videoUrl} type="video/mp4" />
-        </video>
-      )}
+      <BackgroundVideo key={videoUrl} src={videoUrl} enabled={playVideo && (loaded.config || status.config === 'error')} />
 
       {/* Overlay (z-10) */}
       <div className="fixed inset-0 bg-white/35 dark:bg-black/55 z-10 pointer-events-none" />
@@ -321,10 +286,13 @@ export default function App() {
       {/* Content (z-20) */}
       <div className="relative z-20">
         <SideDecor />
-        <ThemeSwitcher />
+        <ThemeSwitcher compact={!isHome} />
         <Navbar />
-        <Suspense fallback={<PageLoading />}><AppContent path={path} /></Suspense>
-        <Footer />
+        <SiteDataNotice resources={['config']} />
+        <div className="relative z-10" data-public-content>
+          <Suspense fallback={<PageLoading />}><AppContent path={path} /></Suspense>
+          <Footer />
+        </div>
       </div>
     </div>
   )

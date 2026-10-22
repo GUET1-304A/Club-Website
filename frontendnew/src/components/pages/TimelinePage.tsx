@@ -5,7 +5,7 @@ import { renderRichText } from '../../lib/richText'
 
 export default function TimelinePage() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
   const events = config.timelineEvents
 
   return (

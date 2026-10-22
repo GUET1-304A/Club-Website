@@ -61,7 +61,17 @@ export interface BlogPost {
   pinned?: boolean
 }
 
+export interface ContactConfig {
+  address?: string
+  email?: string
+  phone?: string
+  hours?: string
+  socials?: { label: string; url: string }[]
+}
+
 export interface SiteConfig {
+  contact?: ContactConfig
+  heroVideoUrl?: string
   siteName: string
   siteDescription: string
   heroTagline: string

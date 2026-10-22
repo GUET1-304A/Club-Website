@@ -12,10 +12,11 @@ const benefits = [
   { icon: Heart, title: '温暖社群', desc: '不止是技术，这里有一群懂你的朋友' },
 ]
 
-function createSpawner(thumbnails: string[]) {
+function createSpawner(getThumbnails: () => string[]) {
   let lastSpawn = 0
   return (container: HTMLDivElement | null, particlesEl: HTMLDivElement | null, clientX: number, clientY: number) => {
-    if (!container || !particlesEl) return
+    const thumbnails = getThumbnails()
+    if (!container || !particlesEl || !thumbnails.length) return
     const now = performance.now()
     if (now - lastSpawn < 80) return
     lastSpawn = now
@@ -41,20 +42,22 @@ function createSpawner(thumbnails: string[]) {
 
 export default function JoinSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.1 })
-  const { projects, members, config } = useSiteData()
+  const { projects, members, config } = useSiteData(['config', 'projects', 'members'])
   const thumbnails = [...projects.map((p) => p.coverImage), ...members.map((m) => m.avatar)]
+  const thumbnailsRef = useRef(thumbnails)
+  thumbnailsRef.current = thumbnails
   // Left card refs
   const leftCardRef = useRef<HTMLDivElement>(null)
   const leftParticlesRef = useRef<HTMLDivElement>(null)
-  const spawnLeft = useRef(createSpawner(thumbnails)).current
+  const spawnLeft = useRef(createSpawner(() => thumbnailsRef.current)).current
   // Right card refs
   const rightCardRef = useRef<HTMLDivElement>(null)
   const rightParticlesRef = useRef<HTMLDivElement>(null)
-  const spawnRight = useRef(createSpawner(thumbnails)).current
+  const spawnRight = useRef(createSpawner(() => thumbnailsRef.current)).current
 
   return (
-    <section ref={ref} className="relative z-10 py-24 md:py-36">
-      <div className="max-w-[1200px] mx-auto px-6">
+    <section ref={ref} className="relative z-10 home-section">
+      <div data-decor-safe-content className="site-container">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* ===== Left — Benefits ===== */}
           <div className={isInView ? 'animate-slide-in-left' : 'opacity-0'}>

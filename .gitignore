@@ -20,6 +20,10 @@ secrets/*.txt
 deploy/certs/*.pem
 
 # Backup files
+backups/
+releases/
+*.release-report.json
+compose.release.json
 *.json.bak
 xingyu-backup-*.json
 

@@ -1,3 +1,4 @@
+import DataState from '../ui/DataState'
 import { useInViewAnimation } from '../../hooks/useInViewAnimation'
 import Button from '../ui/Button'
 import CircularCards from '../ui/CircularCards'
@@ -7,7 +8,7 @@ import { renderRichText } from '../../lib/richText'
 
 export default function MembersSection() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.05 })
-  const { members, config } = useSiteData()
+  const { members, config } = useSiteData(['config', 'members'])
 
   const memberTestimonials: Testimonial[] = members.map((m) => ({
     quote: m.bio || '热爱技术，乐于分享，用代码创造价值。',
@@ -17,9 +18,9 @@ export default function MembersSection() {
   }))
 
   return (
-    <section ref={ref} className="max-w-[1400px] mx-auto px-6 py-20 md:py-28">
+    <section ref={ref} className="site-container home-section">
       {/* Header — left aligned */}
-      <div className="mb-10 pl-4 md:pl-12">
+      <div className="home-section-heading">
         <p
           className={`font-mono text-sm text-[#051A24] tracking-widest uppercase mb-4 ${
             isInView ? 'animate-fade-in-up delay-100' : 'opacity-0'
@@ -37,7 +38,11 @@ export default function MembersSection() {
       </div>
 
       {/* Circular carousel */}
-      <CircularCards testimonials={memberTestimonials} autoplay={true} />
+      <DataState resource="members">
+        {memberTestimonials.length > 0
+          ? <CircularCards key={members.map(member => member.id).join(',')} testimonials={memberTestimonials} autoplay={true} />
+          : <p className="py-16 text-center text-sm text-[var(--theme-text)]">暂无成员，敬请期待。</p>}
+      </DataState>
 
       {/* CTA */}
       <div className="text-center mt-12">

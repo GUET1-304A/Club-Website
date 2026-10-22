@@ -1,76 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useDetailMetadata } from '../../hooks/useMetadata'
+import { usePublicDetail } from '../../hooks/usePublicDetail'
+import DetailError from '../ui/DetailError'
+import { useEffect } from 'react'
 import { Calendar, User, ArrowLeft, Tag, Pin } from 'lucide-react'
 import TagPill from '../ui/TagPill'
 import Card from '../ui/Card'
 import Markdown from '../ui/Markdown'
-import { useSiteData } from '../../store/useSiteData'
+import { useSiteData, mapApiBlog } from '../../store/useSiteData'
 import { handleImageError } from '../../lib/imageFallback'
-import { fetchBlog, fetchBlogs } from '../../services/api'
-import type { BlogPost } from '../../types'
-import type { BlogData } from '../../services/api'
+import { fetchBlog } from '../../services/api'
 import { isMemberLoggedIn, memberMarkBlogRead } from '../../services/memberApi'
 
 const CAT_LABELS: Record<string, string> = {
   tech: '技术分享', event: '活动记录', summary: '心得总结', announcement: '公告通知',
 }
 
-function mapBlog(b: BlogData): BlogPost {
-  return {
-    id: String(b.id),
-    slug: b.slug || `post-${b.id}`,
-    title: b.title,
-    excerpt: b.excerpt || '',
-    content: b.content || '',
-    category: (b.category as BlogPost['category']) || 'tech',
-    tags: b.tags || [],
-    author: b.author || { name: b.authorName || '', avatar: b.authorAvatar || '' },
-    date: b.date || '',
-    coverImage: b.coverImage,
-    pinned: b.pinned,
-  }
-}
+const loadDetail = (slug: string) => fetchBlog(slug).then(mapApiBlog)
 
 export default function BlogDetailPage({ slug }: { slug: string }) {
-  const { blogPosts: storeBlogs } = useSiteData()
-  const [post, setPost] = useState<BlogPost | null>(
-    () => storeBlogs.find(p => p.slug === slug) || null
-  )
-  const [loading, setLoading] = useState(!post)
-  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([])
-
-  useEffect(() => {
-    if (post) {
-      // Find related posts (same category, excluding current)
-      const related = storeBlogs.filter(p => p.slug !== slug && p.category === post.category).slice(0, 3)
-      setRelatedPosts(related)
-      return
-    }
-
-    // Fallback: fetch from API directly
-    let cancelled = false
-    fetchBlog(slug)
-      .then(data => {
-        if (!cancelled) {
-          const mapped = mapBlog(data)
-          setPost(mapped)
-          setLoading(false)
-          // Try to get related from all blogs
-          fetchBlogs().then(blogs => {
-            if (!cancelled) {
-              const related = blogs
-                .filter(b => b.slug !== slug && b.category === mapped.category)
-                .slice(0, 3)
-                .map(mapBlog)
-              setRelatedPosts(related)
-            }
-          }).catch(() => {})
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [slug])
+  const { blogPosts: storeBlogs } = useSiteData(['blogPosts'])
+  const { data: post, loading, error, retry } = usePublicDetail(slug, storeBlogs.find(p => p.slug === slug), loadDetail)
+  useDetailMetadata(`/blog/${slug}`, {
+    title: post?.title || (loading ? '文章详情' : error ? '文章加载失败' : '文章未找到'),
+    description: post?.excerpt || post?.content, image: post?.coverImage, noIndex: !loading && !post, type: 'article',
+  })
+  const relatedPosts = storeBlogs.filter(p => p.slug !== slug && p.category === post?.category).slice(0, 3)
 
   useEffect(() => {
     if (!post || !isMemberLoggedIn()) return
@@ -90,6 +44,8 @@ export default function BlogDetailPage({ slug }: { slug: string }) {
       </div>
     )
   }
+
+  if (error) return <DetailError message={error} onRetry={retry} backHref="/blog" />
 
   if (!post) {
     return (

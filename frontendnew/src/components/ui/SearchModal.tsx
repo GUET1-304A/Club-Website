@@ -1,14 +1,9 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useId, type ReactNode, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { navigate } from '../../lib/navigation'
 import { Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-export interface SearchItem {
-  id: string
-  title: string
-  description?: string
-  category?: string
-  href?: string
-}
+import { searchItems, type SearchItem } from '../../lib/search'
+export type { SearchItem } from '../../lib/search'
 
 interface SearchModalProps {
   children?: ReactNode
@@ -20,49 +15,57 @@ interface SearchModalProps {
 export default function SearchModal({ children, items, placeholder = '搜索...', onSelect }: SearchModalProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const resultsId = useId()
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 50)
-    else setQuery('')
+    if (!open) { setQuery(''); return }
+    const timer = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(timer)
   }, [open])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); setOpen(true) }
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); setOpen(true) }
+      if (e.key === 'Escape' && containerRef.current?.contains(document.activeElement)) { setOpen(false); triggerRef.current?.focus() }
     }
     const onClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
     }
     window.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('pointerdown', onClickOutside)
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('pointerdown', onClickOutside)
     }
   }, [])
 
-  const filtered = query
-    ? items.filter((i) =>
-        i.title.toLowerCase().includes(query.toLowerCase()) ||
-        i.description?.toLowerCase().includes(query.toLowerCase())
-      )
-    : items.slice(0, 6)
+  const filtered = searchItems(items, query)
 
   const handleSelect = (item: SearchItem) => {
     setOpen(false)
-    onSelect?.(item)
-    if (item.href) window.location.href = item.href
+    if (item.href) navigate(item.href)
+    else { onSelect?.(item); triggerRef.current?.focus() }
+  }
+
+  const moveFocus = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.nativeEvent.isComposing || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) return
+    event.preventDefault()
+    const results = Array.from(containerRef.current?.querySelectorAll<HTMLElement>('[data-search-result]') || [])
+    if (!results.length) return
+    const index = results.indexOf(document.activeElement as HTMLElement)
+    const next = index < 0 ? (event.key === 'ArrowDown' ? 0 : results.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length
+    results[next].focus()
   }
 
   return (
     <div ref={containerRef} className="relative">
       {/* Trigger — click to open inline panel */}
-      <div onClick={() => setOpen(!open)} className="cursor-pointer">
+      <div className="cursor-pointer" onClick={children ? () => setOpen(!open) : undefined}>
         {children || (
-          <button type="button" className="flex items-center gap-2 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-2 text-sm text-[var(--theme-text-strong)] hover:border-[#3457ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3457ff] transition-colors">
+          <button ref={triggerRef} type="button" aria-expanded={open} aria-controls={resultsId} onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-2 text-sm text-[var(--theme-text-strong)] hover:border-[#3457ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3457ff] transition-colors">
             <Search className="w-4 h-4" />
             <span>{placeholder}</span>
             <kbd className="ml-2 hidden sm:inline text-[10px] font-mono text-[#273C46]/60">Ctrl K</kbd>
@@ -78,39 +81,54 @@ export default function SearchModal({ children, items, placeholder = '搜索...'
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
-            className="absolute top-full mt-2 right-0 w-80 bg-white rounded-[28px] shadow-xl border border-[rgba(0,0,0,0.06)] overflow-hidden z-50"
+            className="absolute top-full mt-2 right-0 w-[min(24rem,calc(100vw-5rem))] bg-[var(--theme-surface)] rounded-[20px] shadow-xl border border-[var(--theme-border)] overflow-hidden z-50"
           >
             {/* Input */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(0,0,0,0.04)]">
-              <Search className="w-4 h-4 text-[#273C46]/30 shrink-0" />
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--theme-border)]">
+              <Search className="w-4 h-4 text-[var(--theme-text)] shrink-0" />
               <input
                 ref={inputRef}
+                type="search"
+                aria-label={placeholder}
+                aria-controls={resultsId}
+                onKeyDown={event => {
+                  moveFocus(event)
+                  if (event.key === 'Enter' && filtered[0] && !event.nativeEvent.isComposing) { event.preventDefault(); handleSelect(filtered[0]) }
+                }}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={placeholder}
-                className="flex-1 bg-transparent text-sm text-[#051A24] placeholder:text-[#273C46]/25 outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--theme-text-strong)] placeholder:text-[var(--theme-text)] outline-none"
               />
             </div>
 
             {/* Results */}
-            <div className="max-h-64 overflow-y-auto">
+            <p className="sr-only" aria-live="polite">{filtered.length} 个结果，使用上下方向键选择，回车打开，Escape 关闭</p>
+            <ul id={resultsId} className="max-h-80 overflow-y-auto overscroll-contain" onKeyDown={moveFocus}>
               {filtered.length === 0 ? (
-                <p className="text-center text-xs text-[#273C46]/40 py-6">无结果</p>
-              ) : (
-                filtered.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSelect(item)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#051A24]/4 transition-colors first:rounded-t-[28px] last:rounded-b-[28px]"
-                  >
-                    <span className="text-sm text-[#051A24] truncate flex-1">{item.title}</span>
-                    {item.category && (
-                      <span className="text-[10px] font-mono text-[#273C46]/35 shrink-0">{item.category}</span>
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
+                <li className="text-center text-sm text-[var(--theme-text)] py-6">没有找到匹配内容，试试其他关键词</li>
+              ) : filtered.map(item => {
+                const secondary = item.description?.trim() && item.description.trim() !== item.title.trim()
+                  ? item.description : item.keywords?.slice(0, 4).join(' · ')
+                const content = <>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-[var(--theme-text-strong)] line-clamp-2 break-words">{item.title}</span>
+                    {secondary && <span className="mt-1 block text-xs text-[var(--theme-text)] line-clamp-2 leading-relaxed">{secondary}</span>}
+                  </span>
+                  {item.category && <span className="text-[11px] text-[var(--theme-text)] shrink-0">{item.category}</span>}
+                </>
+                const className = 'w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[var(--nav-active-bg)] focus-visible:bg-[var(--nav-active-bg)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#3457ff] transition-colors'
+                return <li key={item.id}>
+                  {item.href ? (
+                    <a href={item.href} data-search-result className={className} onClick={event => {
+                      if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) setOpen(false)
+                    }}>{content}</a>
+                  ) : (
+                    <button type="button" data-search-result className={className} onClick={() => handleSelect(item)}>{content}</button>
+                  )}
+                </li>
+              })}
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>

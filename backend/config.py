@@ -116,6 +116,9 @@ class Config:
     AI_BASE_URL = os.environ.get('AI_BASE_URL', '')
     AI_MODEL = os.environ.get('AI_MODEL', '')
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
+    # Production mounts only the frontend build artifact, never its source tree.
+    # Empty leaves development/API-only deployments unchanged.
+    FRONTEND_METADATA_FILE = os.environ.get('FRONTEND_METADATA_FILE', '')
 
     # ─── QQ 互联登录 ───
     # QQ_APP_KEY 建议通过 *_FILE 注入；未配置时登录页会显示为不可用。

@@ -6,7 +6,7 @@ import { renderRichText } from '../../lib/richText'
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
-  const { config } = useSiteData()
+  const { config } = useSiteData(['config'])
 
   const paragraphs = (config.heroSubtitle || '')
     .split('\n\n')
@@ -24,7 +24,7 @@ export default function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Content */}
-      <div className="relative max-w-[640px] mx-auto px-6 pt-24 md:pt-32 pb-24 flex flex-col items-center text-center">
+      <div data-decor-safe-content className="relative max-w-[640px] mx-auto px-6 pt-24 md:pt-32 pb-24 flex flex-col items-center text-center">
         {/* Tag */}
         <p className={`font-mono text-xs md:text-sm text-[#273C46] mb-10 tracking-widest uppercase ${fadeClass('delay-100')}`}>
           {config.heroTagline || 'XINGYU STUDIO'}

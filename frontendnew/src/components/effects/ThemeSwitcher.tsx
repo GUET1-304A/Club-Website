@@ -1,8 +1,20 @@
 import { motion } from 'framer-motion'
+import { Moon, Sun } from 'lucide-react'
 import { toggleDarkMode, useDarkMode } from '../../lib/theme'
 
-export default function ThemeSwitcher() {
+export default function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const dark = useDarkMode()
+
+  if (compact) {
+    return (
+      <button type="button" onClick={toggleDarkMode}
+        aria-label={dark ? '切换浅色模式' : '切换深色模式'} aria-pressed={dark}
+        title={dark ? '切换浅色模式' : '切换深色模式'}
+        className="hidden lg:flex fixed bottom-6 right-6 z-[150] h-11 w-11 items-center justify-center rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text-strong)] shadow-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#3457ff]">
+        {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </button>
+    )
+  }
 
   return (
     <div className="hidden lg:block fixed right-8 top-6 z-[150] pointer-events-none">

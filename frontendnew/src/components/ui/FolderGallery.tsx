@@ -2,6 +2,7 @@ import { useState, useRef, useId } from 'react'
 import { motion } from 'framer-motion'
 import { useSiteData } from '../../store/useSiteData'
 import { COVER_PLACEHOLDER, handleImageError } from '../../lib/imageFallback'
+import { navigate } from '../../lib/navigation'
 
 export interface GalleryPhoto {
   id: string | number
@@ -23,7 +24,7 @@ export default function FolderGallery({
   dragHintText = '向下拖拽图片关闭',
   className,
 }: FolderGalleryProps) {
-  const { projects: apiProjects } = useSiteData()
+  const { projects: apiProjects } = useSiteData(['projects'])
   const items = photos || apiProjects.map((p) => ({ id: p.id, image: p.coverImage, title: p.name, slug: p.slug }))
   const [isFolderOpen, setIsFolderOpen] = useState(false)
   const [hoverFolder, setHoverFolder] = useState(false)
@@ -116,7 +117,7 @@ export default function FolderGallery({
                       return
                     }
                     if (isFolderOpen && photo.slug) {
-                      window.location.href = `/project/${photo.slug}`
+                      navigate(`/project/${photo.slug}`)
                     }
                   }}
                   className={`absolute bottom-0 w-56 h-72 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden border border-white/60 origin-bottom bg-white ${

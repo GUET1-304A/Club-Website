@@ -1,20 +1,45 @@
+import type { ContactConfig } from '../types'
+
 const API_BASE = '/api'
 
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) { super(message); this.name = 'ApiError'; this.status = status }
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `HTTP ${res.status}`)
+  const controller = new AbortController()
+  let timedOut = false
+  const abort = () => controller.abort(options?.signal?.reason)
+  if (options?.signal?.aborted) abort()
+  options?.signal?.addEventListener('abort', abort, { once: true })
+  const timer = ['GET', 'HEAD'].includes((options?.method || 'GET').toUpperCase())
+    ? setTimeout(() => { timedOut = true; controller.abort() }, 15_000) : undefined
+  try {
+    const res = await fetch(`${API_BASE}${url}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }))
+      throw new ApiError(err.message || `HTTP ${res.status}`, res.status)
+    }
+    return await res.json()
+  } catch (error) {
+    if (timedOut) throw new Error('请求超时，请重试')
+    throw error
+  } finally {
+    clearTimeout(timer)
+    options?.signal?.removeEventListener('abort', abort)
   }
-  return res.json()
 }
 
 // ─── Public: Config ───
 export interface SiteConfigData {
+  contact?: ContactConfig
   hero?: {
+    video_url?: string
     eyebrow?: string
     title?: string
     description?: string
