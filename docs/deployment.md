@@ -38,9 +38,10 @@ Verify with `docker compose ps`, `curl http://localhost:5000/health`, and
 1. Copy each `secrets/*.txt.example` file to the matching untracked `.txt`
    file and replace every `REPLACE_*` value with a generated secret. Restrict
    file permissions to the deployment operator.
-2. Set the seven required host-file variables: `SECRET_KEY_FILE`, `JWT_SECRET_KEY_FILE`,
+2. Set the ten required host-file variables: `SECRET_KEY_FILE`, `JWT_SECRET_KEY_FILE`,
    `OSS_ACCESS_KEY_ID_FILE`, `OSS_ACCESS_KEY_SECRET_FILE`, `OCR_API_KEY_FILE`,
-   `AI_API_KEY_FILE`, and `BOOTSTRAP_ADMIN_PASSWORD_FILE`. Set a non-secret
+   `AI_API_KEY_FILE`, `FEISHU_WEBHOOK_URL_FILE`, `SMTP_USERNAME_FILE`,
+   `SMTP_PASSWORD_FILE`, and `BOOTSTRAP_ADMIN_PASSWORD_FILE`. Set a non-secret
    `BOOTSTRAP_ADMIN_USERNAME` and the required public `CORS_ORIGINS` value.
 3. Set `PUBLIC_BASE_URL` and `CORS_ORIGINS` to the actual HTTPS origin. For the
    checked release workflow below, keep the existing installation's `.env`,
@@ -306,7 +307,7 @@ cannot pass readiness merely because Gunicorn is running.
 Manual read-only smoke check:
 
 ```sh
-python3 scripts/release.py smoke --base-url https://304aistudio.cn \
+python3.11 scripts/release.py smoke --base-url https://304aistudio.cn \
   --revision FULL_40_CHARACTER_RELEASE_SHA --attempts 3
 ```
 
