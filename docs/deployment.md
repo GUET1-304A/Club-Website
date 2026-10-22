@@ -167,7 +167,7 @@ migration runs against the backup source. Independent backup:
 
 ```sh
 release=$(cat /srv/304aistudio/current-release)
-python3 "$release/scripts/recovery.py" --project 304aistudio \
+python3.11 "$release/scripts/recovery.py" --project 304aistudio \
   -f "$release/compose.release.json" backup --output /srv/304aistudio/backups
 ```
 
@@ -187,6 +187,9 @@ restore procedures for those before enabling this release flow. Backups may
 contain private data: restrict the folder to the operator and maintain a
 separate protected off-server copy. Scheduled/off-server copies are not set up
 by these scripts.
+The existing 304aistudio installation already has a separate legacy daily
+SQLite/upload backup cron. Its path, format and verification limits are recorded
+in `生产更新手册.md`; it is not the manifest-based backup used by this workflow.
 An existing backend with `OSS_ENABLED=true` is explicitly refused by this local
 backup workflow; a provider-native release/backup procedure must be established
 before deploying that storage mode.
@@ -196,7 +199,7 @@ before deploying that storage mode.
 Every backup automatically undergoes an isolated restore rehearsal. Repeat it:
 
 ```sh
-python3 "$release/scripts/recovery.py" --project 304aistudio \
+python3.11 "$release/scripts/recovery.py" --project 304aistudio \
   -f "$release/compose.release.json" rehearse \
   --backup /srv/304aistudio/backups/CHOSEN_BACKUP
 ```
@@ -248,6 +251,23 @@ above; changing only an image does not undo migrations or user writes.
 Local prerequisites: Node24+, Python3.12+ with `backend/requirements-dev.txt`,
 Docker Compose and the existing Workbench CLI. Server prerequisites: Docker
 Compose supporting `--wait`, Python3.9+, Bash, flock, tar and sha256sum.
+The server script tests `python3` and versioned Python commands and uses one
+compatible interpreter for every release/recovery operation. `RELEASE_PYTHON`
+can explicitly select a command or absolute executable path; an unsupported
+explicit selection fails without falling back. Do not replace the OS Python.
+
+On Alibaba Cloud Linux 3, install the official `python3.11` package alongside
+the system interpreter. This installation uses `/usr/bin/python3.11` (3.11.13),
+while system `python3` remains 3.6.8. Read-only runtime verification:
+
+```sh
+bash scripts/deploy-remote.sh --check-runtime
+# Optional explicit selection:
+RELEASE_PYTHON=/usr/bin/python3.11 bash scripts/deploy-remote.sh --check-runtime
+```
+
+This runtime-only command does not validate a release, build/start containers,
+back up data, or advance the release pointer. Full release gates remain required.
 
 ```powershell
 # All local checks; never uploads, pushes or deploys.

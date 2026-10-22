@@ -255,6 +255,7 @@ exit 0
     python.write_text('''#!/bin/sh
 echo "python $*" >> "$QA_LOG"
 case "$*" in
+  *release-python-ok*) echo release-python-ok ;;
   *" smoke "*) [ "$QA_FAIL" != smoke ] || exit 23 ;;
   -c*) echo orphan-volume ;;
 esac
@@ -263,7 +264,7 @@ exit 0
     docker.chmod(0o755)
     python.chmod(0o755)
     env = {**os.environ, 'PATH': str(executables) + os.pathsep + os.environ['PATH'],
-           'QA_LOG': str(tmp_path / 'calls'), 'QA_FAIL': failure}
+           'QA_LOG': str(tmp_path / 'calls'), 'QA_FAIL': failure, 'RELEASE_PYTHON': 'python3'}
     result = subprocess.run(['bash', str(script), str(base), 'test-project', 'a' * 40,
                              'https://example.test', 'first' if failure == 'orphan' else 'existing'],
                             env=env, capture_output=True, text=True)
@@ -272,3 +273,39 @@ exit 0
     calls = (tmp_path / 'calls').read_text()
     if failure in ['build', 'orphan']:
         assert 'up -d' not in calls and 'backup --output' not in calls
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Remote interpreter selection runs on Linux')
+def test_runtime_uses_parallel_python_without_replacing_old_system_command(tmp_path):
+    old = tmp_path / 'python3'
+    old.write_text('#!/bin/sh\nexit 1\n')
+    supported = tmp_path / 'python3.11'
+    supported.write_text('''#!/bin/sh
+case "$*" in
+  *release-python-ok*) echo release-python-ok ;;
+  --version) echo 'Python 3.11.13' ;;
+esac
+''')
+    old.chmod(0o755)
+    supported.chmod(0o755)
+    env = {**os.environ, 'PATH': str(tmp_path) + os.pathsep + os.environ['PATH']}
+    env.pop('RELEASE_PYTHON', None)
+    command = ['bash', str(ROOT / 'scripts/deploy-remote.sh'), '--check-runtime']
+    result = subprocess.run(command, env=env, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert str(supported) in result.stdout and 'Python 3.11.13' in result.stdout
+    assert old.read_text() == '#!/bin/sh\nexit 1\n'
+    # Explicit unsupported overrides must fail, rather than silently fall back.
+    result = subprocess.run(command, env={**env, 'RELEASE_PYTHON': str(old)}, capture_output=True, text=True)
+    assert result.returncode != 0 and 'Python 3.9+' in result.stderr
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Remote interpreter selection runs on Linux')
+def test_invalid_explicit_runtime_fails_before_acquiring_deploy_lock(tmp_path):
+    not_python = tmp_path / 'not-python'
+    not_python.write_text('#!/bin/sh\nexit 0\n')
+    not_python.chmod(0o755)
+    result = subprocess.run(['bash', str(ROOT / 'scripts/deploy-remote.sh'), str(tmp_path)],
+        env={**os.environ, 'RELEASE_PYTHON': str(not_python)}, capture_output=True, text=True)
+    assert result.returncode != 0 and 'Python 3.9+' in result.stderr
+    assert not (tmp_path / '.deploy.lock').exists()
