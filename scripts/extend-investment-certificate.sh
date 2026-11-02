@@ -4,6 +4,7 @@
 set -euo pipefail
 test "$(id -u)" = 0
 frontend=304aistudio-frontend-1
+docker image inspect certbot/certbot:latest >/dev/null
 restore_frontend() { docker start "$frontend" >/dev/null; }
 docker stop "$frontend" >/dev/null
 trap restore_frontend EXIT

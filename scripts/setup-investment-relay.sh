@@ -32,7 +32,10 @@ if ! grep -q '^# BEGIN 304 INVESTMENT RELAY$' "$config"; then
 Match User investment-relay
     AuthenticationMethods publickey
     PasswordAuthentication no
-    AllowTcpForwarding no
+    # OpenSSH 8 shares the forwarding permission gate with Unix sockets.
+    # Enable the remote gate, then deny every TCP listen destination.
+    AllowTcpForwarding remote
+    PermitListen none
     AllowStreamLocalForwarding remote
     StreamLocalBindMask 0111
     StreamLocalBindUnlink yes
@@ -45,7 +48,12 @@ Match all
 CONFIG
     if ! sshd -t; then cp -p "$backup" "$config"; exit 1; fi
 fi
-sshd -T -C user="$relay_user",host=localhost,addr=127.0.0.1 | grep -E '^(allowtcpforwarding|allowstreamlocalforwarding|forcecommand|streamlocalbindmask) '
+effective=$(sshd -T -C user="$relay_user",host=localhost,addr=127.0.0.1)
+grep -qx 'allowtcpforwarding remote' <<< "$effective"
+grep -qx 'permitlisten none' <<< "$effective"
+grep -qx 'allowstreamlocalforwarding remote' <<< "$effective"
+grep -qx 'forcecommand /usr/sbin/nologin' <<< "$effective"
+grep -E '^(allowtcpforwarding|allowstreamlocalforwarding|permitlisten|forcecommand|streamlocalbindmask) ' <<< "$effective"
 systemctl reload sshd
 ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 printf 'Restricted desktop relay prepared. No application TCP port was opened.\n'
