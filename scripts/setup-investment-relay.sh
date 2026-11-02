@@ -32,7 +32,6 @@ if ! grep -q '^# BEGIN 304 INVESTMENT RELAY$' "$config"; then
 Match User investment-relay
     AuthenticationMethods publickey
     PasswordAuthentication no
-    ChallengeResponseAuthentication no
     AllowTcpForwarding no
     AllowStreamLocalForwarding remote
     StreamLocalBindMask 0111
