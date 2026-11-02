@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.local/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -18,6 +20,7 @@ secrets/*.txt
 
 # TLS certificate material (the empty deploy/certs/.gitkeep remains tracked)
 deploy/certs/*.pem
+investment-relay/
 
 # Backup files
 backups/

@@ -8,6 +8,7 @@ from .public import public_bp      # 公开 API：站点配置、页面、成员
 from .admin import admin_bp        # 管理后台 API：CRUD 操作、文件上传、数据导入导出（需 JWT 鉴权）
 from .member import member_bp      # 成员门户 API：个人中心、项目管理、资源中心、证书、通知（需 member JWT 鉴权）
 from .assistant import assistant_bp  # 智能项目管理智能体 API：对话、需求解析、方案落地（需 member JWT 鉴权）
+from .demos import demos_bp
 
 # 所有蓝图的统一列表，供 app.py 遍历注册
 all_blueprints = [
@@ -15,4 +16,5 @@ all_blueprints = [
     admin_bp,
     member_bp,
     assistant_bp,
+    demos_bp,
 ]

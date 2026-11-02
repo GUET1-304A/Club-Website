@@ -17,6 +17,18 @@ from models import Award, BlogPost, Project, SiteConfig
 
 
 frontend_bp = Blueprint('frontend', __name__)
+
+
+@frontend_bp.get('/projects/investment')
+@frontend_bp.get('/projects/investment/')
+def investment_entry():
+    response = redirect('https://investment.304aistudio.cn/', code=302)
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
+
+
 _RESERVED = {'api', 'uploads', 'assets', 'health', 'static'}
 _DETAILS = {'project': (Project, '项目未找到'), 'award': (Award, '奖项未找到'),
             'blog': (BlogPost, '文章未找到')}

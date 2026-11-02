@@ -10,6 +10,7 @@ import Button from '../ui/Button'
 import { useSiteData } from '../../store/useSiteData'
 import ContentFilters from '../ui/ContentFilters'
 import ProjectCover from '../ui/ProjectCover'
+import InvestmentDemo from '../ui/InvestmentDemo'
 
 const categories = [
   { key: 'all', label: '全部' },
@@ -34,6 +35,8 @@ export default function ProjectsPage() {
       <h1 className="text-[36px] md:text-[44px] font-medium text-[#051A24] text-center">
         作品<span className="font-mondwest">画廊</span>
       </h1>
+
+      <InvestmentDemo />
 
       <ContentFilters label="项目分类" options={categories} active={activeCat} onChange={setActiveCat}>
         <SearchModal

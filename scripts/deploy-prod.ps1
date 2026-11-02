@@ -7,6 +7,7 @@ param(
     [string]$RemoteDir = '/srv/304aistudio',
     [string]$Domain = 'https://304aistudio.cn',
     [string]$Project = '304aistudio',
+    [string]$WorkbenchPath = $env:WORKBENCH_CLI,
     [switch]$SkipPush,
     [switch]$CheckOnly,
     [switch]$FirstDeploy
@@ -27,7 +28,12 @@ if ($LASTEXITCODE -ne 0) { throw 'Release preflight failed; nothing was uploaded
 $revision = (Get-Content -Raw -LiteralPath $report | ConvertFrom-Json).revision
 if ($revision -notmatch '^[0-9a-f]{40}$') { throw 'Invalid committed revision.' }
 if ($CheckOnly) { Write-Host "Preflight passed: $revision"; return }
-$workbench = 'C:\Users\wy339\AppData\Local\Programs\workbench\workbench.exe'
+if (-not $WorkbenchPath) {
+    $workbenchCommand = Get-Command workbench.exe -ErrorAction SilentlyContinue
+    if ($workbenchCommand) { $WorkbenchPath = $workbenchCommand.Source }
+}
+$workbench = $WorkbenchPath
+if (-not $workbench) { throw 'Set WORKBENCH_CLI or pass -WorkbenchPath with the installed Workbench executable.' }
 if (-not (Test-Path -LiteralPath $workbench)) { throw "Workbench CLI not found: $workbench" }
 if (-not $SkipPush) {
     & git push origin main
