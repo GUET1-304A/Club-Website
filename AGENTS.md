@@ -6,6 +6,8 @@
 
 ## 当前进度入口
 
+- 2026-11-02 投资系统演示已启用：最新读 `docs/verification/investment-demo-2026-11-02.md`。用户明确确认官网模块、`investment.304aistudio.cn`、台式机9012加密转发、登录启动项及正式发布。运行应用版本固定为 `5351cfc6a91b2472bc352baf87d49d61ef5865c3`；完整本地门禁/对应CI/真实Nginx配置检查与服务器24页验收通过，21表4文件备份及隔离恢复通过，原业务卷保留。真实官网按钮已进入投资系统登录页，公网health200、未登录me401。专用SSH用户仅远程Unix socket，TCP目标全部禁止；任务 `304-Investment-Relay` 登录后隐藏启动并重连。临时传输/ACME代理已关闭。仅补录运维脚本与文档时HEAD可高于运行应用SHA。外网完整smoke的网络超时、www既有canonical差异、未验实际业务登录与证书续期详见记录；不要冒充通过。既有公开页视觉约定保持。
+
 - 2026-10-22 正式生产发布：最新读 `docs/verification/production-release-2026-10-22.md`。用户随后明确授权更新服务器旧版。固定应用版本 `993c555eeb823427a37e1e71af727b337a301d05` 已通过完整本地门禁与对应 GitHub CI，使用 Workbench 正式发布成功；旧业务卷保留，21 表/4 上传文件备份和隔离恢复通过，两个域名 readiness 为目标版本，服务端/外网 smoke 均通过 24 页面/4 资源/2 详情。`current-release` 指向该版，旧镜像 ID 已留存；下一步及未验真实账号写入、真实手机/弱网、外部服务、异地/旧 cron 恢复见新文档。后续若仅提交交接文档，Git HEAD 可高于线上应用版本，不得混淆。原版纯图标 Dock、更多分组、公开页视频、避让内容的边缘代码装饰仍是视觉约定。
 - 2026-10-22 宿主Python解阻：最新读 `docs/verification/python-host-2026-10-22.md` 及更新后的 `docs/生产更新手册.md`。用户明确允许修改服务器运行环境；本轮从官方签名源并行安装/usr/bin/python3.11（3.11.13）及必需依赖，系统python3仍3.6.8，网站容器ID/启动时间不变。发布脚本增加兼容解释器选择/显式覆盖校验/只读--check-runtime；Linux相关31项通过，真实主机临时新源码prepare-compose和模块导入通过、卷集合不变。纠正运维文档旧覆盖发布/活库复制示例；只读核对旧03:00备份实际目录/root/backups/304aistudio-daily及04:10续期cron均存在，未运行它们。基线main/b1aced0，收尾正式提交/CheckOnly/CI见同目录2026-10-22.release-report.json与workflow。Python阻塞已消除；未正式部署或操作业务数据，既有视觉约定不变。
 - 2026-10-22 正式提交与门禁：最新进度见 `docs/verification/release-gate-2026-10-22.md`。用户已要求完成下一步，正式代码提交63ef45cc8fc1fc5c90e6771e057dd0684265452d已推送main；原目录PowerShell CheckOnly完整通过（前端35、后端211+Windows跳过3、审计0），托管CI结果见文档收尾。只读实机核对了项目304aistudio、原数据卷、现有TLS及Workbench成功/失败退出码，没有线上变更。**服务器python3仅3.6.8，发布工具需3.9+，正式发布前必须解决，不能绕过。** 3001本地Vite因依赖DLL文件锁暂时停止，收尾恢复状态见文档；Docker3000/5000保持运行。既有视觉约定不变，不正式部署或覆盖生产数据。
