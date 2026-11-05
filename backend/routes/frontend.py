@@ -19,6 +19,16 @@ from models import Award, BlogPost, Project, SiteConfig
 frontend_bp = Blueprint('frontend', __name__)
 
 
+@frontend_bp.get('/projects/airi')
+@frontend_bp.get('/projects/airi/')
+def airi_entry():
+    response = redirect('https://airi.304aistudio.cn/', code=302)
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
+
+
 @frontend_bp.get('/projects/investment')
 @frontend_bp.get('/projects/investment/')
 def investment_entry():

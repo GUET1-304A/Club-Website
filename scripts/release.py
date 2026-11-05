@@ -61,6 +61,7 @@ def preflight(repo):
         raise ValueError('Node.js 24 or later is required for the build scripts')
     for args in [['ci'], ['run', 'check'], ['test'], ['audit', '--audit-level=high'], ['run', 'build']]:
         run([npm] + args, Path(repo) / 'frontendnew')
+    run(['node', '--test', 'scripts/tests/airi-demo-gateway.test.mjs'], repo)
     import sys
     run([sys.executable, '-m', 'pytest', 'backend/tests', '-q'], repo)
     if validate_repository(repo) != revision:

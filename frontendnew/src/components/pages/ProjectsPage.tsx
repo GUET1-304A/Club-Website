@@ -11,6 +11,7 @@ import { useSiteData } from '../../store/useSiteData'
 import ContentFilters from '../ui/ContentFilters'
 import ProjectCover from '../ui/ProjectCover'
 import InvestmentDemo from '../ui/InvestmentDemo'
+import AiriDemo from '../ui/AiriDemo'
 
 const categories = [
   { key: 'all', label: '全部' },
@@ -37,6 +38,7 @@ export default function ProjectsPage() {
       </h1>
 
       <InvestmentDemo />
+      <AiriDemo />
 
       <ContentFilters label="项目分类" options={categories} active={activeCat} onChange={setActiveCat}>
         <SearchModal

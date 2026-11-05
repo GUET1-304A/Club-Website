@@ -48,6 +48,7 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run check
       - run: npm test
+      - run: node --test ../scripts/tests/airi-demo-gateway.test.mjs
       - run: npm run build
 
   backend:

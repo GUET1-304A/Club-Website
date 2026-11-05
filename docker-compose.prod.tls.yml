@@ -10,3 +10,4 @@ services:
       - ./deploy/nginx/tls.conf:/etc/nginx/conf.d/default.conf:ro
       - ./deploy/certs:/etc/nginx/certs:ro
       - ./investment-relay:/run/investment:ro
+      - ./airi-relay:/run/airi:ro
