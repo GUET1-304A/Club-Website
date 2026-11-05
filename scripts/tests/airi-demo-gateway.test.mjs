@@ -53,6 +53,7 @@ test('anonymous visitors cannot read settings, assets, or pass into the upstream
   const f = await fixture(t)
   const page = await f.call('/')
   assert.equal(page.status, 200)
+  assert.equal(page.headers['referrer-policy'], 'same-origin')
   assert.match(page.body, /演示密码/)
   for (const path of ['/api/shared-settings', '/assets/stage.js', '/api/local-vision/persons'])
     assert.equal((await f.call(path)).status, 401)

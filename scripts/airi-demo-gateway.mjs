@@ -53,7 +53,8 @@ export function createAiriDemoGateway(config) {
   const server = createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store')
     response.setHeader('X-Robots-Tag', 'noindex, nofollow')
-    response.setHeader('Referrer-Policy', 'no-referrer')
+    // Same-origin form posts must retain Origin for the login CSRF check.
+    response.setHeader('Referrer-Policy', 'same-origin')
     response.setHeader('X-Content-Type-Options', 'nosniff')
     const send = (status, body, type = 'text/html; charset=utf-8') => {
       response.writeHead(status, { 'Content-Type': type }).end(body)
