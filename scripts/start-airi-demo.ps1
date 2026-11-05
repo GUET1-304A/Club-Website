@@ -33,9 +33,12 @@ try {
         if (!(Test-AiriPreview)) { throw 'AIRI production preview did not become ready.' }
     }
     if (Test-Path -LiteralPath (Join-Path $AiriWorkspace '.runtime\vision-venv\Scripts\python.exe')) {
-        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $AiriWorkspace 'scripts\vision.ps1') start `
-            *> (Join-Path $state 'vision-start.log')
-        if ($LASTEXITCODE -ne 0) { Write-Warning 'AIRI vision is unavailable. The stage keeps its own status and retry controls.' }
+        # Vision readiness is shown by the stage. Its launcher must not delay the access gateway.
+        Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+            ('"' + (Join-Path $AiriWorkspace 'scripts\vision.ps1') + '"'), 'start') `
+            -WorkingDirectory $AiriWorkspace -WindowStyle Hidden `
+            -RedirectStandardOutput (Join-Path $state 'vision-start.log') `
+            -RedirectStandardError (Join-Path $state 'vision-start-error.log') | Out-Null
     }
     & (Join-Path $PSScriptRoot 'start-airi-relay.ps1')
 } finally {
